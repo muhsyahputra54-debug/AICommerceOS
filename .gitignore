@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+
+# PNPM
+.pnpm-store/
+
+# Next.js
+.next/
+out/
+
+# Turbopack
+.turbo/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/

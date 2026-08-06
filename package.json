@@ -1,0 +1,16 @@
+{
+  "name": "ai-commerce-os",
+  "version": "0.1.0",
+  "private": true,
+  "description": "AI Business Operating System",
+  "packageManager": "pnpm@11.20.0",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "dev": "echo \"Workspace is ready\"",
+    "build": "echo \"Build is not configured yet\"",
+    "lint": "echo \"Lint is not configured yet\"",
+    "test": "echo \"Tests are not configured yet\""
+  }
+}
