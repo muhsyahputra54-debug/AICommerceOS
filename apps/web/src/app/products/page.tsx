@@ -1,5 +1,6 @@
 import Link from "next/link";
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import DeleteProductButton from "@/components/products/DeleteProductButton";
 import { getCurrentOrganization } from "@/lib/supabase/current-organization";
 import { createClient } from "@/lib/supabase/server";
 
@@ -115,12 +116,20 @@ export default async function ProductsPage() {
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <Link
-                          href={`/products/${product.id}/edit`}
-                          className="inline-flex h-8 items-center justify-center rounded-lg border px-3 text-sm font-medium transition-colors hover:bg-muted"
-                        >
-                          Edit
-                        </Link>
+                        <div className="flex items-start gap-2">
+                          <Link
+                            href={`/products/${product.id}/edit`}
+                            className="inline-flex h-7 items-center justify-center rounded-lg border px-2.5 text-[0.8rem] font-medium transition-colors hover:bg-muted"
+                          >
+                            Edit
+                          </Link>
+
+                          <DeleteProductButton
+                            organizationId={currentOrganization.organizationId}
+                            productId={product.id}
+                            productName={product.name}
+                          />
+                        </div>
                       </td>
                     </tr>
                   ))}
