@@ -1,3 +1,4 @@
+import Link from "next/link";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { getCurrentOrganization } from "@/lib/supabase/current-organization";
 import { createClient } from "@/lib/supabase/server";
@@ -54,12 +55,23 @@ export default async function CustomersPage() {
 
         <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
           <div className="border-b px-6 py-5">
-            <h2 className="text-lg font-semibold">
-              Customer Management
-            </h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {customers.length} pelanggan pada organization aktif.
-            </p>
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <h2 className="text-lg font-semibold">
+                  Customer Management
+                </h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {customers.length} pelanggan pada organization aktif.
+                </p>
+              </div>
+
+              <Link
+                href="/customers/new"
+                className="inline-flex h-9 items-center justify-center rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/80"
+              >
+                Add Customer
+              </Link>
+            </div>
           </div>
 
           {customers.length === 0 ? (
