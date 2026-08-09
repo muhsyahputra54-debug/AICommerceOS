@@ -1,3 +1,4 @@
+import Link from "next/link";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { getCurrentOrganization } from "@/lib/supabase/current-organization";
 import { createClient } from "@/lib/supabase/server";
@@ -57,6 +58,13 @@ export default async function ProductsPage() {
                   {products.length} produk pada organization aktif.
                 </p>
               </div>
+
+              <Link
+                href="/products/new"
+                className="inline-flex h-9 items-center justify-center rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/80"
+              >
+                Add Product
+              </Link>
             </div>
           </div>
 
