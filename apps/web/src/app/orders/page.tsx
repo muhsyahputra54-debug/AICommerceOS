@@ -1,5 +1,6 @@
 import Link from "next/link";
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import OrderStatusActions from "@/components/orders/OrderStatusActions";
 import { getCurrentOrganization } from "@/lib/supabase/current-organization";
 import { createClient } from "@/lib/supabase/server";
 
@@ -128,6 +129,9 @@ export default async function OrdersPage() {
                     <th className="px-6 py-4 text-left font-medium">
                       Created
                     </th>
+                    <th className="px-6 py-4 text-left font-medium">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
 
@@ -155,6 +159,22 @@ export default async function OrdersPage() {
 
                       <td className="px-6 py-4 text-muted-foreground">
                         {formatDate(order.created_at)}
+                      </td>
+
+                      <td className="px-6 py-4">
+                        <OrderStatusActions
+                          organizationId={
+                            currentOrganization.organizationId
+                          }
+                          orderId={order.id}
+                          status={
+                            order.status as
+                              | "pending"
+                              | "processing"
+                              | "completed"
+                              | "cancelled"
+                          }
+                        />
                       </td>
                     </tr>
                   ))}
