@@ -1,5 +1,6 @@
 import Link from "next/link";
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import DeleteCustomerButton from "@/components/customers/DeleteCustomerButton";
 import { getCurrentOrganization } from "@/lib/supabase/current-organization";
 import { createClient } from "@/lib/supabase/server";
 
@@ -128,12 +129,20 @@ export default async function CustomersPage() {
                         {formatDate(customer.created_at)}
                       </td>
                       <td className="px-6 py-4">
-                        <Link
-                          href={`/customers/${customer.id}/edit`}
-                          className="inline-flex h-8 items-center justify-center rounded-lg border px-3 text-sm font-medium transition-colors hover:bg-muted"
-                        >
-                          Edit
-                        </Link>
+                        <div className="flex items-start gap-2">
+                          <Link
+                            href={`/customers/${customer.id}/edit`}
+                            className="inline-flex h-7 items-center justify-center rounded-lg border px-2.5 text-[0.8rem] font-medium transition-colors hover:bg-muted"
+                          >
+                            Edit
+                          </Link>
+
+                          <DeleteCustomerButton
+                            organizationId={currentOrganization.organizationId}
+                            customerId={customer.id}
+                            customerName={customer.name}
+                          />
+                        </div>
                       </td>
                     </tr>
                   ))}
