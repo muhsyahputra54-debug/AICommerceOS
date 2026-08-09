@@ -100,6 +100,9 @@ export default async function CustomersPage() {
                     <th className="px-6 py-4 text-left font-medium">
                       Added
                     </th>
+                    <th className="px-6 py-4 text-left font-medium">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
 
@@ -123,6 +126,14 @@ export default async function CustomersPage() {
 
                       <td className="px-6 py-4 text-muted-foreground">
                         {formatDate(customer.created_at)}
+                      </td>
+                      <td className="px-6 py-4">
+                        <Link
+                          href={`/customers/${customer.id}/edit`}
+                          className="inline-flex h-8 items-center justify-center rounded-lg border px-3 text-sm font-medium transition-colors hover:bg-muted"
+                        >
+                          Edit
+                        </Link>
                       </td>
                     </tr>
                   ))}
