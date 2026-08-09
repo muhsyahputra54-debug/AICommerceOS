@@ -1,3 +1,4 @@
+import Link from "next/link";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { getCurrentOrganization } from "@/lib/supabase/current-organization";
 import { createClient } from "@/lib/supabase/server";
@@ -68,13 +69,22 @@ export default async function OrdersPage() {
   return (
     <DashboardLayout>
       <div className="space-y-8">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Orders
-          </h1>
-          <p className="mt-2 text-muted-foreground">
-            Kelola dan pantau seluruh pesanan bisnis Anda.
-          </p>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">
+              Orders
+            </h1>
+            <p className="mt-2 text-muted-foreground">
+              Kelola dan pantau seluruh pesanan bisnis Anda.
+            </p>
+          </div>
+
+          <Link
+            href="/orders/new"
+            className="inline-flex h-10 items-center justify-center rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+          >
+            Add Order
+          </Link>
         </div>
 
         <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
