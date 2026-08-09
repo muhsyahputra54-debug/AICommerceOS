@@ -84,6 +84,9 @@ export default async function ProductsPage() {
                     <th className="px-6 py-3 font-medium">Price</th>
                     <th className="px-6 py-3 font-medium">Stock</th>
                     <th className="px-6 py-3 font-medium">Status</th>
+                    <th className="px-6 py-4 text-left font-medium">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
 
@@ -110,6 +113,14 @@ export default async function ProductsPage() {
                         <span className="inline-flex rounded-full border px-2.5 py-1 text-xs font-medium capitalize">
                           {product.status}
                         </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <Link
+                          href={`/products/${product.id}/edit`}
+                          className="inline-flex h-8 items-center justify-center rounded-lg border px-3 text-sm font-medium transition-colors hover:bg-muted"
+                        >
+                          Edit
+                        </Link>
                       </td>
                     </tr>
                   ))}
