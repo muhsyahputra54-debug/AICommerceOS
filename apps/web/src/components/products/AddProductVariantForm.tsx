@@ -7,34 +7,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { createClient } from "@/lib/supabase/client";
 
-type ProductCategory = {
-  id: string;
-  name: string;
-};
-
-type EditableProduct = {
-  id: string;
-  name: string;
-  description: string | null;
-  sku: string | null;
-  category_id: string | null;
-  price: number | string;
-  cost_price: number | string;
-  stock: number;
-  status: string;
-};
-
-type EditProductFormProps = {
+type AddProductVariantFormProps = {
   organizationId: string;
-  product: EditableProduct;
-  categories: ProductCategory[];
+  productId: string;
 };
 
-export default function EditProductForm({
+export default function AddProductVariantForm({
   organizationId,
-  product,
-  categories,
-}: EditProductFormProps) {
+  productId,
+}: AddProductVariantFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -47,22 +28,26 @@ export default function EditProductForm({
     const formData = new FormData(event.currentTarget);
 
     const name = String(formData.get("name") ?? "").trim();
-    const description = String(formData.get("description") ?? "").trim();
     const sku = String(formData.get("sku") ?? "").trim();
-    const categoryId = String(formData.get("category_id") ?? "").trim();
     const price = Number(formData.get("price"));
     const costPrice = Number(formData.get("cost_price"));
     const stock = Number(formData.get("stock"));
     const status = String(formData.get("status") ?? "");
 
     if (!name) {
-      setErrorMessage("Nama produk wajib diisi.");
+      setErrorMessage("Nama variant wajib diisi.");
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (!sku) {
+      setErrorMessage("SKU variant wajib diisi.");
       setIsSubmitting(false);
       return;
     }
 
     if (!Number.isFinite(price) || price < 0) {
-      setErrorMessage("Harga harus bernilai 0 atau lebih.");
+      setErrorMessage("Harga jual harus bernilai 0 atau lebih.");
       setIsSubmitting(false);
       return;
     }
@@ -80,29 +65,25 @@ export default function EditProductForm({
     }
 
     if (status !== "active" && status !== "inactive") {
-      setErrorMessage("Status produk tidak valid.");
+      setErrorMessage("Status variant tidak valid.");
       setIsSubmitting(false);
       return;
     }
 
     const supabase = createClient();
 
-    const { data, error } = await supabase
-      .from("products")
-      .update({
+    const { error } = await supabase
+      .from("product_variants")
+      .insert({
+        organization_id: organizationId,
+        product_id: productId,
         name,
-        description: description || null,
-        sku: sku || null,
-        category_id: categoryId || null,
+        sku,
         price,
         cost_price: costPrice,
         stock,
         status,
-      })
-      .eq("id", product.id)
-      .eq("organization_id", organizationId)
-      .select("id")
-      .maybeSingle();
+      });
 
     if (error) {
       setErrorMessage(
@@ -110,17 +91,12 @@ export default function EditProductForm({
           ? "SKU sudah digunakan pada organization ini."
           : error.message,
       );
+
       setIsSubmitting(false);
       return;
     }
 
-    if (!data) {
-      setErrorMessage("Produk tidak ditemukan atau tidak dapat diubah.");
-      setIsSubmitting(false);
-      return;
-    }
-
-    router.push("/products");
+    router.push(`/products/${productId}/variants`);
     router.refresh();
   }
 
@@ -129,77 +105,49 @@ export default function EditProductForm({
       <div className="grid gap-5 md:grid-cols-2">
         <div className="space-y-2 md:col-span-2">
           <label htmlFor="name" className="text-sm font-medium">
-            Product name
+            Variant name
           </label>
+
           <Input
             id="name"
             name="name"
             type="text"
-            defaultValue={product.name}
+            placeholder="Contoh: Black / Medium"
             required
             maxLength={200}
           />
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-2 md:col-span-2">
           <label htmlFor="sku" className="text-sm font-medium">
             SKU
           </label>
+
           <Input
             id="sku"
             name="sku"
             type="text"
-            defaultValue={product.sku ?? ""}
             placeholder="Contoh: TSHIRT-BLK-M"
+            required
           />
+
           <p className="text-xs text-muted-foreground">
-            Opsional. Harus unik dalam organization.
+            SKU harus unik dalam organization, termasuk terhadap SKU product.
           </p>
-        </div>
-
-        <div className="space-y-2">
-          <label htmlFor="category_id" className="text-sm font-medium">
-            Category
-          </label>
-          <select
-            id="category_id"
-            name="category_id"
-            defaultValue={product.category_id ?? ""}
-            className="h-8 w-full rounded-lg border border-input bg-background px-2.5 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-          >
-            <option value="">No category</option>
-            {categories.map((category) => (
-              <option key={category.id} value={category.id}>
-                {category.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="space-y-2 md:col-span-2">
-          <label htmlFor="description" className="text-sm font-medium">
-            Description
-          </label>
-          <textarea
-            id="description"
-            name="description"
-            rows={4}
-            defaultValue={product.description ?? ""}
-            className="w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-          />
         </div>
 
         <div className="space-y-2">
           <label htmlFor="price" className="text-sm font-medium">
             Selling Price
           </label>
+
           <Input
             id="price"
             name="price"
             type="number"
             min="0"
             step="1"
-            defaultValue={String(product.price)}
+            defaultValue="0"
             required
           />
         </div>
@@ -208,13 +156,14 @@ export default function EditProductForm({
           <label htmlFor="cost_price" className="text-sm font-medium">
             Cost Price
           </label>
+
           <Input
             id="cost_price"
             name="cost_price"
             type="number"
             min="0"
             step="1"
-            defaultValue={String(product.cost_price)}
+            defaultValue="0"
             required
           />
         </div>
@@ -223,13 +172,14 @@ export default function EditProductForm({
           <label htmlFor="stock" className="text-sm font-medium">
             Stock
           </label>
+
           <Input
             id="stock"
             name="stock"
             type="number"
             min="0"
             step="1"
-            defaultValue={String(product.stock)}
+            defaultValue="0"
             required
           />
         </div>
@@ -238,12 +188,11 @@ export default function EditProductForm({
           <label htmlFor="status" className="text-sm font-medium">
             Status
           </label>
+
           <select
             id="status"
             name="status"
-            defaultValue={
-              product.status === "inactive" ? "inactive" : "active"
-            }
+            defaultValue="active"
             className="h-8 w-full rounded-lg border border-input bg-background px-2.5 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
           >
             <option value="active">Active</option>
@@ -262,14 +211,16 @@ export default function EditProductForm({
         <Button
           type="button"
           variant="outline"
-          onClick={() => router.push("/products")}
+          onClick={() =>
+            router.push(`/products/${productId}/variants`)
+          }
           disabled={isSubmitting}
         >
           Cancel
         </Button>
 
         <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Saving..." : "Save changes"}
+          {isSubmitting ? "Saving..." : "Save variant"}
         </Button>
       </div>
     </form>

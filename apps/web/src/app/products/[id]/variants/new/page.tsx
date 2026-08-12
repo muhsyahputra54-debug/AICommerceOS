@@ -1,19 +1,19 @@
 import { notFound } from "next/navigation";
 
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import EditProductForm from "@/components/products/EditProductForm";
+import AddProductVariantForm from "@/components/products/AddProductVariantForm";
 import { getCurrentOrganization } from "@/lib/supabase/current-organization";
 import { createClient } from "@/lib/supabase/server";
 
-type EditProductPageProps = {
+type NewProductVariantPageProps = {
   params: Promise<{
     id: string;
   }>;
 };
 
-export default async function EditProductPage({
+export default async function NewProductVariantPage({
   params,
-}: EditProductPageProps) {
+}: NewProductVariantPageProps) {
   const currentOrganization = await getCurrentOrganization();
 
   if (!currentOrganization) {
@@ -21,8 +21,9 @@ export default async function EditProductPage({
       <DashboardLayout>
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
-            Edit Product
+            Add Product Variant
           </h1>
+
           <p className="mt-2 text-muted-foreground">
             Organization aktif tidak ditemukan.
           </p>
@@ -34,32 +35,15 @@ export default async function EditProductPage({
   const { id } = await params;
   const supabase = await createClient();
 
-  const [
-    { data: product, error: productError },
-    { data: categories, error: categoriesError },
-  ] = await Promise.all([
-    supabase
-      .from("products")
-      .select(
-        "id, name, description, sku, category_id, price, cost_price, stock, status",
-      )
-      .eq("id", id)
-      .eq("organization_id", currentOrganization.organizationId)
-      .maybeSingle(),
+  const { data: product, error } = await supabase
+    .from("products")
+    .select("id, name, sku")
+    .eq("id", id)
+    .eq("organization_id", currentOrganization.organizationId)
+    .maybeSingle();
 
-    supabase
-      .from("categories")
-      .select("id, name")
-      .eq("organization_id", currentOrganization.organizationId)
-      .order("name", { ascending: true }),
-  ]);
-
-  if (productError) {
-    throw new Error(productError.message);
-  }
-
-  if (categoriesError) {
-    throw new Error(categoriesError.message);
+  if (error) {
+    throw new Error(error.message);
   }
 
   if (!product) {
@@ -71,18 +55,22 @@ export default async function EditProductPage({
       <div className="mx-auto max-w-3xl space-y-6">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
-            Edit Product
+            Add Product Variant
           </h1>
+
           <p className="mt-2 text-muted-foreground">
-            Perbarui informasi produk pada organization aktif.
+            Tambahkan variant untuk{" "}
+            <span className="font-medium text-foreground">
+              {product.name}
+            </span>
+            {product.sku ? ` (${product.sku})` : ""}.
           </p>
         </div>
 
         <div className="rounded-2xl border bg-card p-6 shadow-sm">
-          <EditProductForm
+          <AddProductVariantForm
             organizationId={currentOrganization.organizationId}
-            product={product}
-            categories={categories}
+            productId={product.id}
           />
         </div>
       </div>

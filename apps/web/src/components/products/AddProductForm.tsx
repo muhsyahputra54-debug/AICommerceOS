@@ -7,12 +7,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { createClient } from "@/lib/supabase/client";
 
+type ProductCategory = {
+  id: string;
+  name: string;
+};
+
 type AddProductFormProps = {
   organizationId: string;
+  categories: ProductCategory[];
 };
 
 export default function AddProductForm({
   organizationId,
+  categories,
 }: AddProductFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -27,7 +34,10 @@ export default function AddProductForm({
 
     const name = String(formData.get("name") ?? "").trim();
     const description = String(formData.get("description") ?? "").trim();
+    const sku = String(formData.get("sku") ?? "").trim();
+    const categoryId = String(formData.get("category_id") ?? "").trim();
     const price = Number(formData.get("price"));
+    const costPrice = Number(formData.get("cost_price"));
     const stock = Number(formData.get("stock"));
     const status = String(formData.get("status") ?? "");
 
@@ -39,6 +49,12 @@ export default function AddProductForm({
 
     if (!Number.isFinite(price) || price < 0) {
       setErrorMessage("Harga harus bernilai 0 atau lebih.");
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (!Number.isFinite(costPrice) || costPrice < 0) {
+      setErrorMessage("Harga modal harus bernilai 0 atau lebih.");
       setIsSubmitting(false);
       return;
     }
@@ -60,14 +76,21 @@ export default function AddProductForm({
     const { error } = await supabase.from("products").insert({
       name,
       description: description || null,
+      sku: sku || null,
+      category_id: categoryId || null,
       price,
+      cost_price: costPrice,
       stock,
       status,
       organization_id: organizationId,
     });
 
     if (error) {
-      setErrorMessage(error.message);
+      setErrorMessage(
+        error.code === "23505"
+          ? "SKU sudah digunakan pada organization ini."
+          : error.message,
+      );
       setIsSubmitting(false);
       return;
     }
@@ -93,6 +116,40 @@ export default function AddProductForm({
           />
         </div>
 
+        <div className="space-y-2">
+          <label htmlFor="sku" className="text-sm font-medium">
+            SKU
+          </label>
+          <Input
+            id="sku"
+            name="sku"
+            type="text"
+            placeholder="Contoh: TSHIRT-BLK-M"
+          />
+          <p className="text-xs text-muted-foreground">
+            Opsional. Harus unik dalam organization.
+          </p>
+        </div>
+
+        <div className="space-y-2">
+          <label htmlFor="category_id" className="text-sm font-medium">
+            Category
+          </label>
+          <select
+            id="category_id"
+            name="category_id"
+            defaultValue=""
+            className="h-8 w-full rounded-lg border border-input bg-background px-2.5 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+          >
+            <option value="">No category</option>
+            {categories.map((category) => (
+              <option key={category.id} value={category.id}>
+                {category.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
         <div className="space-y-2 md:col-span-2">
           <label htmlFor="description" className="text-sm font-medium">
             Description
@@ -108,11 +165,26 @@ export default function AddProductForm({
 
         <div className="space-y-2">
           <label htmlFor="price" className="text-sm font-medium">
-            Price
+            Selling Price
           </label>
           <Input
             id="price"
             name="price"
+            type="number"
+            min="0"
+            step="1"
+            defaultValue="0"
+            required
+          />
+        </div>
+
+        <div className="space-y-2">
+          <label htmlFor="cost_price" className="text-sm font-medium">
+            Cost Price
+          </label>
+          <Input
+            id="cost_price"
+            name="cost_price"
             type="number"
             min="0"
             step="1"
