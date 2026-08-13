@@ -179,6 +179,13 @@ export default async function ProductVariantsPage({
                             Edit
                           </Link>
 
+                          <Link
+                            href={`/products/${product.id}/variants/${variant.id}/inventory/adjust`}
+                            className="inline-flex h-7 items-center justify-center rounded-lg border px-2.5 text-[0.8rem] font-medium transition-colors hover:bg-muted"
+                          >
+                            Adjust Stock
+                          </Link>
+
                           <DeleteProductVariantButton
                             organizationId={
                               currentOrganization.organizationId

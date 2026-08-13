@@ -256,12 +256,21 @@ export default async function ProductsPage({
                 </p>
               </div>
 
-              <Link
-                href="/products/new"
-                className="inline-flex h-9 items-center justify-center rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/80"
-              >
-                Add Product
-              </Link>
+              <div className="flex gap-2">
+                <Link
+                  href="/inventory"
+                  className="inline-flex h-9 items-center justify-center rounded-lg border px-4 text-sm font-medium transition-colors hover:bg-muted"
+                >
+                  Inventory History
+                </Link>
+
+                <Link
+                  href="/products/new"
+                  className="inline-flex h-9 items-center justify-center rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/80"
+                >
+                  Add Product
+                </Link>
+              </div>
             </div>
 
             <form
@@ -419,6 +428,13 @@ export default async function ProductsPage({
                               className="inline-flex h-7 items-center justify-center rounded-lg border px-2.5 text-[0.8rem] font-medium transition-colors hover:bg-muted"
                             >
                               Variants
+                            </Link>
+
+                            <Link
+                              href={`/products/${product.id}/inventory/adjust`}
+                              className="inline-flex h-7 items-center justify-center rounded-lg border px-2.5 text-[0.8rem] font-medium transition-colors hover:bg-muted"
+                            >
+                              Adjust Stock
                             </Link>
 
                             <DeleteProductButton
