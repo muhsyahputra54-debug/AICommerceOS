@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import AdjustInventoryForm from "@/components/inventory/AdjustInventoryForm";
+import SetLowStockThresholdForm from "@/components/inventory/SetLowStockThresholdForm";
 import { getCurrentOrganization } from "@/lib/supabase/current-organization";
 import { createClient } from "@/lib/supabase/server";
 
@@ -53,7 +54,7 @@ export default async function VariantInventoryAdjustPage({
 
   const { data: variant, error: variantError } = await supabase
     .from("product_variants")
-    .select("id, name, sku, stock")
+    .select("id, name, sku, stock, low_stock_threshold")
     .eq("id", variantId)
     .eq("product_id", product.id)
     .eq("organization_id", currentOrganization.organizationId)
@@ -72,12 +73,11 @@ export default async function VariantInventoryAdjustPage({
       <div className="mx-auto max-w-3xl space-y-6">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
-            Adjust Variant Stock
+            Variant Inventory
           </h1>
 
           <p className="mt-2 text-muted-foreground">
-            Buat perubahan stock variant yang tercatat pada inventory
-            ledger.
+            Kelola stock dan low-stock intelligence untuk variant.
           </p>
         </div>
 
@@ -89,6 +89,15 @@ export default async function VariantInventoryAdjustPage({
             targetName={`${product.name} — ${variant.name} (${variant.sku})`}
             currentStock={variant.stock}
             returnHref={`/products/${product.id}/variants`}
+          />
+        </div>
+
+        <div className="rounded-2xl border bg-card p-6 shadow-sm">
+          <SetLowStockThresholdForm
+            organizationId={currentOrganization.organizationId}
+            targetType="variant"
+            targetId={variant.id}
+            currentThreshold={variant.low_stock_threshold}
           />
         </div>
       </div>

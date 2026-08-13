@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import AdjustInventoryForm from "@/components/inventory/AdjustInventoryForm";
+import SetLowStockThresholdForm from "@/components/inventory/SetLowStockThresholdForm";
 import { getCurrentOrganization } from "@/lib/supabase/current-organization";
 import { createClient } from "@/lib/supabase/server";
 
@@ -37,7 +38,7 @@ export default async function ProductInventoryAdjustPage({
 
   const { data: product, error } = await supabase
     .from("products")
-    .select("id, name, sku, stock")
+    .select("id, name, sku, stock, low_stock_threshold")
     .eq("id", id)
     .eq("organization_id", currentOrganization.organizationId)
     .maybeSingle();
@@ -55,11 +56,11 @@ export default async function ProductInventoryAdjustPage({
       <div className="mx-auto max-w-3xl space-y-6">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
-            Adjust Product Stock
+            Product Inventory
           </h1>
 
           <p className="mt-2 text-muted-foreground">
-            Buat perubahan stock yang tercatat pada inventory ledger.
+            Kelola stock dan low-stock intelligence untuk product.
           </p>
         </div>
 
@@ -75,6 +76,15 @@ export default async function ProductInventoryAdjustPage({
             }
             currentStock={product.stock}
             returnHref="/products"
+          />
+        </div>
+
+        <div className="rounded-2xl border bg-card p-6 shadow-sm">
+          <SetLowStockThresholdForm
+            organizationId={currentOrganization.organizationId}
+            targetType="product"
+            targetId={product.id}
+            currentThreshold={product.low_stock_threshold}
           />
         </div>
       </div>
