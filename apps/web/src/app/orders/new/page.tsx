@@ -1,4 +1,4 @@
-import DashboardLayout from "@/components/layout/DashboardLayout";
+﻿import DashboardLayout from "@/components/layout/DashboardLayout";
 import AddOrderForm from "@/components/orders/AddOrderForm";
 import { getCurrentOrganization } from "@/lib/supabase/current-organization";
 import { createClient } from "@/lib/supabase/server";
@@ -24,22 +24,21 @@ export default async function NewOrderPage() {
 
   const supabase = await createClient();
 
-  const { data: customers, error: customersError } =
-    await supabase
+  const [
+    customersResult,
+    productsResult,
+    variantsResult,
+  ] = await Promise.all([
+    supabase
       .from("customers")
       .select("id, name")
       .eq(
         "organization_id",
         currentOrganization.organizationId,
       )
-      .order("name", { ascending: true });
+      .order("name", { ascending: true }),
 
-  if (customersError) {
-    throw new Error(customersError.message);
-  }
-
-  const { data: products, error: productsError } =
-    await supabase
+    supabase
       .from("products")
       .select("id, name, price, stock")
       .eq(
@@ -47,10 +46,31 @@ export default async function NewOrderPage() {
         currentOrganization.organizationId,
       )
       .eq("status", "active")
-      .order("name", { ascending: true });
+      .order("name", { ascending: true }),
 
-  if (productsError) {
-    throw new Error(productsError.message);
+    supabase
+      .from("product_variants")
+      .select(
+        "id, product_id, name, sku, price, stock",
+      )
+      .eq(
+        "organization_id",
+        currentOrganization.organizationId,
+      )
+      .eq("status", "active")
+      .order("name", { ascending: true }),
+  ]);
+
+  if (customersResult.error) {
+    throw new Error(customersResult.error.message);
+  }
+
+  if (productsResult.error) {
+    throw new Error(productsResult.error.message);
+  }
+
+  if (variantsResult.error) {
+    throw new Error(variantsResult.error.message);
   }
 
   return (
@@ -70,8 +90,9 @@ export default async function NewOrderPage() {
           organizationId={
             currentOrganization.organizationId
           }
-          customers={customers}
-          products={products}
+          customers={customersResult.data ?? []}
+          products={productsResult.data ?? []}
+          variants={variantsResult.data ?? []}
         />
       </div>
     </DashboardLayout>
