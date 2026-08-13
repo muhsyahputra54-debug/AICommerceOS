@@ -1,36 +1,86 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+﻿# AICommerceOS Web
 
-## Getting Started
+Web application utama AICommerceOS.
 
-First, run the development server:
+## Stack
+
+- Next.js
+- TypeScript
+- Supabase
+- PostgreSQL
+- Tailwind CSS
+
+## Development
+
+Jalankan dari folder web:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+cd apps/web
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Development server:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```text
+http://localhost:3000
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Verification
 
-## Learn More
+TypeScript:
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+pnpm exec tsc --noEmit
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+ESLint:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+pnpm lint
+```
 
-## Deploy on Vercel
+Production build:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+pnpm build
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Main Application Areas
+
+- `/products` — product management
+- `/inventory` — inventory intelligence dan movement history
+- `/analytics` — sales dan product performance
+- `/orders` — order management
+- `/orders/new` — create product atau variant order
+
+Product-specific routes juga menyediakan:
+
+- variants
+- product images
+- inventory adjustment
+- product performance
+
+## Product Variants
+
+Order form mendukung base product dan product variant.
+
+Base product menggunakan `product_id` dengan `variant_id = NULL`.
+
+Variant menggunakan parent `product_id` dan selected `variant_id`.
+
+Harga final dan cost snapshot ditentukan oleh database, bukan client.
+
+## Security
+
+Supabase Row Level Security merupakan database security boundary utama.
+
+Order creation dan lifecycle status dilakukan melalui RPC:
+
+- `create_order(...)`
+- `update_order_status(...)`
+
+Authenticated client tidak melakukan direct mutation terhadap tabel `orders` dan `order_items`.
+
+## Documentation
+
+Dokumentasi architecture, Phase 5, QA, database records, dan roadmap tersedia di root `README.md`.
