@@ -386,7 +386,7 @@ export default async function ProductsPage({
                         </td>
 
                         <td className="whitespace-nowrap px-6 py-4">
-                          {product.sku || "—"}
+                          {product.sku || "â€”"}
                         </td>
 
                         <td className="whitespace-nowrap px-6 py-4">
@@ -431,6 +431,12 @@ export default async function ProductsPage({
                             </Link>
 
                             <Link
+                              href={`/products/${product.id}/performance`}
+                              className="inline-flex h-7 items-center justify-center rounded-lg border px-2.5 text-[0.8rem] font-medium transition-colors hover:bg-muted"
+                            >
+                              Performance
+                            </Link>
+<Link
                               href={`/products/${product.id}/images`}
                               className="inline-flex h-7 items-center justify-center rounded-lg border px-2.5 text-[0.8rem] font-medium transition-colors hover:bg-muted"
                             >
@@ -461,7 +467,7 @@ export default async function ProductsPage({
 
               <div className="flex flex-col justify-between gap-3 border-t px-6 py-4 text-sm sm:flex-row sm:items-center">
                 <p className="text-muted-foreground">
-                  Page {page} of {totalPages} · {totalProducts} products
+                  Page {page} of {totalPages} Â· {totalProducts} products
                 </p>
 
                 <div className="flex gap-2">
