@@ -431,6 +431,13 @@ export default async function ProductsPage({
                             </Link>
 
                             <Link
+                              href={`/products/${product.id}/images`}
+                              className="inline-flex h-7 items-center justify-center rounded-lg border px-2.5 text-[0.8rem] font-medium transition-colors hover:bg-muted"
+                            >
+                              Images
+                            </Link>
+
+                            <Link
                               href={`/products/${product.id}/inventory/adjust`}
                               className="inline-flex h-7 items-center justify-center rounded-lg border px-2.5 text-[0.8rem] font-medium transition-colors hover:bg-muted"
                             >
