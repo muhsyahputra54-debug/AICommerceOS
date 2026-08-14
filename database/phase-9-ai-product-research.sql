@@ -1,0 +1,43 @@
+﻿-- AICommerceOS
+-- Phase 9 — AI Product Research
+--
+-- Applied to active Supabase database.
+--
+-- Core database object:
+--   public.product_research_ai_runs
+--
+-- Core RPC:
+--   public.apply_product_research_ai_run(uuid)
+--
+-- Runtime architecture:
+--   Product Research Candidate
+--     -> server-side AI endpoint
+--     -> OpenAI structured analysis
+--     -> AI Research Run history
+--     -> explicit user review
+--     -> Apply AI Scores
+--
+-- AI output:
+-- - demand score
+-- - competition score
+-- - opportunity score
+-- - confidence score
+-- - recommendation
+-- - summary
+-- - rationale
+-- - risks
+-- - next actions
+--
+-- Security / authority:
+-- - organization-scoped AI runs
+-- - RLS enabled
+-- - anon denied
+-- - AI API key stays server-side
+-- - AI does not mutate orders
+-- - AI does not mutate inventory
+-- - AI does not create products
+-- - AI recommendation does not automatically approve candidates
+-- - applying AI only updates research scores
+--
+-- OpenAI credentials are environment configuration and
+-- must never be committed to this repository.
