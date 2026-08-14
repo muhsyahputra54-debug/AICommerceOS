@@ -1,0 +1,34 @@
+﻿-- AICommerceOS
+-- Phase 11 — Price Monitoring
+--
+-- Core tables:
+-- public.price_monitor_targets
+-- public.price_observations
+--
+-- Core RPC:
+-- public.record_price_observation(...)
+--
+-- Architecture:
+-- Product / Variant
+--   -> Price Monitor Target
+--   -> Price Observation
+--   -> Previous-price comparison
+--   -> Internal-price comparison
+--   -> Threshold detection
+--   -> Price Monitoring Dashboard
+--
+-- Security:
+-- - organization scoped
+-- - tenant-safe Product / Variant FKs
+-- - RLS enabled
+-- - anon blocked
+-- - observations append through SECURITY DEFINER RPC
+-- - fixed search_path = public, pg_temp
+--
+-- Commerce authority:
+-- Phase 11 never updates products.price,
+-- product_variants.price, stock, inventory,
+-- orders, or order_items.
+--
+-- Automated repricing is intentionally
+-- outside Phase 11.
