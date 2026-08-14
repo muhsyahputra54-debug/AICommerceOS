@@ -443,6 +443,12 @@ export default async function ProductsPage({
                             >
                               Performance
                             </Link>
+                        <Link
+                          href={`/products/${product.id}/description`}
+                          className="inline-flex items-center text-sm font-medium hover:underline"
+                        >
+                          AI Description
+                        </Link>
 <Link
                               href={`/products/${product.id}/images`}
                               className="inline-flex h-7 items-center justify-center rounded-lg border px-2.5 text-[0.8rem] font-medium transition-colors hover:bg-muted"

@@ -1,0 +1,38 @@
+﻿-- AICommerceOS
+-- Phase 10 — AI Description Generator
+--
+-- Applied to active Supabase database.
+--
+-- Core object:
+--   public.product_description_generations
+--
+-- Core RPC:
+--   public.apply_product_description_generation(uuid)
+--
+-- Authoritative product field:
+--   public.products.description
+--
+-- Workflow:
+-- Product
+--   -> Generate AI draft
+--   -> Generation history
+--   -> User review
+--   -> Apply Description
+--   -> products.description
+--
+-- Security:
+-- - organization scoped
+-- - same-organization Product FK
+-- - RLS enabled
+-- - anon denied
+-- - SECURITY DEFINER Apply RPC
+-- - fixed search_path = public, pg_temp
+-- - API credential server-side only
+--
+-- AI never automatically overwrites products.description.
+-- User explicitly applies a completed generation.
+--
+-- No stock/order/inventory mutation.
+--
+-- Real provider execution remains deferred until
+-- OPENAI_API_KEY is configured.
