@@ -1,0 +1,51 @@
+﻿-- AICommerceOS
+-- Phase 13 — AI Agents
+--
+-- Core tables:
+-- public.ai_agents
+-- public.ai_agent_runs
+-- public.ai_agent_steps
+--
+-- Protected RPCs:
+-- public.start_ai_agent_run(...)
+-- public.append_ai_agent_step(...)
+-- public.finish_ai_agent_run(...)
+--
+-- Flow:
+-- Agent Registry
+--   -> Objective
+--   -> Read-only approved context
+--   -> AI analysis
+--   -> Recommendation
+--   -> Audit steps
+--   -> Human / controlled commerce workflows
+--
+-- Approved context domains:
+-- - products
+-- - product research
+-- - price monitoring
+-- - automation history
+--
+-- Security:
+-- - organization scoped
+-- - tenant-safe composite FKs
+-- - RLS enabled
+-- - anon blocked
+-- - runs and steps read-only to normal clients
+-- - run lifecycle through SECURITY DEFINER RPCs
+-- - fixed search_path = public, pg_temp
+-- - API credential server-side only
+--
+-- AI Agents do NOT directly mutate:
+-- - products.price
+-- - product_variants.price
+-- - stock
+-- - inventory
+-- - orders
+-- - order_items
+-- - automation actions
+--
+-- Existing controlled commerce RPCs remain authoritative.
+--
+-- Real provider execution remains deferred until
+-- OPENAI_API_KEY is configured.
