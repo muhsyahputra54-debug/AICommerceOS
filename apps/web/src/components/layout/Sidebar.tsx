@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -9,6 +9,7 @@ import {
   ShoppingCart,
   Package,
   Users,
+  Truck,
   BarChart3,
   Settings,
   Sparkles,
@@ -39,6 +40,11 @@ const mainMenus = [
     title: "Customers",
     icon: Users,
     href: "/customers",
+  },
+  {
+    title: "Suppliers",
+    icon: Truck,
+    href: "/suppliers",
   },
   {
     title: "Analytics",
@@ -146,7 +152,7 @@ export default function Sidebar() {
           </p>
 
           <p className="mt-1 text-[11px] text-muted-foreground">
-            v0.1.0 • Development
+            v0.1.0 â€¢ Development
           </p>
         </div>
       </div>
