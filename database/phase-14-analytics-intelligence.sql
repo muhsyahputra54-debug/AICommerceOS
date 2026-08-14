@@ -1,0 +1,53 @@
+﻿-- AICommerceOS
+-- Phase 14 — Analytics & Intelligence
+--
+-- Core RPC:
+-- public.get_commerce_analytics(uuid, integer)
+--
+-- Analytics sources:
+-- - orders / order_items
+-- - products / product_variants
+-- - product research
+-- - price monitoring
+-- - automated commerce
+-- - AI research
+-- - AI descriptions
+-- - AI agents
+--
+-- Metrics:
+-- - orders and lifecycle distribution
+-- - completed revenue
+-- - COGS
+-- - gross profit
+-- - average order value
+-- - daily sales trend
+-- - catalog / inventory metrics
+-- - research pipeline
+-- - price monitoring signals
+-- - automation execution activity
+-- - AI activity
+--
+-- Security:
+-- - authenticated only
+-- - organization membership checked inside RPC
+-- - SECURITY DEFINER
+-- - fixed search_path = public, pg_temp
+-- - anon EXECUTE denied
+--
+-- Commerce authority:
+-- Phase 14 is read-only.
+--
+-- It does NOT mutate:
+-- - products
+-- - variants
+-- - stock
+-- - inventory
+-- - orders
+-- - order_items
+-- - price monitoring
+-- - automation
+-- - AI agent state
+--
+-- Base Product and Variant inventory values are
+-- intentionally reported separately to avoid
+-- double-counting.
