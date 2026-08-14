@@ -1,0 +1,56 @@
+﻿-- AICommerceOS
+-- Phase 15 — Billing / SaaS
+--
+-- Provider-neutral SaaS billing foundation.
+--
+-- Tables:
+-- public.billing_plans
+-- public.organization_subscriptions
+-- public.billing_usage
+-- public.billing_events
+--
+-- RPC:
+-- public.refresh_billing_usage(uuid)
+-- public.get_billing_overview(uuid)
+--
+-- Usage is derived server-side from:
+-- - products
+-- - orders
+-- - product research
+-- - price monitoring
+-- - automation rules
+-- - AI research runs
+-- - AI description runs
+-- - AI agent runs
+--
+-- Security:
+-- - RLS enabled
+-- - anon blocked
+-- - organization subscriptions SELECT-only
+-- - billing usage SELECT-only
+-- - billing events SELECT-only
+-- - plan configuration SELECT-only for normal clients
+-- - no browser self-upgrade RPC
+-- - no browser subscription mutation
+-- - SECURITY DEFINER RPCs use:
+--   search_path = public, pg_temp
+--
+-- refresh_billing_usage() accepts only an organization id.
+-- Usage quantities are calculated from authoritative
+-- commerce tables and cannot be supplied by the browser.
+--
+-- Default Plan:
+-- - internal provider
+-- - no invented commercial pricing
+-- - quota limits not enforced until pricing policy exists
+--
+-- Deferred:
+-- - real payment provider
+-- - checkout
+-- - webhook ingestion
+-- - invoices
+-- - payment capture/refunds
+-- - commercial quota enforcement
+--
+-- Therefore Phase 15 remains an implementation checkpoint
+-- until a real billing provider is selected and verified.
