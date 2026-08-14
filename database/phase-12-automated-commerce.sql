@@ -1,0 +1,44 @@
+﻿-- AICommerceOS
+-- Phase 12 — Automated Commerce
+--
+-- Core tables:
+-- public.automation_rules
+-- public.automation_runs
+-- public.automation_actions
+--
+-- Core RPCs:
+-- public.evaluate_automation_rule(uuid)
+-- public.execute_automation_action(uuid)
+--
+-- Flow:
+-- Phase 11 Price Observation
+--   -> Automation Rule
+--   -> Evaluation Run
+--   -> Proposed Price Action
+--   -> Proposal or Automatic Execution
+--   -> Product / Variant Price
+--   -> Audit History
+--
+-- Safety:
+-- - organization scoped
+-- - tenant-safe composite FKs
+-- - RLS enabled
+-- - runs/actions are read-only to normal clients
+-- - evaluation/execution through SECURITY DEFINER RPCs
+-- - fixed search_path = public, pg_temp
+-- - stale-price protection before execution
+-- - proposal mode supports explicit human approval
+-- - automatic mode executes only triggered Phase 11 signals
+--
+-- Commerce authority:
+-- Phase 12 may update ONLY:
+--   products.price
+--   product_variants.price
+--
+-- Phase 12 does NOT directly mutate:
+--   orders
+--   order_items
+--   inventory ledger
+--   stock
+--
+-- Existing protected order lifecycle RPCs remain authoritative.
