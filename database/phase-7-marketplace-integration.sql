@@ -1,0 +1,28 @@
+﻿-- AICommerceOS
+-- Phase 7 — Marketplace Integration
+-- Marketplace foundation architecture record.
+--
+-- Applied successfully to active Supabase database.
+--
+-- Core objects:
+--   public.marketplace_accounts
+--   public.marketplace_listings
+--   public.marketplace_order_links
+--   public.marketplace_sync_logs
+--
+-- Architecture guarantees:
+-- - organization-scoped marketplace accounts
+-- - provider-agnostic marketplace identity
+-- - no API secrets/tokens stored in marketplace account table
+-- - base Product and Variant listing mapping
+-- - same-organization composite foreign keys
+-- - external marketplace orders link to existing internal orders
+-- - marketplace tables do not mutate orders/order_items/stock directly
+-- - existing create_order/update_order_status remain commerce authority
+-- - sync logs are append-oriented
+-- - RLS enabled for all marketplace tables
+-- - anon denied table access
+--
+-- Full schema was applied through Supabase SQL Editor during Phase 7.
+-- Final Phase 7 database audit verifies live definitions, privileges,
+-- constraints, RLS policies, tenant isolation, and order authority.
