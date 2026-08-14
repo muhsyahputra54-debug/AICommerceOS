@@ -8,6 +8,7 @@ import {
   Bot,
   ShoppingCart,
   Package,
+  Search,
   Store,
   Users,
   Truck,
@@ -36,6 +37,11 @@ const mainMenus = [
     title: "Marketplaces",
     icon: Store,
     href: "/marketplaces",
+  },
+  {
+    title: "Product Research",
+    icon: Search,
+    href: "/research",
   },
   {
     title: "Orders",

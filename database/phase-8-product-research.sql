@@ -1,0 +1,35 @@
+﻿-- AICommerceOS
+-- Phase 8 — Product Research
+--
+-- Applied to active Supabase database.
+--
+-- Core objects:
+--   public.product_research_items
+--   public.product_research_observations
+--
+-- Scope:
+-- - manual product opportunity research
+-- - source marketplace / URL
+-- - observed selling price
+-- - estimated cost
+-- - manual demand score 0-100
+-- - manual competition score 0-100
+-- - manual opportunity score 0-100
+-- - researching / shortlisted / approved / rejected lifecycle
+-- - optional link to an existing internal product
+-- - historical market observations
+-- - price / sold count / rating / review count observations
+-- - organization-scoped RLS
+-- - anon denied
+--
+-- Product deletion only nulls linked_product_id;
+-- organization_id remains intact.
+--
+-- Explicitly excluded from Phase 8:
+-- - AI scoring
+-- - automated scraping
+-- - automatic product discovery
+-- - automatic supplier selection
+-- - automatic product creation
+--
+-- Those capabilities belong to later roadmap phases.

@@ -7,6 +7,7 @@ import {
   Bot,
   LayoutDashboard,
   Package,
+  Search,
   Store,
   Settings,
   ShoppingCart,
@@ -41,6 +42,11 @@ const menus = [
     title: "Marketplaces",
     icon: Store,
     href: "/marketplaces",
+  },
+  {
+    title: "Product Research",
+    icon: Search,
+    href: "/research",
   },
   {
     title: "Orders",
