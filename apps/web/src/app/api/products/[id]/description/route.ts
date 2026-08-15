@@ -1,4 +1,12 @@
-﻿import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
+
+import {
+  checkAiAllowance,
+  getAiAllowanceMessage,
+  getAiAllowanceStatus,
+  recordOpenAIChatUsageSafely,
+  type OpenAIChatResponseMetadata,
+} from "@/lib/ai/metering";
 
 import { getCurrentOrganization } from "@/lib/supabase/current-organization";
 import { createClient } from "@/lib/supabase/server";
@@ -24,7 +32,7 @@ type GeneratedContent = {
   keywords: string[];
 };
 
-type OpenAIResponse = {
+type OpenAIResponse = OpenAIChatResponseMetadata & {
   choices?: Array<{
     message?: {
       content?: string | null;
@@ -176,6 +184,34 @@ export async function POST(
     );
   }
 
+  try {
+    const allowance =
+      await checkAiAllowance(organizationId);
+
+    if (!allowance.allowed) {
+      return NextResponse.json(
+        {
+          error:
+            getAiAllowanceMessage(allowance.reason),
+        },
+        {
+          status:
+            getAiAllowanceStatus(allowance.reason),
+        },
+      );
+    }
+  } catch (error) {
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : "AI usage metering tidak tersedia.",
+      },
+      { status: 503 },
+    );
+  }
+
   const model =
     process.env.OPENAI_DESCRIPTION_MODEL?.trim() ||
     process.env.OPENAI_MODEL?.trim() ||
@@ -315,11 +351,46 @@ export async function POST(
       (await aiResponse.json()) as OpenAIResponse;
 
     if (!aiResponse.ok) {
+      await recordOpenAIChatUsageSafely({
+        organizationId,
+        userId: user.id,
+        feature: "product_description",
+        requestedModel: model,
+        sourceKind:
+          "product_description_generation",
+        sourceId: generation.id,
+        responseData,
+        requestIdHeader:
+          aiResponse.headers.get("x-request-id"),
+        requestStatus: "failed",
+        metadata: {
+          product_id: product.id,
+          http_status: aiResponse.status,
+        },
+      });
+
       throw new Error(
         responseData.error?.message ??
           `OpenAI request failed (${aiResponse.status})`,
       );
     }
+
+    await recordOpenAIChatUsageSafely({
+      organizationId,
+      userId: user.id,
+      feature: "product_description",
+      requestedModel: model,
+      sourceKind:
+        "product_description_generation",
+      sourceId: generation.id,
+      responseData,
+      requestIdHeader:
+        aiResponse.headers.get("x-request-id"),
+      requestStatus: "completed",
+      metadata: {
+        product_id: product.id,
+      },
+    });
 
     const content =
       responseData.choices?.[0]?.message?.content;

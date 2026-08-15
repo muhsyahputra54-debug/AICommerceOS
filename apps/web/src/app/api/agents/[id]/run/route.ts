@@ -1,4 +1,12 @@
-﻿import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
+
+import {
+  checkAiAllowance,
+  getAiAllowanceMessage,
+  getAiAllowanceStatus,
+  recordOpenAIChatUsageSafely,
+  type OpenAIChatResponseMetadata,
+} from "@/lib/ai/metering";
 
 import { getCurrentOrganization } from "@/lib/supabase/current-organization";
 import { createClient } from "@/lib/supabase/server";
@@ -20,7 +28,7 @@ type AgentOutput = {
   next_actions: string[];
 };
 
-type OpenAIResponse = {
+type OpenAIResponse = OpenAIChatResponseMetadata & {
   choices?: Array<{
     message?: {
       content?: string | null;
@@ -286,6 +294,34 @@ export async function POST(
     );
   }
 
+  try {
+    const allowance =
+      await checkAiAllowance(organizationId);
+
+    if (!allowance.allowed) {
+      return NextResponse.json(
+        {
+          error:
+            getAiAllowanceMessage(allowance.reason),
+        },
+        {
+          status:
+            getAiAllowanceStatus(allowance.reason),
+        },
+      );
+    }
+  } catch (error) {
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : "AI usage metering tidak tersedia.",
+      },
+      { status: 503 },
+    );
+  }
+
   const model =
     agent.model?.trim() ||
     process.env.OPENAI_AGENT_MODEL?.trim() ||
@@ -524,11 +560,44 @@ export async function POST(
       (await response.json()) as OpenAIResponse;
 
     if (!response.ok) {
+      await recordOpenAIChatUsageSafely({
+        organizationId,
+        userId: user.id,
+        feature: "ai_agent",
+        requestedModel: model,
+        sourceKind: "ai_agent_run",
+        sourceId: runId,
+        responseData,
+        requestIdHeader:
+          response.headers.get("x-request-id"),
+        requestStatus: "failed",
+        metadata: {
+          agent_id: agent.id,
+          http_status: response.status,
+        },
+      });
+
       throw new Error(
         responseData.error?.message ??
           `OpenAI request failed (${response.status})`,
       );
     }
+
+    await recordOpenAIChatUsageSafely({
+      organizationId,
+      userId: user.id,
+      feature: "ai_agent",
+      requestedModel: model,
+      sourceKind: "ai_agent_run",
+      sourceId: runId,
+      responseData,
+      requestIdHeader:
+        response.headers.get("x-request-id"),
+      requestStatus: "completed",
+      metadata: {
+        agent_id: agent.id,
+      },
+    });
 
     const content =
       responseData
