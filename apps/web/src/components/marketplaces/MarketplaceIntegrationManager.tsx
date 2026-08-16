@@ -124,6 +124,20 @@ type ExternalOrder = {
   linked_internal_order_id: string | null;
 };
 
+
+type WebhookEvent = {
+  id: string;
+  notification_id: string | null;
+  notification_type: number | null;
+  external_shop_id: string;
+  external_entity_id: string | null;
+  external_status: string | null;
+  external_update_time: string | null;
+  processing_status: string;
+  processing_message: string | null;
+  received_at: string;
+};
+
 type MarketplaceIntegrationManagerProps = {
   organizationId: string;
   account: Account;
@@ -137,6 +151,7 @@ type MarketplaceIntegrationManagerProps = {
   authorizedShops: AuthorizedShop[];
   catalogProducts: CatalogProduct[];
   externalOrders: ExternalOrder[];
+  webhookEvents: WebhookEvent[];
 };
 
 function formatCurrency(value: number | string) {
@@ -214,6 +229,7 @@ export default function MarketplaceIntegrationManager({
   authorizedShops,
   catalogProducts,
   externalOrders,
+  webhookEvents,
 }: MarketplaceIntegrationManagerProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -1079,6 +1095,78 @@ export default function MarketplaceIntegrationManager({
             orders, alter status, reserve stock, or write back to the
             marketplace.
           </p>
+        </div>
+      ) : null}
+
+      {supportsTokopediaShop ? (
+        <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
+          <div className="border-b px-6 py-5">
+            <h2 className="text-lg font-semibold">
+              Webhook Events
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Authenticated, idempotent event intake. Raw payload and recipient
+              PII are not persisted.
+            </p>
+          </div>
+
+          {webhookEvents.length === 0 ? (
+            <div className="px-6 py-10 text-center">
+              <p className="font-medium">
+                No webhook event received yet
+              </p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Configure the staging webhook URL in Partner Center after app
+                credentials are available.
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="border-b bg-muted/40 text-left">
+                  <tr>
+                    <th className="px-6 py-3 font-medium">
+                      Received
+                    </th>
+                    <th className="px-6 py-3 font-medium">
+                      Type
+                    </th>
+                    <th className="px-6 py-3 font-medium">
+                      Entity
+                    </th>
+                    <th className="px-6 py-3 font-medium">
+                      External Status
+                    </th>
+                    <th className="px-6 py-3 font-medium">
+                      Processing
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {webhookEvents.map((event) => (
+                    <tr key={event.id}>
+                      <td className="whitespace-nowrap px-6 py-4">
+                        {formatDate(event.received_at)}
+                      </td>
+                      <td className="px-6 py-4">
+                        {event.notification_type ?? "—"}
+                      </td>
+                      <td className="px-6 py-4">
+                        {event.external_entity_id ??
+                          event.external_shop_id}
+                      </td>
+                      <td className="px-6 py-4">
+                        {event.external_status ?? "—"}
+                      </td>
+                      <td className="px-6 py-4 capitalize">
+                        {event.processing_status}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       ) : null}
 

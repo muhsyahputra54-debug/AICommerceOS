@@ -1,4 +1,4 @@
-import { createHmac } from "node:crypto";
+import { createHmac, timingSafeEqual } from "node:crypto";
 
 const SELLER_AUTHORIZATION_URL =
   "https://services.tiktokshop.com/open/authorize";
@@ -882,5 +882,44 @@ export async function searchOrders(input: {
     requestId:
       payload.request_id?.trim() || null,
   };
+}
+
+export function verifyTikTokShopWebhookSignature(input: {
+  rawBody: string;
+  authorizationHeader: string | null;
+}) {
+  const provided = input.authorizationHeader
+    ?.trim()
+    .replace(/^sha256=/i, "");
+
+  if (!provided || !/^[a-f0-9]{64}$/i.test(provided)) {
+    return false;
+  }
+
+  const appKey = requiredEnv("TIKTOK_SHOP_APP_KEY");
+  const appSecret = requiredEnv("TIKTOK_SHOP_APP_SECRET");
+
+  const expected = createHmac("sha256", appSecret)
+    .update(appKey + input.rawBody)
+    .digest("hex");
+
+  const providedBuffer = Buffer.from(
+    provided.toLowerCase(),
+    "utf8",
+  );
+
+  const expectedBuffer = Buffer.from(
+    expected.toLowerCase(),
+    "utf8",
+  );
+
+  if (providedBuffer.length !== expectedBuffer.length) {
+    return false;
+  }
+
+  return timingSafeEqual(
+    providedBuffer,
+    expectedBuffer,
+  );
 }
 

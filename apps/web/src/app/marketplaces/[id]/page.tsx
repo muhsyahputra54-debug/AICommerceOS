@@ -114,6 +114,21 @@ export default async function MarketplaceAccountPage({
     throw new Error(externalOrdersError.message);
   }
 
+  const {
+    data: webhookEvents,
+    error: webhookEventsError,
+  } = await supabase.rpc(
+    "get_marketplace_webhook_events",
+    {
+      p_marketplace_account_id: account.id,
+      p_limit: 100,
+    },
+  );
+
+  if (webhookEventsError) {
+    throw new Error(webhookEventsError.message);
+  }
+
   const [
     productsResult,
     variantsResult,
@@ -224,6 +239,7 @@ export default async function MarketplaceAccountPage({
           authorizedShops={authorizedShops ?? []}
           catalogProducts={catalogProducts ?? []}
           externalOrders={externalOrders ?? []}
+          webhookEvents={webhookEvents ?? []}
         />
       </div>
     </DashboardLayout>
