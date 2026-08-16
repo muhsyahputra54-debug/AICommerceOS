@@ -1,5 +1,6 @@
-﻿"use client";
+"use client";
 
+import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
@@ -71,6 +72,16 @@ type SyncLog = {
   created_at: string;
 };
 
+type MarketplaceConnectionStatus = {
+  provider: string;
+  status: string;
+  connected_at: string | null;
+  access_token_expires_at: string | null;
+  refresh_token_expires_at: string | null;
+  granted_scopes: string[];
+  updated_at: string;
+};
+
 type MarketplaceIntegrationManagerProps = {
   organizationId: string;
   account: Account;
@@ -80,6 +91,7 @@ type MarketplaceIntegrationManagerProps = {
   orders: Order[];
   orderLinks: OrderLink[];
   logs: SyncLog[];
+  connection: MarketplaceConnectionStatus | null;
 };
 
 function formatCurrency(value: number | string) {
@@ -102,6 +114,18 @@ function formatDate(value: string) {
   }).format(new Date(value));
 }
 
+function supportsTokopediaShopConnector(provider: string) {
+  const normalized = provider
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+
+  return (
+    normalized.includes("tokopedia") ||
+    normalized.includes("tiktok shop")
+  );
+}
+
 export default function MarketplaceIntegrationManager({
   organizationId,
   account,
@@ -111,6 +135,7 @@ export default function MarketplaceIntegrationManager({
   orders,
   orderLinks,
   logs,
+  connection,
 }: MarketplaceIntegrationManagerProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -146,6 +171,9 @@ export default function MarketplaceIntegrationManager({
 
   const editingOrderLink =
     orderLinks.find((item) => item.id === editingOrderLinkId) ?? null;
+
+  const supportsTokopediaShop =
+    supportsTokopediaShopConnector(account.provider);
 
   function listingTargetName(item: Listing) {
     if (item.target_type === "product" && item.product_id) {
@@ -440,6 +468,56 @@ export default function MarketplaceIntegrationManager({
 
   return (
     <div className="space-y-6">
+      {supportsTokopediaShop ? (
+        <div className="rounded-2xl border bg-card p-6 shadow-sm">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h2 className="text-lg font-semibold">
+                Tokopedia &amp; Shop Connector
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Seller authorization is handled server-side. Marketplace access
+                and refresh tokens are encrypted before storage.
+              </p>
+
+              <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                <span className="rounded-full border px-2.5 py-1 font-medium capitalize">
+                  {connection?.status ?? "not connected"}
+                </span>
+
+                {connection?.access_token_expires_at ? (
+                  <span className="rounded-full border px-2.5 py-1 text-muted-foreground">
+                    Access token expires{" "}
+                    {formatDate(connection.access_token_expires_at)}
+                  </span>
+                ) : null}
+
+                {connection?.granted_scopes?.length ? (
+                  <span className="rounded-full border px-2.5 py-1 text-muted-foreground">
+                    {connection.granted_scopes.length} scope(s)
+                  </span>
+                ) : null}
+              </div>
+            </div>
+
+            {account.status === "inactive" ? (
+              <span className="text-sm text-muted-foreground">
+                Activate this marketplace account before connecting.
+              </span>
+            ) : (
+              <Link
+                href={`/api/marketplaces/tiktok-shop/authorize?account_id=${encodeURIComponent(account.id)}`}
+                className="inline-flex h-10 items-center justify-center rounded-lg border bg-background px-4 text-sm font-medium transition-colors hover:bg-muted"
+              >
+                {connection
+                  ? "Reconnect Tokopedia & Shop"
+                  : "Connect Tokopedia & Shop"}
+              </Link>
+            )}
+          </div>
+        </div>
+      ) : null}
+
       {errorMessage ? (
         <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
           {errorMessage}

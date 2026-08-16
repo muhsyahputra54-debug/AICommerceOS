@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import DashboardLayout from "@/components/layout/DashboardLayout";
@@ -50,6 +50,25 @@ export default async function MarketplaceAccountPage({
   if (!account) {
     notFound();
   }
+
+  const {
+    data: connectionRows,
+    error: connectionError,
+  } = await supabase.rpc(
+    "get_marketplace_connection_status",
+    {
+      p_marketplace_account_id: account.id,
+    },
+  );
+
+  if (connectionError) {
+    throw new Error(connectionError.message);
+  }
+
+  const connection =
+    Array.isArray(connectionRows) && connectionRows.length > 0
+      ? connectionRows[0]
+      : null;
 
   const [
     productsResult,
@@ -157,6 +176,7 @@ export default async function MarketplaceAccountPage({
           orders={ordersResult.data ?? []}
           orderLinks={orderLinksResult.data ?? []}
           logs={logsResult.data ?? []}
+          connection={connection}
         />
       </div>
     </DashboardLayout>
