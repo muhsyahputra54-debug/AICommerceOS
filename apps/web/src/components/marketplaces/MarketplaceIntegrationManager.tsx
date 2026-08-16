@@ -159,6 +159,18 @@ type ExternalOrderBridgeReadiness = {
   ready: boolean;
 };
 
+
+type OrderStatusReconciliation = {
+  external_order_row_id: string;
+  external_order_id: string;
+  external_status: string;
+  internal_order_id: string;
+  internal_status: string;
+  proposed_status: string | null;
+  action_required: boolean;
+  reason: string;
+};
+
 type MarketplaceIntegrationManagerProps = {
   organizationId: string;
   account: Account;
@@ -175,6 +187,7 @@ type MarketplaceIntegrationManagerProps = {
   webhookEvents: WebhookEvent[];
   customers: Customer[];
   bridgeReadiness: ExternalOrderBridgeReadiness[];
+  statusReconciliation: OrderStatusReconciliation[];
 };
 
 function formatCurrency(value: number | string) {
@@ -255,6 +268,7 @@ export default function MarketplaceIntegrationManager({
   webhookEvents,
   customers,
   bridgeReadiness,
+  statusReconciliation,
 }: MarketplaceIntegrationManagerProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -555,6 +569,51 @@ export default function MarketplaceIntegrationManager({
       delete next[order.id];
       return next;
     });
+
+    setIsSubmitting(false);
+    router.refresh();
+  }
+
+  async function handleApplyStatusReconciliation(
+    item: OrderStatusReconciliation,
+  ) {
+    if (!item.proposed_status || !item.action_required) {
+      return;
+    }
+
+    if (
+      !window.confirm(
+        `Approve internal order ${item.internal_order_id.slice(
+          0,
+          8,
+        )} status ${item.internal_status} → ${item.proposed_status} based on marketplace status ${item.external_status}?`,
+      )
+    ) {
+      return;
+    }
+
+    setErrorMessage(null);
+    setIsSubmitting(true);
+
+    const supabase = createClient();
+
+    const { error } = await supabase.rpc(
+      "apply_marketplace_order_status_reconciliation",
+      {
+        p_external_order_row_id:
+          item.external_order_row_id,
+        p_expected_external_status:
+          item.external_status,
+        p_expected_target_status:
+          item.proposed_status,
+      },
+    );
+
+    if (error) {
+      setErrorMessage(error.message);
+      setIsSubmitting(false);
+      return;
+    }
 
     setIsSubmitting(false);
     router.refresh();
@@ -1337,6 +1396,116 @@ export default function MarketplaceIntegrationManager({
             create_order RPC, so the new internal order remains pending and
             no inventory is deducted by this bridge.
           </p>
+        </div>
+      ) : null}
+
+      {supportsTokopediaShop ? (
+        <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
+          <div className="border-b px-6 py-5">
+            <h2 className="text-lg font-semibold">
+              Order Status Reconciliation
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Human-approved internal status transitions based on the
+              reconciled marketplace order mirror. Every transition still
+              delegates to the protected update_order_status RPC.
+            </p>
+          </div>
+
+          {statusReconciliation.length === 0 ? (
+            <div className="px-6 py-10 text-center">
+              <p className="font-medium">
+                No linked order is ready for status reconciliation
+              </p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Bridge an external order to an internal order first.
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="border-b bg-muted/40 text-left">
+                  <tr>
+                    <th className="px-6 py-3 font-medium">
+                      External Order
+                    </th>
+                    <th className="px-6 py-3 font-medium">
+                      Marketplace
+                    </th>
+                    <th className="px-6 py-3 font-medium">
+                      Internal
+                    </th>
+                    <th className="px-6 py-3 font-medium">
+                      Proposal
+                    </th>
+                    <th className="px-6 py-3 font-medium">
+                      Reason
+                    </th>
+                    <th className="px-6 py-3 font-medium">
+                      Action
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {statusReconciliation.map((item) => (
+                    <tr key={item.external_order_row_id}>
+                      <td className="px-6 py-4 font-medium">
+                        {item.external_order_id}
+                      </td>
+                      <td className="px-6 py-4">
+                        {item.external_status}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="font-medium capitalize">
+                          {item.internal_status}
+                        </div>
+                        <div className="mt-1 text-xs text-muted-foreground">
+                          {item.internal_order_id.slice(0, 8)}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 capitalize">
+                        {item.proposed_status ?? "No action"}
+                      </td>
+                      <td className="max-w-md px-6 py-4 text-muted-foreground">
+                        {item.reason}
+                      </td>
+                      <td className="px-6 py-4">
+                        {item.action_required &&
+                        item.proposed_status ? (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            disabled={isSubmitting}
+                            onClick={() =>
+                              handleApplyStatusReconciliation(
+                                item,
+                              )
+                            }
+                          >
+                            Approve → {item.proposed_status}
+                          </Button>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">
+                            No approval needed
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          <div className="border-t px-6 py-4 text-xs text-muted-foreground">
+            UNPAID and ON_HOLD do not advance the internal order.
+            Fulfillment states can move pending → processing.
+            DELIVERED stays processing until marketplace COMPLETED.
+            Cancellation can move pending/processing → cancelled.
+            COMPLETED uses two controlled steps when the internal order is
+            still pending.
+          </div>
         </div>
       ) : null}
 

@@ -143,6 +143,20 @@ export default async function MarketplaceAccountPage({
     throw new Error(bridgeReadinessError.message);
   }
 
+  const {
+    data: statusReconciliation,
+    error: statusReconciliationError,
+  } = await supabase.rpc(
+    "get_marketplace_order_status_reconciliation",
+    {
+      p_marketplace_account_id: account.id,
+    },
+  );
+
+  if (statusReconciliationError) {
+    throw new Error(statusReconciliationError.message);
+  }
+
   const [
     productsResult,
     variantsResult,
@@ -264,6 +278,7 @@ export default async function MarketplaceAccountPage({
           webhookEvents={webhookEvents ?? []}
           customers={customersResult.data ?? []}
           bridgeReadiness={bridgeReadiness ?? []}
+          statusReconciliation={statusReconciliation ?? []}
         />
       </div>
     </DashboardLayout>
