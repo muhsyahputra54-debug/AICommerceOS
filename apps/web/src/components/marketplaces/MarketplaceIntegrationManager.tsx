@@ -140,6 +140,25 @@ type WebhookEvent = {
   received_at: string;
 };
 
+
+type Customer = {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+};
+
+type ExternalOrderBridgeReadiness = {
+  external_order_row_id: string;
+  external_order_id: string;
+  total_items: number | string;
+  mapped_items: number | string;
+  unmapped_items: number | string;
+  ambiguous_items: number | string;
+  linked_internal_order_id: string | null;
+  ready: boolean;
+};
+
 type MarketplaceIntegrationManagerProps = {
   organizationId: string;
   account: Account;
@@ -154,6 +173,8 @@ type MarketplaceIntegrationManagerProps = {
   catalogProducts: CatalogProduct[];
   externalOrders: ExternalOrder[];
   webhookEvents: WebhookEvent[];
+  customers: Customer[];
+  bridgeReadiness: ExternalOrderBridgeReadiness[];
 };
 
 function formatCurrency(value: number | string) {
@@ -232,6 +253,8 @@ export default function MarketplaceIntegrationManager({
   catalogProducts,
   externalOrders,
   webhookEvents,
+  customers,
+  bridgeReadiness,
 }: MarketplaceIntegrationManagerProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -240,6 +263,9 @@ export default function MarketplaceIntegrationManager({
     useState<string | null>(null);
   const [editingOrderLinkId, setEditingOrderLinkId] =
     useState<string | null>(null);
+
+  const [bridgeCustomerByOrderId, setBridgeCustomerByOrderId] =
+    useState<Record<string, string>>({});
 
   const productNames = new Map(
     products.map((product) => [
@@ -257,6 +283,13 @@ export default function MarketplaceIntegrationManager({
 
   const orderMap = new Map(orders.map((order) => [order.id, order]));
   const linkedOrderIds = new Set(orderLinks.map((item) => item.order_id));
+
+  const bridgeReadinessByOrderId = new Map(
+    bridgeReadiness.map((item) => [
+      item.external_order_row_id,
+      item,
+    ]),
+  );
 
   const availableOrders = orders.filter(
     (order) => !linkedOrderIds.has(order.id),
@@ -475,6 +508,56 @@ export default function MarketplaceIntegrationManager({
     } finally {
       setIsSubmitting(false);
     }
+  }
+
+  async function handleBridgeExternalOrder(
+    order: ExternalOrder,
+  ) {
+    const customerId =
+      bridgeCustomerByOrderId[order.id] ?? "";
+
+    if (!customerId) {
+      setErrorMessage(
+        "Pilih customer internal sebelum membuat order.",
+      );
+      return;
+    }
+
+    if (
+      !window.confirm(
+        `Buat internal pending order dari external order ${order.external_order_id}?`,
+      )
+    ) {
+      return;
+    }
+
+    setErrorMessage(null);
+    setIsSubmitting(true);
+
+    const supabase = createClient();
+
+    const { error } = await supabase.rpc(
+      "bridge_marketplace_external_order",
+      {
+        p_external_order_row_id: order.id,
+        p_customer_id: customerId,
+      },
+    );
+
+    if (error) {
+      setErrorMessage(error.message);
+      setIsSubmitting(false);
+      return;
+    }
+
+    setBridgeCustomerByOrderId((current) => {
+      const next = { ...current };
+      delete next[order.id];
+      return next;
+    });
+
+    setIsSubmitting(false);
+    router.refresh();
   }
 
   async function handleAddListing(event: FormEvent<HTMLFormElement>) {
@@ -1082,6 +1165,9 @@ export default function MarketplaceIntegrationManager({
                       Internal Link
                     </th>
                     <th className="px-4 py-3 font-medium">
+                      Bridge
+                    </th>
+                    <th className="px-4 py-3 font-medium">
                       Updated
                     </th>
                   </tr>
@@ -1119,6 +1205,117 @@ export default function MarketplaceIntegrationManager({
                           </span>
                         )}
                       </td>
+                      <td className="min-w-64 px-4 py-3">
+                        {(() => {
+                          const readiness =
+                            bridgeReadinessByOrderId.get(
+                              order.id,
+                            );
+
+                          if (
+                            order.linked_internal_order_id ||
+                            readiness?.linked_internal_order_id
+                          ) {
+                            return (
+                              <span className="text-xs text-muted-foreground">
+                                Already linked
+                              </span>
+                            );
+                          }
+
+                          if (!readiness?.ready) {
+                            return (
+                              <div className="text-xs text-muted-foreground">
+                                <div>
+                                  Mapping incomplete
+                                </div>
+                                <div className="mt-1">
+                                  {Number(
+                                    readiness?.mapped_items ?? 0,
+                                  )}
+                                  /
+                                  {Number(
+                                    readiness?.total_items ?? 0,
+                                  )}{" "}
+                                  mapped
+                                  {Number(
+                                    readiness?.ambiguous_items ?? 0,
+                                  ) > 0
+                                    ? ` • ${Number(
+                                        readiness?.ambiguous_items ??
+                                          0,
+                                      )} ambiguous`
+                                    : ""}
+                                </div>
+                              </div>
+                            );
+                          }
+
+                          if (customers.length === 0) {
+                            return (
+                              <span className="text-xs text-muted-foreground">
+                                Add an internal customer first
+                              </span>
+                            );
+                          }
+
+                          return (
+                            <div className="space-y-2">
+                              <select
+                                value={
+                                  bridgeCustomerByOrderId[
+                                    order.id
+                                  ] ?? ""
+                                }
+                                onChange={(event) =>
+                                  setBridgeCustomerByOrderId(
+                                    (current) => ({
+                                      ...current,
+                                      [order.id]:
+                                        event.target.value,
+                                    }),
+                                  )
+                                }
+                                disabled={isSubmitting}
+                                className="h-9 w-full rounded-lg border bg-background px-2 text-xs"
+                              >
+                                <option value="">
+                                  Select customer
+                                </option>
+                                {customers.map(
+                                  (customer) => (
+                                    <option
+                                      key={customer.id}
+                                      value={customer.id}
+                                    >
+                                      {customer.name}
+                                    </option>
+                                  ),
+                                )}
+                              </select>
+
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                disabled={
+                                  isSubmitting ||
+                                  !bridgeCustomerByOrderId[
+                                    order.id
+                                  ]
+                                }
+                                onClick={() =>
+                                  handleBridgeExternalOrder(
+                                    order,
+                                  )
+                                }
+                              >
+                                Create pending order
+                              </Button>
+                            </div>
+                          );
+                        })()}
+                      </td>
                       <td className="whitespace-nowrap px-4 py-3">
                         {formatDate(
                           order.external_update_time ??
@@ -1133,10 +1330,12 @@ export default function MarketplaceIntegrationManager({
           )}
 
           <p className="mt-4 text-xs text-muted-foreground">
-            M4 reads only the most recently updated seven-day window and
-            imports one page of up to 50 orders. It does not create internal
-            orders, alter status, reserve stock, or write back to the
-            marketplace.
+            External orders remain a read-only mirror. M7 can create an
+            internal order only after every line item has one deterministic
+            Product/Variant mapping and an operator explicitly selects an
+            existing customer. Creation delegates to the protected
+            create_order RPC, so the new internal order remains pending and
+            no inventory is deducted by this bridge.
           </p>
         </div>
       ) : null}

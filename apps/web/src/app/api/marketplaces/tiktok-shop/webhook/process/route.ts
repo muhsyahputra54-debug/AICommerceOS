@@ -202,6 +202,11 @@ export async function POST(request: Request) {
     });
   }
 
+  const organizationId =
+    currentOrganization.organizationId;
+  const marketplaceAccountId = account.id;
+  const userId = user.id;
+
   async function complete(
     eventId: string,
     status: "processed" | "ignored" | "error",
@@ -210,10 +215,10 @@ export async function POST(request: Request) {
     const { error } = await admin.rpc(
       "complete_marketplace_webhook_event",
       {
-        p_organization_id:
-          currentOrganization.organizationId,
-        p_marketplace_account_id: account.id,
-        p_user_id: user.id,
+        p_organization_id: organizationId,
+        p_marketplace_account_id:
+          marketplaceAccountId,
+        p_user_id: userId,
         p_event_id: eventId,
         p_status: status,
         p_message: message,

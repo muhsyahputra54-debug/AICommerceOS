@@ -129,6 +129,20 @@ export default async function MarketplaceAccountPage({
     throw new Error(webhookEventsError.message);
   }
 
+  const {
+    data: bridgeReadiness,
+    error: bridgeReadinessError,
+  } = await supabase.rpc(
+    "get_marketplace_external_order_bridge_readiness",
+    {
+      p_marketplace_account_id: account.id,
+    },
+  );
+
+  if (bridgeReadinessError) {
+    throw new Error(bridgeReadinessError.message);
+  }
+
   const [
     productsResult,
     variantsResult,
@@ -136,6 +150,7 @@ export default async function MarketplaceAccountPage({
     ordersResult,
     orderLinksResult,
     logsResult,
+    customersResult,
   ] = await Promise.all([
     supabase
       .from("products")
@@ -183,6 +198,12 @@ export default async function MarketplaceAccountPage({
       .eq("marketplace_account_id", account.id)
       .order("created_at", { ascending: false })
       .limit(100),
+
+    supabase
+      .from("customers")
+      .select("id, name, email, phone")
+      .eq("organization_id", organizationId)
+      .order("name", { ascending: true }),
   ]);
 
   const results = [
@@ -192,6 +213,7 @@ export default async function MarketplaceAccountPage({
     ordersResult,
     orderLinksResult,
     logsResult,
+    customersResult,
   ];
 
   const failed = results.find((result) => result.error);
@@ -240,6 +262,8 @@ export default async function MarketplaceAccountPage({
           catalogProducts={catalogProducts ?? []}
           externalOrders={externalOrders ?? []}
           webhookEvents={webhookEvents ?? []}
+          customers={customersResult.data ?? []}
+          bridgeReadiness={bridgeReadiness ?? []}
         />
       </div>
     </DashboardLayout>
