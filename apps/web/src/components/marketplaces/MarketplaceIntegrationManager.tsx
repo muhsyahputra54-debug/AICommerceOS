@@ -97,6 +97,18 @@ type AuthorizedShop = {
   updated_at: string;
 };
 
+
+type CatalogProduct = {
+  id: string;
+  external_product_id: string;
+  title: string;
+  external_status: string;
+  sku_count: number | string;
+  seller_skus: string[];
+  last_seen_at: string;
+  external_update_time: string | null;
+};
+
 type MarketplaceIntegrationManagerProps = {
   organizationId: string;
   account: Account;
@@ -108,6 +120,7 @@ type MarketplaceIntegrationManagerProps = {
   logs: SyncLog[];
   connection: MarketplaceConnectionStatus | null;
   authorizedShops: AuthorizedShop[];
+  catalogProducts: CatalogProduct[];
 };
 
 function formatCurrency(value: number | string) {
@@ -153,6 +166,7 @@ export default function MarketplaceIntegrationManager({
   logs,
   connection,
   authorizedShops,
+  catalogProducts,
 }: MarketplaceIntegrationManagerProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -269,6 +283,51 @@ export default function MarketplaceIntegrationManager({
 
     setIsSubmitting(false);
     router.refresh();
+  }
+
+  const selectedAuthorizedShop =
+    authorizedShops.find((shop) => shop.is_selected) ??
+    null;
+
+  async function handleSyncProductCatalog() {
+    setErrorMessage(null);
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch(
+        "/api/marketplaces/tiktok-shop/products/sync",
+        {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({
+            account_id: account.id,
+          }),
+        },
+      );
+
+      const payload = (await response.json()) as {
+        error?: string;
+      };
+
+      if (!response.ok) {
+        throw new Error(
+          payload.error ??
+            "Product catalog sync gagal.",
+        );
+      }
+
+      router.refresh();
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "Product catalog sync gagal.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   async function handleAddListing(event: FormEvent<HTMLFormElement>) {
@@ -714,6 +773,107 @@ export default function MarketplaceIntegrationManager({
               </table>
             </div>
           )}
+        </div>
+      ) : null}
+
+      {supportsTokopediaShop ? (
+        <div className="rounded-2xl border bg-card p-6 shadow-sm">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h2 className="text-lg font-semibold">
+                External Product Catalog
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Read-only catalog from the selected marketplace shop.
+                Internal products, variants, stock, and orders are not changed.
+              </p>
+            </div>
+
+            <Button
+              type="button"
+              variant="outline"
+              disabled={
+                isSubmitting ||
+                connection?.status !== "active" ||
+                !selectedAuthorizedShop
+              }
+              onClick={handleSyncProductCatalog}
+            >
+              {isSubmitting
+                ? "Syncing..."
+                : "Sync first 100 products"}
+            </Button>
+          </div>
+
+          {!selectedAuthorizedShop ? (
+            <p className="mt-4 text-sm text-muted-foreground">
+              Select an Authorized Shop before syncing products.
+            </p>
+          ) : catalogProducts.length === 0 ? (
+            <p className="mt-4 text-sm text-muted-foreground">
+              No external product has been synchronized yet.
+            </p>
+          ) : (
+            <div className="mt-5 overflow-x-auto rounded-xl border">
+              <table className="w-full text-sm">
+                <thead className="border-b bg-muted/40 text-left">
+                  <tr>
+                    <th className="px-4 py-3 font-medium">
+                      Product
+                    </th>
+                    <th className="px-4 py-3 font-medium">
+                      Status
+                    </th>
+                    <th className="px-4 py-3 font-medium">
+                      SKUs
+                    </th>
+                    <th className="px-4 py-3 font-medium">
+                      Last seen
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {catalogProducts.map((product) => (
+                    <tr key={product.id}>
+                      <td className="px-4 py-3">
+                        <div className="font-medium">
+                          {product.title}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {product.external_product_id}
+                        </div>
+                        {product.seller_skus.length ? (
+                          <div className="mt-1 text-xs text-muted-foreground">
+                            {product.seller_skus
+                              .slice(0, 3)
+                              .join(", ")}
+                            {product.seller_skus.length > 3
+                              ? ` +${product.seller_skus.length - 3}`
+                              : ""}
+                          </div>
+                        ) : null}
+                      </td>
+                      <td className="px-4 py-3">
+                        {product.external_status}
+                      </td>
+                      <td className="px-4 py-3">
+                        {Number(product.sku_count)}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        {formatDate(product.last_seen_at)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          <p className="mt-4 text-xs text-muted-foreground">
+            M3 intentionally synchronizes one page (up to 100 products).
+            Pagination will be enabled after the first real Partner Center
+            runtime validation so we can measure API latency and function limits.
+          </p>
         </div>
       ) : null}
 

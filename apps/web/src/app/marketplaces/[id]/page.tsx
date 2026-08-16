@@ -84,6 +84,21 @@ export default async function MarketplaceAccountPage({
     throw new Error(authorizedShopsError.message);
   }
 
+  const {
+    data: catalogProducts,
+    error: catalogProductsError,
+  } = await supabase.rpc(
+    "get_marketplace_catalog_products",
+    {
+      p_marketplace_account_id: account.id,
+      p_limit: 200,
+    },
+  );
+
+  if (catalogProductsError) {
+    throw new Error(catalogProductsError.message);
+  }
+
   const [
     productsResult,
     variantsResult,
@@ -192,6 +207,7 @@ export default async function MarketplaceAccountPage({
           logs={logsResult.data ?? []}
           connection={connection}
           authorizedShops={authorizedShops ?? []}
+          catalogProducts={catalogProducts ?? []}
         />
       </div>
     </DashboardLayout>

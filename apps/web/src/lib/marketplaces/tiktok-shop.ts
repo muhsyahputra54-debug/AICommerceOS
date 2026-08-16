@@ -12,6 +12,9 @@ const BUSINESS_API_BASE_URL =
 const AUTHORIZED_SHOPS_PATH =
   "/authorization/202309/shops";
 
+const SEARCH_PRODUCTS_PATH =
+  "/product/202502/products/search";
+
 export const TIKTOK_SHOP_PROVIDER = "tiktok_shop";
 
 type TokenData = {
@@ -70,6 +73,62 @@ export type TikTokShopAuthorizedShop = {
 
 export type TikTokShopAuthorizedShopsResult = {
   shops: TikTokShopAuthorizedShop[];
+  requestId: string | null;
+};
+
+
+type SearchProductSku = {
+  id?: string;
+  seller_sku?: string;
+  price?: {
+    currency?: string;
+    tax_exclusive_price?: string;
+    sale_price?: string;
+    starting_bid_price?: string;
+  };
+  inventory?: unknown[];
+};
+
+type SearchProduct = {
+  id?: string;
+  title?: string;
+  status?: string;
+  skus?: SearchProductSku[];
+  create_time?: number;
+  update_time?: number;
+};
+
+type SearchProductsEnvelope = {
+  code?: number;
+  message?: string;
+  request_id?: string;
+  data?: {
+    total_count?: number;
+    next_page_token?: string;
+    products?: SearchProduct[];
+  };
+};
+
+export type TikTokShopCatalogProduct = {
+  externalProductId: string;
+  title: string;
+  status: string;
+  createTime: number | null;
+  updateTime: number | null;
+  skus: Array<{
+    externalSkuId: string;
+    sellerSku: string | null;
+    currency: string | null;
+    salePrice: string | null;
+    taxExclusivePrice: string | null;
+    inventory: unknown[];
+  }>;
+};
+
+export type TikTokShopSearchProductsResult = {
+  products: TikTokShopCatalogProduct[];
+  totalCount: number;
+  nextPageToken: string | null;
   requestId: string | null;
 };
 
@@ -370,6 +429,172 @@ export async function getAuthorizedShops(
 
   return {
     shops,
+    requestId:
+      payload.request_id?.trim() || null,
+  };
+}
+
+export function hasProductBasicScope(
+  grantedScopes: string[],
+) {
+  if (grantedScopes.length === 0) {
+    return true;
+  }
+
+  return (
+    grantedScopes.includes("seller.product.basic") ||
+    grantedScopes.includes("test.scope.public")
+  );
+}
+
+export async function searchProducts(input: {
+  accessToken: string;
+  shopCipher: string;
+  pageToken?: string | null;
+  pageSize?: number;
+}): Promise<TikTokShopSearchProductsResult> {
+  const accessToken = input.accessToken.trim();
+  const shopCipher = input.shopCipher.trim();
+
+  if (!accessToken || !shopCipher) {
+    throw new Error(
+      "TikTok Shop access token atau shop cipher tidak tersedia.",
+    );
+  }
+
+  const pageSize = Math.min(
+    Math.max(input.pageSize ?? 100, 1),
+    100,
+  );
+
+  const appKey = requiredEnv("TIKTOK_SHOP_APP_KEY");
+  const timestamp = Math.floor(Date.now() / 1000);
+
+  const body = JSON.stringify({
+    status: "ALL",
+    locale: "id-ID",
+  });
+
+  const query: Record<
+    string,
+    string | number | boolean | undefined
+  > = {
+    app_key: appKey,
+    timestamp,
+    shop_cipher: shopCipher,
+    page_size: pageSize,
+    page_token: input.pageToken?.trim() || undefined,
+  };
+
+  const sign = signTikTokShopRequest({
+    path: SEARCH_PRODUCTS_PATH,
+    query,
+    body,
+    contentType: "application/json",
+  });
+
+  const url = new URL(
+    SEARCH_PRODUCTS_PATH,
+    BUSINESS_API_BASE_URL,
+  );
+
+  for (const [key, value] of Object.entries(query)) {
+    if (value !== undefined) {
+      url.searchParams.set(key, String(value));
+    }
+  }
+
+  url.searchParams.set("sign", sign);
+
+  const response = await fetch(url, {
+    method: "POST",
+    cache: "no-store",
+    headers: {
+      Accept: "application/json",
+      "content-type": "application/json",
+      "x-tts-access-token": accessToken,
+    },
+    body,
+  });
+
+  const payload =
+    (await response.json()) as SearchProductsEnvelope;
+
+  if (
+    !response.ok ||
+    payload.code !== 0 ||
+    !payload.data
+  ) {
+    throw new Error(
+      payload.message ||
+        `Search Products failed (${response.status}).`,
+    );
+  }
+
+  const products = (payload.data.products ?? []).map(
+    (product) => {
+      const externalProductId = product.id?.trim();
+      const title = product.title?.trim();
+
+      if (!externalProductId || !title) {
+        throw new Error(
+          "Search Products response tidak lengkap.",
+        );
+      }
+
+      const skus = (product.skus ?? []).flatMap(
+        (sku) => {
+          const externalSkuId = sku.id?.trim();
+
+          if (!externalSkuId) {
+            return [];
+          }
+
+          return [
+            {
+              externalSkuId,
+              sellerSku:
+                sku.seller_sku?.trim() || null,
+              currency:
+                sku.price?.currency?.trim() || null,
+              salePrice:
+                sku.price?.sale_price?.trim() || null,
+              taxExclusivePrice:
+                sku.price?.tax_exclusive_price?.trim() ||
+                null,
+              inventory: Array.isArray(sku.inventory)
+                ? sku.inventory
+                : [],
+            },
+          ];
+        },
+      );
+
+      return {
+        externalProductId,
+        title,
+        status: product.status?.trim() || "UNKNOWN",
+        createTime:
+          Number.isFinite(product.create_time)
+            ? Number(product.create_time)
+            : null,
+        updateTime:
+          Number.isFinite(product.update_time)
+            ? Number(product.update_time)
+            : null,
+        skus,
+      };
+    },
+  );
+
+  return {
+    products,
+    totalCount:
+      Number.isFinite(payload.data.total_count)
+        ? Number(payload.data.total_count)
+        : products.length,
+    nextPageToken:
+      payload.data.next_page_token?.trim() || null,
     requestId:
       payload.request_id?.trim() || null,
   };
