@@ -70,6 +70,20 @@ export default async function MarketplaceAccountPage({
       ? connectionRows[0]
       : null;
 
+  const {
+    data: authorizedShops,
+    error: authorizedShopsError,
+  } = await supabase.rpc(
+    "get_marketplace_authorized_shops",
+    {
+      p_marketplace_account_id: account.id,
+    },
+  );
+
+  if (authorizedShopsError) {
+    throw new Error(authorizedShopsError.message);
+  }
+
   const [
     productsResult,
     variantsResult,
@@ -177,6 +191,7 @@ export default async function MarketplaceAccountPage({
           orderLinks={orderLinksResult.data ?? []}
           logs={logsResult.data ?? []}
           connection={connection}
+          authorizedShops={authorizedShops ?? []}
         />
       </div>
     </DashboardLayout>

@@ -82,6 +82,21 @@ type MarketplaceConnectionStatus = {
   updated_at: string;
 };
 
+
+type AuthorizedShop = {
+  id: string;
+  external_shop_id: string;
+  shop_code: string | null;
+  name: string;
+  region: string | null;
+  seller_type: string | null;
+  status: string;
+  is_selected: boolean;
+  last_seen_at: string;
+  created_at: string;
+  updated_at: string;
+};
+
 type MarketplaceIntegrationManagerProps = {
   organizationId: string;
   account: Account;
@@ -92,6 +107,7 @@ type MarketplaceIntegrationManagerProps = {
   orderLinks: OrderLink[];
   logs: SyncLog[];
   connection: MarketplaceConnectionStatus | null;
+  authorizedShops: AuthorizedShop[];
 };
 
 function formatCurrency(value: number | string) {
@@ -136,6 +152,7 @@ export default function MarketplaceIntegrationManager({
   orderLinks,
   logs,
   connection,
+  authorizedShops,
 }: MarketplaceIntegrationManagerProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -185,6 +202,73 @@ export default function MarketplaceIntegrationManager({
     }
 
     return "Unknown target";
+  }
+
+  async function handleSyncAuthorizedShops() {
+    setErrorMessage(null);
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch(
+        "/api/marketplaces/tiktok-shop/shops/sync",
+        {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({
+            account_id: account.id,
+          }),
+        },
+      );
+
+      const payload = (await response.json()) as {
+        error?: string;
+      };
+
+      if (!response.ok) {
+        throw new Error(
+          payload.error ??
+            "Authorized Shops sync gagal.",
+        );
+      }
+
+      router.refresh();
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "Authorized Shops sync gagal.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function handleSelectAuthorizedShop(
+    shop: AuthorizedShop,
+  ) {
+    setErrorMessage(null);
+    setIsSubmitting(true);
+
+    const supabase = createClient();
+
+    const { error } = await supabase.rpc(
+      "select_marketplace_authorized_shop",
+      {
+        p_marketplace_account_id: account.id,
+        p_authorized_shop_id: shop.id,
+      },
+    );
+
+    if (error) {
+      setErrorMessage(error.message);
+      setIsSubmitting(false);
+      return;
+    }
+
+    setIsSubmitting(false);
+    router.refresh();
   }
 
   async function handleAddListing(event: FormEvent<HTMLFormElement>) {
@@ -515,6 +599,121 @@ export default function MarketplaceIntegrationManager({
               </Link>
             )}
           </div>
+        </div>
+      ) : null}
+
+      {supportsTokopediaShop ? (
+        <div className="rounded-2xl border bg-card p-6 shadow-sm">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h2 className="text-lg font-semibold">
+                Authorized Shops
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Retrieve the shops authorized by this seller connection.
+                Shop cipher remains encrypted and server-only.
+              </p>
+            </div>
+
+            <Button
+              type="button"
+              variant="outline"
+              disabled={
+                isSubmitting ||
+                connection?.status !== "active"
+              }
+              onClick={handleSyncAuthorizedShops}
+            >
+              {isSubmitting
+                ? "Syncing..."
+                : "Sync authorized shops"}
+            </Button>
+          </div>
+
+          {connection?.status !== "active" ? (
+            <p className="mt-4 text-sm text-muted-foreground">
+              Connect the seller account before retrieving authorized shops.
+            </p>
+          ) : authorizedShops.length === 0 ? (
+            <p className="mt-4 text-sm text-muted-foreground">
+              No authorized shop has been synchronized yet.
+            </p>
+          ) : (
+            <div className="mt-5 overflow-x-auto rounded-xl border">
+              <table className="w-full text-sm">
+                <thead className="border-b bg-muted/40 text-left">
+                  <tr>
+                    <th className="px-4 py-3 font-medium">
+                      Shop
+                    </th>
+                    <th className="px-4 py-3 font-medium">
+                      Region
+                    </th>
+                    <th className="px-4 py-3 font-medium">
+                      Seller type
+                    </th>
+                    <th className="px-4 py-3 font-medium">
+                      Status
+                    </th>
+                    <th className="px-4 py-3 font-medium">
+                      Mapping
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {authorizedShops.map((shop) => (
+                    <tr key={shop.id}>
+                      <td className="px-4 py-3">
+                        <div className="font-medium">
+                          {shop.name}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {shop.external_shop_id}
+                          {shop.shop_code
+                            ? ` • ${shop.shop_code}`
+                            : ""}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        {shop.region ?? "—"}
+                      </td>
+                      <td className="px-4 py-3">
+                        {shop.seller_type ?? "—"}
+                      </td>
+                      <td className="px-4 py-3 capitalize">
+                        {shop.status}
+                      </td>
+                      <td className="px-4 py-3">
+                        {shop.is_selected ? (
+                          <span className="inline-flex rounded-full border px-2.5 py-1 text-xs font-medium">
+                            Selected
+                          </span>
+                        ) : shop.status === "active" ? (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            disabled={isSubmitting}
+                            onClick={() =>
+                              handleSelectAuthorizedShop(
+                                shop,
+                              )
+                            }
+                          >
+                            Use this shop
+                          </Button>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">
+                            Unavailable
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       ) : null}
 

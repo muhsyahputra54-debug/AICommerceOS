@@ -6,6 +6,12 @@ const SELLER_AUTHORIZATION_URL =
 const TOKEN_GET_URL =
   "https://auth.tiktok-shops.com/api/v2/token/get";
 
+const BUSINESS_API_BASE_URL =
+  "https://open-api.tiktokglobalshop.com";
+
+const AUTHORIZED_SHOPS_PATH =
+  "/authorization/202309/shops";
+
 export const TIKTOK_SHOP_PROVIDER = "tiktok_shop";
 
 type TokenData = {
@@ -32,6 +38,39 @@ export type TikTokShopAuthorization = {
   openId: string | null;
   userType: number | null;
   grantedScopes: string[];
+};
+
+
+type AuthorizedShopData = {
+  id?: string;
+  name?: string;
+  region?: string;
+  seller_type?: string;
+  cipher?: string;
+  code?: string;
+};
+
+type AuthorizedShopsEnvelope = {
+  code?: number;
+  message?: string;
+  request_id?: string;
+  data?: {
+    shops?: AuthorizedShopData[];
+  };
+};
+
+export type TikTokShopAuthorizedShop = {
+  externalShopId: string;
+  name: string;
+  region: string | null;
+  sellerType: string | null;
+  cipher: string;
+  code: string | null;
+};
+
+export type TikTokShopAuthorizedShopsResult = {
+  shops: TikTokShopAuthorizedShop[];
+  requestId: string | null;
 };
 
 function requiredEnv(name: string) {
@@ -233,3 +272,106 @@ export function signTikTokShopRequest(input: {
     .update(message)
     .digest("hex");
 }
+
+export function hasAuthorizedShopsScope(
+  grantedScopes: string[],
+) {
+  if (grantedScopes.length === 0) {
+    return true;
+  }
+
+  return (
+    grantedScopes.includes("seller.authorization.info") ||
+    grantedScopes.includes("test.scope.public")
+  );
+}
+
+export async function getAuthorizedShops(
+  accessToken: string,
+): Promise<TikTokShopAuthorizedShopsResult> {
+  const token = accessToken.trim();
+
+  if (!token) {
+    throw new Error("TikTok Shop access token tidak tersedia.");
+  }
+
+  const appKey = requiredEnv("TIKTOK_SHOP_APP_KEY");
+  const timestamp = Math.floor(Date.now() / 1000);
+
+  const query = {
+    app_key: appKey,
+    timestamp,
+  };
+
+  const sign = signTikTokShopRequest({
+    path: AUTHORIZED_SHOPS_PATH,
+    query,
+  });
+
+  const url = new URL(
+    AUTHORIZED_SHOPS_PATH,
+    BUSINESS_API_BASE_URL,
+  );
+
+  url.searchParams.set("app_key", appKey);
+  url.searchParams.set(
+    "timestamp",
+    String(timestamp),
+  );
+  url.searchParams.set("sign", sign);
+
+  const response = await fetch(url, {
+    method: "GET",
+    cache: "no-store",
+    headers: {
+      Accept: "application/json",
+      "content-type": "application/json",
+      "x-tts-access-token": token,
+    },
+  });
+
+  const payload =
+    (await response.json()) as AuthorizedShopsEnvelope;
+
+  if (
+    !response.ok ||
+    payload.code !== 0 ||
+    !payload.data
+  ) {
+    throw new Error(
+      payload.message ||
+        `Get Authorized Shops failed (${response.status}).`,
+    );
+  }
+
+  const shops = (payload.data.shops ?? []).map(
+    (shop) => {
+      const externalShopId = shop.id?.trim();
+      const name = shop.name?.trim();
+      const cipher = shop.cipher?.trim();
+
+      if (!externalShopId || !name || !cipher) {
+        throw new Error(
+          "Authorized shop response tidak lengkap.",
+        );
+      }
+
+      return {
+        externalShopId,
+        name,
+        region: shop.region?.trim() || null,
+        sellerType:
+          shop.seller_type?.trim() || null,
+        cipher,
+        code: shop.code?.trim() || null,
+      };
+    },
+  );
+
+  return {
+    shops,
+    requestId:
+      payload.request_id?.trim() || null,
+  };
+}
+
