@@ -99,6 +99,21 @@ export default async function MarketplaceAccountPage({
     throw new Error(catalogProductsError.message);
   }
 
+  const {
+    data: externalOrders,
+    error: externalOrdersError,
+  } = await supabase.rpc(
+    "get_marketplace_external_orders",
+    {
+      p_marketplace_account_id: account.id,
+      p_limit: 200,
+    },
+  );
+
+  if (externalOrdersError) {
+    throw new Error(externalOrdersError.message);
+  }
+
   const [
     productsResult,
     variantsResult,
@@ -208,6 +223,7 @@ export default async function MarketplaceAccountPage({
           connection={connection}
           authorizedShops={authorizedShops ?? []}
           catalogProducts={catalogProducts ?? []}
+          externalOrders={externalOrders ?? []}
         />
       </div>
     </DashboardLayout>

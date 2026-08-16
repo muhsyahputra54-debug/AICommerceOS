@@ -109,6 +109,21 @@ type CatalogProduct = {
   external_update_time: string | null;
 };
 
+
+type ExternalOrder = {
+  id: string;
+  external_order_id: string;
+  external_status: string;
+  payment_currency: string | null;
+  payment_subtotal: number | string | null;
+  payment_total_amount: number | string | null;
+  item_count: number | string;
+  external_create_time: string | null;
+  external_update_time: string | null;
+  last_seen_at: string;
+  linked_internal_order_id: string | null;
+};
+
 type MarketplaceIntegrationManagerProps = {
   organizationId: string;
   account: Account;
@@ -121,6 +136,7 @@ type MarketplaceIntegrationManagerProps = {
   connection: MarketplaceConnectionStatus | null;
   authorizedShops: AuthorizedShop[];
   catalogProducts: CatalogProduct[];
+  externalOrders: ExternalOrder[];
 };
 
 function formatCurrency(value: number | string) {
@@ -131,6 +147,36 @@ function formatCurrency(value: number | string) {
     currency: "IDR",
     maximumFractionDigits: 0,
   }).format(Number.isFinite(parsed) ? parsed : 0);
+}
+
+
+function formatExternalAmount(
+  value: number | string | null,
+  currency: string | null,
+) {
+  if (value === null) {
+    return "—";
+  }
+
+  const parsed = Number(value);
+
+  if (!Number.isFinite(parsed)) {
+    return "—";
+  }
+
+  if (!currency) {
+    return String(parsed);
+  }
+
+  try {
+    return new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency,
+      maximumFractionDigits: 2,
+    }).format(parsed);
+  } catch {
+    return `${currency} ${parsed}`;
+  }
 }
 
 function formatDate(value: string) {
@@ -167,6 +213,7 @@ export default function MarketplaceIntegrationManager({
   connection,
   authorizedShops,
   catalogProducts,
+  externalOrders,
 }: MarketplaceIntegrationManagerProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -324,6 +371,47 @@ export default function MarketplaceIntegrationManager({
         error instanceof Error
           ? error.message
           : "Product catalog sync gagal.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function handleSyncExternalOrders() {
+    setErrorMessage(null);
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch(
+        "/api/marketplaces/tiktok-shop/orders/sync",
+        {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({
+            account_id: account.id,
+          }),
+        },
+      );
+
+      const payload = (await response.json()) as {
+        error?: string;
+      };
+
+      if (!response.ok) {
+        throw new Error(
+          payload.error ??
+            "External order sync gagal.",
+        );
+      }
+
+      router.refresh();
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "External order sync gagal.",
       );
     } finally {
       setIsSubmitting(false);
@@ -873,6 +961,123 @@ export default function MarketplaceIntegrationManager({
             M3 intentionally synchronizes one page (up to 100 products).
             Pagination will be enabled after the first real Partner Center
             runtime validation so we can measure API latency and function limits.
+          </p>
+        </div>
+      ) : null}
+
+      {supportsTokopediaShop ? (
+        <div className="rounded-2xl border bg-card p-6 shadow-sm">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h2 className="text-lg font-semibold">
+                External Orders
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Read-only operational order mirror. Buyer recipient name,
+                address, phone, and email are deliberately not persisted.
+              </p>
+            </div>
+
+            <Button
+              type="button"
+              variant="outline"
+              disabled={
+                isSubmitting ||
+                connection?.status !== "active" ||
+                !selectedAuthorizedShop
+              }
+              onClick={handleSyncExternalOrders}
+            >
+              {isSubmitting
+                ? "Syncing..."
+                : "Sync recent orders"}
+            </Button>
+          </div>
+
+          {!selectedAuthorizedShop ? (
+            <p className="mt-4 text-sm text-muted-foreground">
+              Select an Authorized Shop before syncing orders.
+            </p>
+          ) : externalOrders.length === 0 ? (
+            <p className="mt-4 text-sm text-muted-foreground">
+              No external order has been synchronized yet.
+            </p>
+          ) : (
+            <div className="mt-5 overflow-x-auto rounded-xl border">
+              <table className="w-full text-sm">
+                <thead className="border-b bg-muted/40 text-left">
+                  <tr>
+                    <th className="px-4 py-3 font-medium">
+                      External Order
+                    </th>
+                    <th className="px-4 py-3 font-medium">
+                      Status
+                    </th>
+                    <th className="px-4 py-3 font-medium">
+                      Amount
+                    </th>
+                    <th className="px-4 py-3 font-medium">
+                      Items
+                    </th>
+                    <th className="px-4 py-3 font-medium">
+                      Internal Link
+                    </th>
+                    <th className="px-4 py-3 font-medium">
+                      Updated
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {externalOrders.map((order) => (
+                    <tr key={order.id}>
+                      <td className="px-4 py-3 font-medium">
+                        {order.external_order_id}
+                      </td>
+                      <td className="px-4 py-3">
+                        {order.external_status}
+                      </td>
+                      <td className="px-4 py-3">
+                        {formatExternalAmount(
+                          order.payment_total_amount ??
+                            order.payment_subtotal,
+                          order.payment_currency,
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        {Number(order.item_count)}
+                      </td>
+                      <td className="px-4 py-3">
+                        {order.linked_internal_order_id ? (
+                          <span className="inline-flex rounded-full border px-2.5 py-1 text-xs font-medium">
+                            {order.linked_internal_order_id.slice(
+                              0,
+                              8,
+                            )}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">
+                            Not linked
+                          </span>
+                        )}
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3">
+                        {formatDate(
+                          order.external_update_time ??
+                            order.last_seen_at,
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          <p className="mt-4 text-xs text-muted-foreground">
+            M4 reads only the most recently updated seven-day window and
+            imports one page of up to 50 orders. It does not create internal
+            orders, alter status, reserve stock, or write back to the
+            marketplace.
           </p>
         </div>
       ) : null}
