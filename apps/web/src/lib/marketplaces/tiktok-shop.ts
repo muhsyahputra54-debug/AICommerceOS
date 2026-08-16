@@ -18,6 +18,9 @@ const SEARCH_PRODUCTS_PATH =
 const SEARCH_ORDERS_PATH =
   "/order/202309/orders/search";
 
+const ORDER_DETAILS_PATH =
+  "/order/202309/orders";
+
 export const TIKTOK_SHOP_PROVIDER = "tiktok_shop";
 
 type TokenData = {
@@ -177,6 +180,16 @@ type SearchOrdersEnvelope = {
   data?: {
     total_count?: number;
     next_page_token?: string;
+    orders?: SearchOrder[];
+  };
+};
+
+
+type OrderDetailsEnvelope = {
+  code?: number;
+  message?: string;
+  request_id?: string;
+  data?: {
     orders?: SearchOrder[];
   };
 };
@@ -686,6 +699,90 @@ export async function searchProducts(input: {
   };
 }
 
+function normalizeExternalOrder(
+  order: SearchOrder,
+): TikTokShopExternalOrder {
+  const externalOrderId = order.id?.trim();
+
+  if (!externalOrderId) {
+    throw new Error(
+      "Order response contains an order without id.",
+    );
+  }
+
+  const lineItems = (order.line_items ?? []).flatMap(
+    (item) => {
+      const externalLineItemId = item.id?.trim();
+
+      if (!externalLineItemId) {
+        return [];
+      }
+
+      return [
+        {
+          externalLineItemId,
+          externalProductId:
+            item.product_id?.trim() || null,
+          productName:
+            item.product_name?.trim() || null,
+          externalSkuId:
+            item.sku_id?.trim() || null,
+          skuName: item.sku_name?.trim() || null,
+          sellerSku:
+            item.seller_sku?.trim() || null,
+          quantity:
+            Number.isFinite(item.quantity) &&
+            Number(item.quantity) > 0
+              ? Number(item.quantity)
+              : 1,
+          originalPrice:
+            item.original_price?.trim() || null,
+          salePrice:
+            item.sale_price?.trim() || null,
+        },
+      ];
+    },
+  );
+
+  return {
+    externalOrderId,
+    status: order.status?.trim() || "UNKNOWN",
+    createTime:
+      Number.isFinite(order.create_time)
+        ? Number(order.create_time)
+        : null,
+    updateTime:
+      Number.isFinite(order.update_time)
+        ? Number(order.update_time)
+        : null,
+    isSampleOrder:
+      order.is_sample_order === true,
+    fulfillmentType:
+      order.fulfillment_type?.trim() || null,
+    deliveryOptionName:
+      order.delivery_option_name?.trim() || null,
+    payment: {
+      currency:
+        order.payment?.currency?.trim() || null,
+      subTotal:
+        order.payment?.sub_total?.trim() || null,
+      shippingFee:
+        order.payment?.shipping_fee?.trim() || null,
+      originalShippingFee:
+        order.payment?.original_shipping_fee?.trim() ||
+        null,
+      sellerDiscount:
+        order.payment?.seller_discount?.trim() || null,
+      platformDiscount:
+        order.payment?.platform_discount?.trim() ||
+        null,
+      totalAmount:
+        order.payment?.total_amount?.trim() || null,
+    },
+    lineItems,
+  };
+}
+
 export function hasOrderInfoScope(
   grantedScopes: string[],
 ) {
@@ -788,87 +885,7 @@ export async function searchOrders(input: {
   }
 
   const orders = (payload.data.orders ?? []).map(
-    (order) => {
-      const externalOrderId = order.id?.trim();
-
-      if (!externalOrderId) {
-        throw new Error(
-          "Search Orders response contains an order without id.",
-        );
-      }
-
-      const lineItems = (order.line_items ?? []).flatMap(
-        (item) => {
-          const externalLineItemId = item.id?.trim();
-
-          if (!externalLineItemId) {
-            return [];
-          }
-
-          return [
-            {
-              externalLineItemId,
-              externalProductId:
-                item.product_id?.trim() || null,
-              productName:
-                item.product_name?.trim() || null,
-              externalSkuId:
-                item.sku_id?.trim() || null,
-              skuName: item.sku_name?.trim() || null,
-              sellerSku:
-                item.seller_sku?.trim() || null,
-              quantity:
-                Number.isFinite(item.quantity) &&
-                Number(item.quantity) > 0
-                  ? Number(item.quantity)
-                  : 1,
-              originalPrice:
-                item.original_price?.trim() || null,
-              salePrice:
-                item.sale_price?.trim() || null,
-            },
-          ];
-        },
-      );
-
-      return {
-        externalOrderId,
-        status: order.status?.trim() || "UNKNOWN",
-        createTime:
-          Number.isFinite(order.create_time)
-            ? Number(order.create_time)
-            : null,
-        updateTime:
-          Number.isFinite(order.update_time)
-            ? Number(order.update_time)
-            : null,
-        isSampleOrder:
-          order.is_sample_order === true,
-        fulfillmentType:
-          order.fulfillment_type?.trim() || null,
-        deliveryOptionName:
-          order.delivery_option_name?.trim() || null,
-        payment: {
-          currency:
-            order.payment?.currency?.trim() || null,
-          subTotal:
-            order.payment?.sub_total?.trim() || null,
-          shippingFee:
-            order.payment?.shipping_fee?.trim() || null,
-          originalShippingFee:
-            order.payment?.original_shipping_fee?.trim() ||
-            null,
-          sellerDiscount:
-            order.payment?.seller_discount?.trim() || null,
-          platformDiscount:
-            order.payment?.platform_discount?.trim() ||
-            null,
-          totalAmount:
-            order.payment?.total_amount?.trim() || null,
-        },
-        lineItems,
-      };
-    },
+    normalizeExternalOrder,
   );
 
   return {
@@ -921,5 +938,95 @@ export function verifyTikTokShopWebhookSignature(input: {
     providedBuffer,
     expectedBuffer,
   );
+}
+
+export async function getOrderDetails(input: {
+  accessToken: string;
+  shopCipher: string;
+  orderIds: string[];
+}): Promise<{
+  orders: TikTokShopExternalOrder[];
+  requestId: string | null;
+}> {
+  const accessToken = input.accessToken.trim();
+  const shopCipher = input.shopCipher.trim();
+
+  const orderIds = Array.from(
+    new Set(
+      input.orderIds
+        .map((id) => id.trim())
+        .filter(Boolean),
+    ),
+  );
+
+  if (!accessToken || !shopCipher) {
+    throw new Error(
+      "TikTok Shop access token atau shop cipher tidak tersedia.",
+    );
+  }
+
+  if (orderIds.length === 0 || orderIds.length > 50) {
+    throw new Error(
+      "Get Order Detail membutuhkan 1 sampai 50 order id.",
+    );
+  }
+
+  const appKey = requiredEnv("TIKTOK_SHOP_APP_KEY");
+  const timestamp = Math.floor(Date.now() / 1000);
+
+  const query = {
+    app_key: appKey,
+    timestamp,
+    shop_cipher: shopCipher,
+    ids: orderIds.join(","),
+  };
+
+  const sign = signTikTokShopRequest({
+    path: ORDER_DETAILS_PATH,
+    query,
+  });
+
+  const url = new URL(
+    ORDER_DETAILS_PATH,
+    BUSINESS_API_BASE_URL,
+  );
+
+  for (const [key, value] of Object.entries(query)) {
+    url.searchParams.set(key, String(value));
+  }
+
+  url.searchParams.set("sign", sign);
+
+  const response = await fetch(url, {
+    method: "GET",
+    cache: "no-store",
+    headers: {
+      Accept: "application/json",
+      "content-type": "application/json",
+      "x-tts-access-token": accessToken,
+    },
+  });
+
+  const payload =
+    (await response.json()) as OrderDetailsEnvelope;
+
+  if (
+    !response.ok ||
+    payload.code !== 0 ||
+    !payload.data
+  ) {
+    throw new Error(
+      payload.message ||
+        `Get Order Detail failed (${response.status}).`,
+    );
+  }
+
+  return {
+    orders: (payload.data.orders ?? []).map(
+      normalizeExternalOrder,
+    ),
+    requestId:
+      payload.request_id?.trim() || null,
+  };
 }
 

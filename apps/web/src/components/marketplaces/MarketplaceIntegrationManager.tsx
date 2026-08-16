@@ -134,6 +134,8 @@ type WebhookEvent = {
   external_status: string | null;
   external_update_time: string | null;
   processing_status: string;
+  attempt_count: number;
+  last_attempt_at: string | null;
   processing_message: string | null;
   received_at: string;
 };
@@ -428,6 +430,47 @@ export default function MarketplaceIntegrationManager({
         error instanceof Error
           ? error.message
           : "External order sync gagal.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function handleProcessWebhookQueue() {
+    setErrorMessage(null);
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch(
+        "/api/marketplaces/tiktok-shop/webhook/process",
+        {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({
+            account_id: account.id,
+          }),
+        },
+      );
+
+      const payload = (await response.json()) as {
+        error?: string;
+      };
+
+      if (!response.ok) {
+        throw new Error(
+          payload.error ??
+            "Webhook reconciliation gagal.",
+        );
+      }
+
+      router.refresh();
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "Webhook reconciliation gagal.",
       );
     } finally {
       setIsSubmitting(false);
@@ -1100,14 +1143,31 @@ export default function MarketplaceIntegrationManager({
 
       {supportsTokopediaShop ? (
         <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
-          <div className="border-b px-6 py-5">
-            <h2 className="text-lg font-semibold">
-              Webhook Events
-            </h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Authenticated, idempotent event intake. Raw payload and recipient
-              PII are not persisted.
-            </p>
+          <div className="flex flex-col gap-4 border-b px-6 py-5 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h2 className="text-lg font-semibold">
+                Webhook Events
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Authenticated, idempotent intake with controlled read-only
+                reconciliation. Raw payload and recipient PII are not persisted.
+              </p>
+            </div>
+
+            <Button
+              type="button"
+              variant="outline"
+              disabled={
+                isSubmitting ||
+                connection?.status !== "active" ||
+                !selectedAuthorizedShop
+              }
+              onClick={handleProcessWebhookQueue}
+            >
+              {isSubmitting
+                ? "Processing..."
+                : "Process webhook queue"}
+            </Button>
           </div>
 
           {webhookEvents.length === 0 ? (
@@ -1140,6 +1200,9 @@ export default function MarketplaceIntegrationManager({
                     <th className="px-6 py-3 font-medium">
                       Processing
                     </th>
+                    <th className="px-6 py-3 font-medium">
+                      Attempts
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
@@ -1158,8 +1221,18 @@ export default function MarketplaceIntegrationManager({
                       <td className="px-6 py-4">
                         {event.external_status ?? "—"}
                       </td>
-                      <td className="px-6 py-4 capitalize">
-                        {event.processing_status}
+                      <td className="px-6 py-4">
+                        <div className="capitalize">
+                          {event.processing_status}
+                        </div>
+                        {event.processing_message ? (
+                          <div className="mt-1 max-w-sm text-xs text-muted-foreground">
+                            {event.processing_message}
+                          </div>
+                        ) : null}
+                      </td>
+                      <td className="px-6 py-4">
+                        {event.attempt_count}
                       </td>
                     </tr>
                   ))}
