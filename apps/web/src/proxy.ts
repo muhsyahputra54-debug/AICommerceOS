@@ -7,7 +7,11 @@ export async function proxy(request: NextRequest) {
   const isMarketplaceWebhook =
     pathname === "/api/marketplaces/tiktok-shop/webhook";
 
-  if (isMarketplaceWebhook) {
+  const isOperationalEndpoint =
+    pathname === "/api/health" ||
+    pathname === "/api/readiness";
+
+  if (isMarketplaceWebhook || isOperationalEndpoint) {
     return NextResponse.next({
       request,
     });

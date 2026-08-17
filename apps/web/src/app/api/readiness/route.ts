@@ -8,47 +8,25 @@ const requiredEnvironment = [
 ] as const;
 
 export async function GET() {
-  const missing =
-    requiredEnvironment.filter(
-      (key) =>
-        !process.env[key]?.trim(),
-    );
-
-  const ready =
-    missing.length === 0;
+  const ready = requiredEnvironment.every(
+    (key) => Boolean(process.env[key]?.trim()),
+  );
 
   return NextResponse.json(
     {
-      status:
-        ready
-          ? "ready"
-          : "not_ready",
-
-      service:
-        "aicommerceos-web",
-
+      status: ready ? "ready" : "not_ready",
+      service: "aicommerceos-web",
       checks: {
-        environment:
-          ready
-            ? "ok"
-            : "missing_configuration",
+        environment: ready
+          ? "ok"
+          : "missing_configuration",
       },
-
-      missing_configuration:
-        missing,
-
-      timestamp:
-        new Date().toISOString(),
+      timestamp: new Date().toISOString(),
     },
     {
-      status:
-        ready
-          ? 200
-          : 503,
-
+      status: ready ? 200 : 503,
       headers: {
-        "Cache-Control":
-          "no-store, max-age=0",
+        "Cache-Control": "no-store, max-age=0",
       },
     },
   );
