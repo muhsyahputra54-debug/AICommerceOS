@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element -- Product images use temporary signed Supabase Storage URLs. */
 "use client";
 
 import { useState, type FormEvent } from "react";

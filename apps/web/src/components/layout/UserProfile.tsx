@@ -1,6 +1,8 @@
+/* eslint-disable @next/next/no-img-element -- OAuth avatar URLs can originate from external identity-provider hosts. */
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { LogOut, UserCircle2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -12,6 +14,8 @@ type UserProfileData = {
 };
 
 export default function UserProfile() {
+  const router = useRouter();
+
   const [user, setUser] = useState<UserProfileData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -50,7 +54,8 @@ export default function UserProfile() {
 
     await supabase.auth.signOut();
 
-    window.location.href = "/login";
+    router.replace("/login");
+    router.refresh();
   };
 
   if (loading) {
