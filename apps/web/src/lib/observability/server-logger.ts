@@ -5,6 +5,10 @@ type StructuredServerErrorInput = {
   method?: string;
   provider?: string;
   operation?: string;
+  errorDigest?: string | null;
+  routerKind?: string | null;
+  routeType?: string | null;
+  runtime?: string | null;
   error?: unknown;
 };
 
@@ -87,6 +91,10 @@ export function logServerError({
   method,
   provider,
   operation,
+  errorDigest = null,
+  routerKind = null,
+  routeType = null,
+  runtime = null,
   error,
 }: StructuredServerErrorInput) {
   const entry = {
@@ -102,6 +110,14 @@ export function logServerError({
       safeString(provider, 100),
     operation:
       safeString(operation, 150),
+    error_digest:
+      safeString(errorDigest, 150),
+    router_kind:
+      safeString(routerKind, 50),
+    route_type:
+      safeString(routeType, 50),
+    runtime:
+      safeString(runtime, 50),
     ...errorFields(error),
   };
 
