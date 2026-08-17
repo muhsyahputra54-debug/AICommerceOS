@@ -9,6 +9,9 @@ import {
   searchOrders,
   TIKTOK_SHOP_PROVIDER,
 } from "@/lib/marketplaces/tiktok-shop";
+import {
+  getValidTikTokShopAccessToken,
+} from "@/lib/marketplaces/token-manager";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentOrganization } from "@/lib/supabase/current-organization";
 import { createClient } from "@/lib/supabase/server";
@@ -16,9 +19,6 @@ import { createClient } from "@/lib/supabase/server";
 type OrderSyncContextRow = {
   provider: string;
   connection_status: string;
-  access_token_ciphertext: string;
-  access_token_expires_at: string | null;
-  granted_scopes: string[];
   authorized_shop_id: string;
   external_shop_id: string;
   shop_cipher_ciphertext: string;
@@ -154,16 +154,27 @@ export async function POST(request: Request) {
     );
   }
 
-  if (
-    context.access_token_expires_at &&
-    new Date(
-      context.access_token_expires_at,
-    ).getTime() <= Date.now()
-  ) {
+  let tokenContext: Awaited<
+    ReturnType<
+      typeof getValidTikTokShopAccessToken
+    >
+  >;
+
+  try {
+    tokenContext =
+      await getValidTikTokShopAccessToken({
+        organizationId:
+          currentOrganization.organizationId,
+        marketplaceAccountId: account.id,
+        userId: user.id,
+      });
+  } catch (error) {
     return NextResponse.json(
       {
         error:
-          "TikTok Shop access token sudah kedaluwarsa. Reconnect diperlukan.",
+          error instanceof Error
+            ? error.message
+            : "TikTok Shop token validation gagal.",
       },
       { status: 409 },
     );
@@ -171,7 +182,7 @@ export async function POST(request: Request) {
 
   if (
     !hasOrderInfoScope(
-      context.granted_scopes ?? [],
+      tokenContext.grantedScopes,
     )
   ) {
     return NextResponse.json(
@@ -185,9 +196,7 @@ export async function POST(request: Request) {
 
   try {
     const accessToken =
-      decryptMarketplaceSecret(
-        context.access_token_ciphertext,
-      );
+      tokenContext.accessToken;
 
     const shopCipher =
       decryptMarketplaceSecret(
@@ -276,6 +285,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       ok: true,
+      token_refreshed: tokenContext.refreshed,
       synced_count:
         typeof syncedCount === "number"
           ? syncedCount

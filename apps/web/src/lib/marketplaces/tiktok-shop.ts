@@ -6,6 +6,9 @@ const SELLER_AUTHORIZATION_URL =
 const TOKEN_GET_URL =
   "https://auth.tiktok-shops.com/api/v2/token/get";
 
+const TOKEN_REFRESH_URL =
+  "https://auth.tiktok-shops.com/api/v2/token/refresh";
+
 const BUSINESS_API_BASE_URL =
   "https://open-api.tiktokglobalshop.com";
 
@@ -36,6 +39,7 @@ type TokenData = {
 type TokenEnvelope = {
   code?: number;
   message?: string;
+  request_id?: string;
   data?: TokenData;
 };
 
@@ -47,6 +51,17 @@ export type TikTokShopAuthorization = {
   openId: string | null;
   userType: number | null;
   grantedScopes: string[];
+};
+
+export type TikTokShopRefreshedAuthorization = {
+  accessToken: string;
+  refreshToken: string;
+  accessTokenExpiresAt: string;
+  refreshTokenExpiresAt: string;
+  openId: string;
+  userType: number;
+  grantedScopes: string[] | null;
+  requestId: string | null;
 };
 
 
@@ -274,6 +289,16 @@ function normalizeScopes(
   return [];
 }
 
+function normalizeOptionalScopes(
+  value: string[] | string | undefined,
+) {
+  if (value === undefined) {
+    return null;
+  }
+
+  return normalizeScopes(value);
+}
+
 export function isTikTokShopProvider(provider: string) {
   const normalized = provider
     .toLowerCase()
@@ -381,6 +406,113 @@ export async function exchangeAuthorizationCode(
         : null,
     grantedScopes:
       normalizeScopes(payload.data.granted_scopes),
+  };
+}
+
+export async function refreshTikTokShopAuthorization(
+  refreshTokenInput: string,
+): Promise<TikTokShopRefreshedAuthorization> {
+  const refreshToken = refreshTokenInput.trim();
+
+  if (!refreshToken) {
+    throw new Error(
+      "TikTok Shop refresh token tidak tersedia.",
+    );
+  }
+
+  const appKey = requiredEnv("TIKTOK_SHOP_APP_KEY");
+  const appSecret = requiredEnv(
+    "TIKTOK_SHOP_APP_SECRET",
+  );
+
+  const url = new URL(TOKEN_REFRESH_URL);
+
+  url.searchParams.set("app_key", appKey);
+  url.searchParams.set("app_secret", appSecret);
+  url.searchParams.set("refresh_token", refreshToken);
+  url.searchParams.set("grant_type", "refresh_token");
+
+  const response = await fetch(url, {
+    method: "GET",
+    cache: "no-store",
+    headers: {
+      Accept: "application/json",
+    },
+  });
+
+  const payload =
+    (await response.json()) as TokenEnvelope;
+
+  if (
+    !response.ok ||
+    payload.code !== 0 ||
+    !payload.data
+  ) {
+    throw new Error(
+      payload.message ||
+        `TikTok Shop token refresh failed (${response.status}).`,
+    );
+  }
+
+  const accessToken =
+    payload.data.access_token?.trim();
+  const nextRefreshToken =
+    payload.data.refresh_token?.trim();
+  const openId = payload.data.open_id?.trim();
+  const userType = payload.data.user_type;
+
+  const accessTokenExpiresAt =
+    unixTimestampToIso(
+      payload.data.access_token_expire_in,
+    );
+
+  const refreshTokenExpiresAt =
+    unixTimestampToIso(
+      payload.data.refresh_token_expire_in,
+    );
+
+  if (
+    !accessToken ||
+    !nextRefreshToken ||
+    !openId ||
+    !accessTokenExpiresAt ||
+    !refreshTokenExpiresAt
+  ) {
+    throw new Error(
+      "TikTok Shop refresh response tidak lengkap.",
+    );
+  }
+
+  if (userType !== 0) {
+    throw new Error(
+      "Refreshed authorization bukan seller authorization.",
+    );
+  }
+
+  if (
+    new Date(accessTokenExpiresAt).getTime() <=
+      Date.now() ||
+    new Date(refreshTokenExpiresAt).getTime() <=
+      Date.now()
+  ) {
+    throw new Error(
+      "TikTok Shop refresh response berisi token yang sudah kedaluwarsa.",
+    );
+  }
+
+  return {
+    accessToken,
+    refreshToken: nextRefreshToken,
+    accessTokenExpiresAt,
+    refreshTokenExpiresAt,
+    openId,
+    userType,
+    grantedScopes:
+      normalizeOptionalScopes(
+        payload.data.granted_scopes,
+      ),
+    requestId:
+      payload.request_id?.trim() || null,
   };
 }
 

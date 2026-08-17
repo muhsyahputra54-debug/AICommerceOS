@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 
 import {
-  decryptMarketplaceSecret,
   encryptMarketplaceSecret,
 } from "@/lib/marketplaces/crypto";
 import {
@@ -10,19 +9,12 @@ import {
   isTikTokShopProvider,
   TIKTOK_SHOP_PROVIDER,
 } from "@/lib/marketplaces/tiktok-shop";
+import {
+  getValidTikTokShopAccessToken,
+} from "@/lib/marketplaces/token-manager";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentOrganization } from "@/lib/supabase/current-organization";
 import { createClient } from "@/lib/supabase/server";
-
-type ConnectionSecretRow = {
-  provider: string;
-  status: string;
-  access_token_ciphertext: string;
-  refresh_token_ciphertext: string;
-  access_token_expires_at: string | null;
-  refresh_token_expires_at: string | null;
-  granted_scopes: string[];
-};
 
 export async function POST(request: Request) {
   const currentOrganization =
@@ -118,59 +110,34 @@ export async function POST(request: Request) {
 
   const admin = createAdminClient();
 
-  const {
-    data: connectionRows,
-    error: connectionError,
-  } = await admin.rpc(
-    "get_marketplace_connection_secret",
-    {
-      p_organization_id:
-        currentOrganization.organizationId,
-      p_marketplace_account_id: account.id,
-      p_user_id: user.id,
-    },
-  );
+  let tokenContext: Awaited<
+    ReturnType<
+      typeof getValidTikTokShopAccessToken
+    >
+  >;
 
-  if (connectionError) {
-    return NextResponse.json(
-      { error: connectionError.message },
-      { status: 500 },
-    );
-  }
-
-  const connection =
-    Array.isArray(connectionRows) &&
-    connectionRows.length > 0
-      ? (connectionRows[0] as ConnectionSecretRow)
-      : null;
-
-  if (!connection || connection.status !== "active") {
+  try {
+    tokenContext =
+      await getValidTikTokShopAccessToken({
+        organizationId:
+          currentOrganization.organizationId,
+        marketplaceAccountId: account.id,
+        userId: user.id,
+      });
+  } catch (error) {
     return NextResponse.json(
       {
         error:
-          "Marketplace belum memiliki koneksi seller aktif.",
-      },
-      { status: 409 },
-    );
-  }
-
-  if (
-    connection.access_token_expires_at &&
-    new Date(
-      connection.access_token_expires_at,
-    ).getTime() <= Date.now()
-  ) {
-    return NextResponse.json(
-      {
-        error:
-          "TikTok Shop access token sudah kedaluwarsa. Reconnect diperlukan sebelum sync.",
+          error instanceof Error
+            ? error.message
+            : "TikTok Shop token validation gagal.",
       },
       { status: 409 },
     );
   }
 
   const grantedScopes =
-    connection.granted_scopes ?? [];
+    tokenContext.grantedScopes;
 
   if (!hasAuthorizedShopsScope(grantedScopes)) {
     return NextResponse.json(
@@ -183,13 +150,10 @@ export async function POST(request: Request) {
   }
 
   try {
-    const accessToken =
-      decryptMarketplaceSecret(
-        connection.access_token_ciphertext,
-      );
-
     const result =
-      await getAuthorizedShops(accessToken);
+      await getAuthorizedShops(
+        tokenContext.accessToken,
+      );
 
     const encryptedShops = result.shops.map(
       (shop) => ({
@@ -225,6 +189,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       ok: true,
+      token_refreshed: tokenContext.refreshed,
       synced_count:
         typeof syncedCount === "number"
           ? syncedCount

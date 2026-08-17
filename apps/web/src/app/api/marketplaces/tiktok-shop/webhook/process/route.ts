@@ -9,6 +9,9 @@ import {
   isTikTokShopProvider,
   TIKTOK_SHOP_PROVIDER,
 } from "@/lib/marketplaces/tiktok-shop";
+import {
+  getValidTikTokShopAccessToken,
+} from "@/lib/marketplaces/token-manager";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentOrganization } from "@/lib/supabase/current-organization";
 import { createClient } from "@/lib/supabase/server";
@@ -27,9 +30,6 @@ type ClaimedWebhookEvent = {
 type OrderSyncContextRow = {
   provider: string;
   connection_status: string;
-  access_token_ciphertext: string;
-  access_token_expires_at: string | null;
-  granted_scopes: string[];
   authorized_shop_id: string;
   external_shop_id: string;
   shop_cipher_ciphertext: string;
@@ -309,35 +309,50 @@ export async function POST(request: Request) {
     });
   }
 
-  if (
-    context.access_token_expires_at &&
-    new Date(
-      context.access_token_expires_at,
-    ).getTime() <= Date.now()
-  ) {
+  let tokenContext: Awaited<
+    ReturnType<
+      typeof getValidTikTokShopAccessToken
+    >
+  >;
+
+  try {
+    tokenContext =
+      await getValidTikTokShopAccessToken({
+        organizationId,
+        marketplaceAccountId,
+        userId,
+      });
+  } catch (error) {
+    const message =
+      error instanceof Error
+        ? error.message
+        : "TikTok Shop token validation gagal.";
+
     for (const event of orderEvents) {
       await complete(
         event.id,
         "error",
-        "Seller access token expired. Reconnect required.",
+        message,
       );
       errors += 1;
     }
 
-    return NextResponse.json({
-      ok: false,
-      claimed: claimedEvents.length,
-      processed,
-      ignored,
-      errors,
-      error:
-        "Seller access token expired. Reconnect required.",
-    });
+    return NextResponse.json(
+      {
+        ok: false,
+        claimed: claimedEvents.length,
+        processed,
+        ignored,
+        errors,
+        error: message,
+      },
+      { status: 409 },
+    );
   }
 
   if (
     !hasOrderInfoScope(
-      context.granted_scopes ?? [],
+      tokenContext.grantedScopes,
     )
   ) {
     for (const event of orderEvents) {
@@ -362,9 +377,7 @@ export async function POST(request: Request) {
 
   try {
     const accessToken =
-      decryptMarketplaceSecret(
-        context.access_token_ciphertext,
-      );
+      tokenContext.accessToken;
 
     const shopCipher =
       decryptMarketplaceSecret(
@@ -472,6 +485,7 @@ export async function POST(request: Request) {
 
   return NextResponse.json({
     ok: true,
+    token_refreshed: tokenContext.refreshed,
     claimed: claimedEvents.length,
     processed,
     ignored,
