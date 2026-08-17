@@ -11,7 +11,7 @@ export default function Header() {
 
   return (
     <>
-      <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-background/95 px-4 backdrop-blur sm:px-6">
+      <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border/70 bg-card/90 px-4 shadow-sm shadow-primary/5 backdrop-blur-xl sm:px-6">
         {/* Left Side */}
         <div className="flex min-w-0 flex-1 items-center gap-3">
           {/* Mobile Menu */}
@@ -19,14 +19,14 @@ export default function Header() {
             type="button"
             aria-label="Open navigation"
             onClick={() => setMobileMenuOpen(true)}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-colors hover:bg-muted md:hidden"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-transparent transition-colors hover:border-border/70 hover:bg-accent/70 md:hidden"
           >
             <Menu className="h-5 w-5" />
           </button>
 
           {/* Search */}
           <div className="flex min-w-0 flex-1 items-center">
-            <div className="flex h-10 w-full max-w-md items-center gap-3 rounded-lg border bg-muted/30 px-3">
+            <div className="flex h-10 w-full max-w-md items-center gap-3 rounded-xl border border-border/80 bg-background/80 px-3 shadow-sm transition-all focus-within:border-primary/40 focus-within:ring-2 focus-within:ring-primary/10">
               <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
 
               <input
@@ -44,7 +44,7 @@ export default function Header() {
             type="button"
             title="Notifications"
             aria-label="Notifications"
-            className="relative flex h-10 w-10 items-center justify-center rounded-lg transition-colors hover:bg-muted"
+            className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-transparent transition-colors hover:border-border/70 hover:bg-accent/70"
           >
             <Bell className="h-5 w-5" />
 

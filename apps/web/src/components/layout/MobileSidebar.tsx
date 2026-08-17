@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -96,7 +96,7 @@ export default function MobileSidebar({
       />
 
       {/* Sidebar */}
-      <aside className="relative flex h-full w-72 max-w-[85vw] flex-col border-r bg-background shadow-xl">
+      <aside className="relative flex h-full w-72 max-w-[85vw] flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-xl">
         {/* Header */}
         <div className="flex h-16 items-center justify-between border-b px-5">
           <Link
@@ -104,7 +104,7 @@ export default function MobileSidebar({
             onClick={onClose}
             className="flex items-center gap-3"
           >
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-sidebar-primary text-sidebar-primary-foreground">
               <Sparkles className="h-5 w-5" />
             </div>
 
@@ -113,7 +113,7 @@ export default function MobileSidebar({
                 AI Commerce OS
               </p>
 
-              <p className="text-[11px] text-muted-foreground">
+              <p className="text-[11px] text-sidebar-foreground/60">
                 Business Intelligence
               </p>
             </div>
@@ -123,7 +123,7 @@ export default function MobileSidebar({
             type="button"
             onClick={onClose}
             aria-label="Close sidebar"
-            className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            className="flex h-9 w-9 items-center justify-center rounded-lg text-sidebar-foreground/60 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
           >
             <X className="h-5 w-5" />
           </button>
@@ -131,7 +131,7 @@ export default function MobileSidebar({
 
         {/* Navigation */}
         <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-6">
-          <p className="mb-3 px-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+          <p className="mb-3 px-3 text-[11px] font-semibold uppercase tracking-wider text-sidebar-foreground/60">
             Navigation
           </p>
 
@@ -150,8 +150,8 @@ export default function MobileSidebar({
                 onClick={onClose}
                 className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-colors ${
                   isActive
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                 }`}
               >
                 <Icon className="h-5 w-5 shrink-0" />
@@ -164,13 +164,13 @@ export default function MobileSidebar({
 
         {/* Footer */}
         <div className="border-t p-4">
-          <div className="rounded-xl bg-muted/50 p-3">
+          <div className="rounded-xl bg-sidebar-accent/60 p-3">
             <p className="text-xs font-medium">
               AI Commerce OS
             </p>
 
-            <p className="mt-1 text-[11px] text-muted-foreground">
-              v0.1.0 â€¢ Development
+            <p className="mt-1 text-[11px] text-sidebar-foreground/60">
+              v0.1.0 / Development
             </p>
           </div>
         </div>

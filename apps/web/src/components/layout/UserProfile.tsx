@@ -61,11 +61,11 @@ export default function UserProfile() {
   if (loading) {
     return (
       <div className="flex items-center gap-2">
-        <UserCircle2 className="h-9 w-9 text-gray-400" />
+        <UserCircle2 className="h-9 w-9 text-muted-foreground/60" />
 
         <div>
-          <div className="h-4 w-20 animate-pulse rounded bg-gray-200" />
-          <div className="mt-1 h-3 w-28 animate-pulse rounded bg-gray-200" />
+          <div className="h-4 w-20 animate-pulse rounded bg-muted" />
+          <div className="mt-1 h-3 w-28 animate-pulse rounded bg-muted" />
         </div>
       </div>
     );
@@ -84,7 +84,7 @@ export default function UserProfile() {
           className="h-9 w-9 rounded-full object-cover"
         />
       ) : (
-        <UserCircle2 className="h-9 w-9 text-gray-500" />
+        <UserCircle2 className="h-9 w-9 text-muted-foreground" />
       )}
 
       <div className="hidden sm:block">
@@ -92,7 +92,7 @@ export default function UserProfile() {
           {user.name}
         </p>
 
-        <p className="text-xs text-gray-500">
+        <p className="text-xs text-muted-foreground">
           {user.email}
         </p>
       </div>

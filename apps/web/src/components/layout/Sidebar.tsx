@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -92,8 +92,8 @@ export default function Sidebar() {
         href={item.href}
         className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
           isActive
-            ? "bg-primary text-primary-foreground shadow-sm"
-            : "text-muted-foreground hover:bg-muted hover:text-foreground"
+            ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-md shadow-black/10"
+            : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
         }`}
       >
         <Icon
@@ -108,14 +108,14 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="hidden h-screen w-64 shrink-0 flex-col border-r bg-background md:flex">
+    <aside className="hidden h-screen w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground md:flex">
       {/* Brand */}
       <div className="flex h-16 items-center border-b px-5">
         <Link
           href="/"
           className="flex items-center gap-3"
         >
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-sidebar-primary text-sidebar-primary-foreground shadow-sm">
             <Sparkles className="h-5 w-5" />
           </div>
 
@@ -124,7 +124,7 @@ export default function Sidebar() {
               AI Commerce OS
             </p>
 
-            <p className="text-[11px] text-muted-foreground">
+            <p className="text-[11px] text-sidebar-foreground/60">
               Business Intelligence
             </p>
           </div>
@@ -135,7 +135,7 @@ export default function Sidebar() {
       <div className="flex-1 overflow-y-auto px-3 py-6">
         {/* Main */}
         <div>
-          <p className="mb-3 px-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+          <p className="mb-3 px-3 text-[11px] font-semibold uppercase tracking-wider text-sidebar-foreground/60">
             Main
           </p>
 
@@ -146,7 +146,7 @@ export default function Sidebar() {
 
         {/* System */}
         <div className="mt-8">
-          <p className="mb-3 px-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+          <p className="mb-3 px-3 text-[11px] font-semibold uppercase tracking-wider text-sidebar-foreground/60">
             System
           </p>
 
@@ -158,13 +158,13 @@ export default function Sidebar() {
 
       {/* Footer */}
       <div className="border-t p-4">
-        <div className="rounded-xl bg-muted/50 p-3">
+        <div className="rounded-xl bg-sidebar-accent/60 p-3">
           <p className="text-xs font-medium">
             AI Commerce OS
           </p>
 
-          <p className="mt-1 text-[11px] text-muted-foreground">
-            v0.1.0 â€¢ Development
+          <p className="mt-1 text-[11px] text-sidebar-foreground/60">
+            v0.1.0 / Development
           </p>
         </div>
       </div>

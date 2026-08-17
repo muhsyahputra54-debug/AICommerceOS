@@ -1,4 +1,4 @@
-﻿import DashboardLayout from "@/components/layout/DashboardLayout";
+import DashboardLayout from "@/components/layout/DashboardLayout";
 import StatsCard from "@/components/dashboard/StatsCard";
 import RevenueChart, {
   type SalesTrendPoint,
@@ -154,7 +154,7 @@ export default async function Home() {
               value={formatCurrency(summary.revenue)}
               description="Completed sales"
               icon={
-                <DollarSign className="h-6 w-6 text-blue-600" />
+                <DollarSign className="h-6 w-6 text-primary" />
               }
             />
 
@@ -163,7 +163,7 @@ export default async function Home() {
               value={formatNumber(summary.completed_orders)}
               description="Order terminal completed"
               icon={
-                <ShoppingCart className="h-6 w-6 text-blue-600" />
+                <ShoppingCart className="h-6 w-6 text-primary" />
               }
             />
 
@@ -172,7 +172,7 @@ export default async function Home() {
               value={formatNumber(customerCount)}
               description="Organization aktif"
               icon={
-                <Users className="h-6 w-6 text-blue-600" />
+                <Users className="h-6 w-6 text-primary" />
               }
             />
 
@@ -181,7 +181,7 @@ export default async function Home() {
               value={formatCurrency(summary.profit)}
               description="Historical revenue - cost"
               icon={
-                <TrendingUp className="h-6 w-6 text-blue-600" />
+                <TrendingUp className="h-6 w-6 text-primary" />
               }
             />
           </div>
