@@ -1,9 +1,13 @@
-import { createClient } from "@/lib/supabase/server";
+import { logServerError } from "@/lib/observability/server-logger";
 import { ensureOrganization } from "@/lib/supabase/organization";
+import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
+
+  const requestId =
+    request.headers.get("x-request-id");
 
   const code = searchParams.get("code");
 
@@ -19,10 +23,16 @@ export async function GET(request: Request) {
     await supabase.auth.exchangeCodeForSession(code);
 
   if (error) {
-    console.error(
-      "Auth callback error:",
-      error.message,
-    );
+    logServerError({
+      event: "auth_callback_exchange_failed",
+      requestId,
+      route: "/auth/callback",
+      method: "GET",
+      provider: "supabase",
+      operation:
+        "exchange_code_for_session",
+      error,
+    });
 
     return NextResponse.redirect(
       `${origin}/login?error=auth_callback_failed`,
@@ -32,10 +42,16 @@ export async function GET(request: Request) {
   try {
     await ensureOrganization();
   } catch (error) {
-    console.error(
-      "Organization setup error:",
+    logServerError({
+      event:
+        "auth_callback_organization_setup_failed",
+      requestId,
+      route: "/auth/callback",
+      method: "GET",
+      provider: "supabase",
+      operation: "ensure_organization",
       error,
-    );
+    });
 
     return NextResponse.redirect(
       `${origin}/?error=organization_setup_failed`,

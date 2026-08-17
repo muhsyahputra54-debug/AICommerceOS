@@ -1,3 +1,4 @@
+import { logServerError } from "@/lib/observability/server-logger";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export type OpenAIChatUsage = {
@@ -236,10 +237,13 @@ export async function recordOpenAIChatUsageSafely(
   try {
     return await recordOpenAIChatUsage(input);
   } catch (error) {
-    console.error(
-      "[AICommerceOS][ai-metering] usage recording failed",
+    logServerError({
+      event: "ai_metering_usage_recording_failed",
+      requestId: input.requestIdHeader,
+      provider: "openai",
+      operation: "record_ai_usage",
       error,
-    );
+    });
 
     return null;
   }
