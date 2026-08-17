@@ -10,10 +10,12 @@ export default function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error(
-      "Fatal AICommerceOS application error.",
-      error,
-    );
+    if (process.env.NODE_ENV !== "production") {
+      console.error(
+        "Fatal AICommerceOS application error.",
+        error,
+      );
+    }
   }, [error]);
 
   return (
@@ -38,6 +40,7 @@ export default function GlobalError({
           }}
         >
           <section
+            role="alert"
             style={{
               width: "100%",
               maxWidth: "520px",

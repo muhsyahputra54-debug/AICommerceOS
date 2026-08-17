@@ -11,15 +11,20 @@ export default function Error({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error(
-      "Unhandled AICommerceOS application error.",
-      error,
-    );
+    if (process.env.NODE_ENV !== "production") {
+      console.error(
+        "Unhandled AICommerceOS application error.",
+        error,
+      );
+    }
   }, [error]);
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-background px-6 text-foreground">
-      <section className="w-full max-w-lg rounded-2xl border bg-card p-8 shadow-sm">
+      <section
+        role="alert"
+        className="w-full max-w-lg rounded-2xl border bg-card p-8 shadow-sm"
+      >
         <p className="text-sm font-medium text-muted-foreground">
           AI Commerce OS
         </p>
