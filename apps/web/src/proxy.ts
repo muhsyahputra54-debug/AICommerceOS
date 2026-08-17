@@ -2,6 +2,17 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 export async function proxy(request: NextRequest) {
+  const pathname = request.nextUrl.pathname;
+
+  const isMarketplaceWebhook =
+    pathname === "/api/marketplaces/tiktok-shop/webhook";
+
+  if (isMarketplaceWebhook) {
+    return NextResponse.next({
+      request,
+    });
+  }
+
   let response = NextResponse.next({
     request,
   });
@@ -34,8 +45,6 @@ export async function proxy(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-
-  const pathname = request.nextUrl.pathname;
 
   const isLoginPage = pathname === "/login";
   const isAuthCallback = pathname.startsWith("/auth");
