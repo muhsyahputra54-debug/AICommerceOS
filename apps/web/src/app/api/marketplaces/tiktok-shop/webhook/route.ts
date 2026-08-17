@@ -6,6 +6,7 @@ import {
   TIKTOK_SHOP_PROVIDER,
   verifyTikTokShopWebhookSignature,
 } from "@/lib/marketplaces/tiktok-shop";
+import { logServerError } from "@/lib/observability/server-logger";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 type TikTokShopWebhookPayload = {
@@ -42,6 +43,9 @@ function integerUnixTime(
 }
 
 export async function POST(request: Request) {
+  const requestId =
+    request.headers.get("x-request-id");
+
   const rawBody = await request.text();
 
   let signatureValid = false;
@@ -51,7 +55,9 @@ export async function POST(request: Request) {
       verifyTikTokShopWebhookSignature({
         rawBody,
         authorizationHeader:
-          request.headers.get("authorization"),
+          request.headers.get(
+            "authorization",
+          ),
       });
   } catch {
     signatureValid = false;
@@ -92,11 +98,14 @@ export async function POST(request: Request) {
       : {};
 
   const notificationId =
-    stringValue(payload.tts_notification_id);
+    stringValue(
+      payload.tts_notification_id,
+    );
 
-  const payloadSha256 = createHash("sha256")
-    .update(rawBody)
-    .digest("hex");
+  const payloadSha256 =
+    createHash("sha256")
+      .update(rawBody)
+      .digest("hex");
 
   const dedupeKey =
     notificationId || payloadSha256;
@@ -124,9 +133,12 @@ export async function POST(request: Request) {
   } = await admin.rpc(
     "record_marketplace_webhook_event",
     {
-      p_provider: TIKTOK_SHOP_PROVIDER,
-      p_external_shop_id: shopId,
-      p_dedupe_key: dedupeKey,
+      p_provider:
+        TIKTOK_SHOP_PROVIDER,
+      p_external_shop_id:
+        shopId,
+      p_dedupe_key:
+        dedupeKey,
       p_notification_id:
         notificationId || null,
       p_notification_type:
@@ -143,8 +155,12 @@ export async function POST(request: Request) {
         payloadSha256,
       p_metadata: {
         push_timestamp:
-          Number.isFinite(payload.timestamp)
-            ? Number(payload.timestamp)
+          Number.isFinite(
+            payload.timestamp,
+          )
+            ? Number(
+                payload.timestamp,
+              )
             : null,
       },
     },
@@ -153,10 +169,19 @@ export async function POST(request: Request) {
   if (recordError) {
     // A valid webhook is acknowledged quickly so provider retries
     // are not amplified by an internal persistence issue.
-    console.error(
-      "Marketplace webhook persistence failed:",
-      recordError.message,
-    );
+    logServerError({
+      event:
+        "marketplace_webhook_persistence_failed",
+      requestId,
+      route:
+        "/api/marketplaces/tiktok-shop/webhook",
+      method: "POST",
+      provider:
+        TIKTOK_SHOP_PROVIDER,
+      operation:
+        "record_marketplace_webhook_event",
+      error: recordError,
+    });
   }
 
   return new NextResponse(null, {
