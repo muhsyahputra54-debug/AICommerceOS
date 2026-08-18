@@ -188,7 +188,87 @@ const dictionaries = {
         operational: "Operasional",
       },
     },
-  },
+
+    products: {
+      title: "Produk",
+      description: "Kelola produk dan katalog bisnis Anda.",
+      noOrganization: "Organisasi aktif tidak ditemukan.",
+
+      management: {
+        title: "Manajemen Produk",
+        matchingProducts:
+          "produk sesuai filter pada organisasi aktif.",
+        inventoryHistory: "Riwayat Inventaris",
+        addProduct: "Tambah Produk",
+      },
+
+      filters: {
+        searchPlaceholder: "Cari nama atau SKU...",
+        allStatuses: "Semua status",
+        active: "Aktif",
+        inactive: "Tidak Aktif",
+        allCategories: "Semua kategori",
+        newest: "Terbaru",
+        oldest: "Terlama",
+        nameAsc: "Nama A-Z",
+        nameDesc: "Nama Z-A",
+        priceAsc: "Harga rendah-tinggi",
+        priceDesc: "Harga tinggi-rendah",
+        stockAsc: "Stok rendah-tinggi",
+        stockDesc: "Stok tinggi-rendah",
+        apply: "Terapkan",
+        reset: "Reset",
+      },
+
+      empty: {
+        title: "Produk tidak ditemukan",
+        description:
+          "Coba ubah pencarian atau filter yang digunakan.",
+      },
+
+      table: {
+        product: "Produk",
+        sku: "SKU",
+        category: "Kategori",
+        sellingPrice: "Harga Jual",
+        costPrice: "Harga Modal",
+        stock: "Stok",
+        status: "Status",
+        actions: "Aksi",
+        unknown: "Tidak diketahui",
+        uncategorized: "Tanpa kategori",
+      },
+
+      actions: {
+        edit: "Edit",
+        variants: "Varian",
+        suppliers: "Pemasok",
+        performance: "Performa",
+        aiDescription: "Deskripsi AI",
+        images: "Gambar",
+        adjustStock: "Sesuaikan Stok",
+      },
+
+      pagination: {
+        page: "Halaman",
+        of: "dari",
+        products: "produk",
+        previous: "Sebelumnya",
+        next: "Berikutnya",
+      },
+
+      delete: {
+        confirmPrefix: "Hapus produk ",
+        confirmSuffix:
+          "? Tindakan ini tidak dapat dibatalkan.",
+        inUse:
+          "Produk tidak dapat dihapus karena sudah digunakan pada pesanan.",
+        notFound:
+          "Produk tidak ditemukan atau tidak dapat dihapus.",
+        deleting: "Menghapus...",
+        delete: "Hapus",
+      },
+    },  },
 
   en: {
     common: {
@@ -377,7 +457,87 @@ const dictionaries = {
         operational: "Operational",
       },
     },
-  },
+
+    products: {
+      title: "Products",
+      description: "Manage your business products and catalog.",
+      noOrganization: "No active organization found.",
+
+      management: {
+        title: "Product Management",
+        matchingProducts:
+          "products match the active organization filters.",
+        inventoryHistory: "Inventory History",
+        addProduct: "Add Product",
+      },
+
+      filters: {
+        searchPlaceholder: "Search name or SKU...",
+        allStatuses: "All statuses",
+        active: "Active",
+        inactive: "Inactive",
+        allCategories: "All categories",
+        newest: "Newest",
+        oldest: "Oldest",
+        nameAsc: "Name A-Z",
+        nameDesc: "Name Z-A",
+        priceAsc: "Price low-high",
+        priceDesc: "Price high-low",
+        stockAsc: "Stock low-high",
+        stockDesc: "Stock high-low",
+        apply: "Apply",
+        reset: "Reset",
+      },
+
+      empty: {
+        title: "No products found",
+        description:
+          "Try changing your search or filters.",
+      },
+
+      table: {
+        product: "Product",
+        sku: "SKU",
+        category: "Category",
+        sellingPrice: "Selling Price",
+        costPrice: "Cost Price",
+        stock: "Stock",
+        status: "Status",
+        actions: "Actions",
+        unknown: "Unknown",
+        uncategorized: "Uncategorized",
+      },
+
+      actions: {
+        edit: "Edit",
+        variants: "Variants",
+        suppliers: "Suppliers",
+        performance: "Performance",
+        aiDescription: "AI Description",
+        images: "Images",
+        adjustStock: "Adjust Stock",
+      },
+
+      pagination: {
+        page: "Page",
+        of: "of",
+        products: "products",
+        previous: "Previous",
+        next: "Next",
+      },
+
+      delete: {
+        confirmPrefix: "Delete product ",
+        confirmSuffix:
+          "? This action cannot be undone.",
+        inUse:
+          "The product cannot be deleted because it is already used in an order.",
+        notFound:
+          "The product was not found or cannot be deleted.",
+        deleting: "Deleting...",
+        delete: "Delete",
+      },
+    },  },
 } as const;
 
 export type Dictionary =

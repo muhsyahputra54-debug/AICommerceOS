@@ -1,9 +1,11 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import DeleteProductButton from "@/components/products/DeleteProductButton";
 import { getCurrentOrganization } from "@/lib/supabase/current-organization";
 import { createClient } from "@/lib/supabase/server";
+import { getDictionary } from "@/lib/i18n/dictionaries";
+import { getLocale } from "@/lib/i18n/server";
 
 const PAGE_SIZE = 20;
 
@@ -69,15 +71,18 @@ function buildProductsUrl(filters: ProductFilters, page: number) {
 export default async function ProductsPage({
   searchParams,
 }: ProductsPageProps) {
+  const locale = await getLocale();
+  const productsCopy = getDictionary(locale).products;
+
   const currentOrganization = await getCurrentOrganization();
 
   if (!currentOrganization) {
     return (
       <DashboardLayout>
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Products</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{productsCopy.title}</h1>
           <p className="mt-2 text-muted-foreground">
-            Organization aktif tidak ditemukan.
+            {productsCopy.noOrganization}
           </p>
         </div>
       </DashboardLayout>
@@ -238,9 +243,9 @@ export default async function ProductsPage({
     <DashboardLayout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Products</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{productsCopy.title}</h1>
           <p className="mt-2 text-muted-foreground">
-            Kelola produk dan katalog bisnis Anda.
+            {productsCopy.description}
           </p>
         </div>
 
@@ -249,10 +254,10 @@ export default async function ProductsPage({
             <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
               <div>
                 <h2 className="text-lg font-semibold">
-                  Product Management
+                  {productsCopy.management.title}
                 </h2>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  {totalProducts} produk sesuai filter pada organization aktif.
+                  {totalProducts} {productsCopy.management.matchingProducts}
                 </p>
               </div>
 
@@ -261,14 +266,14 @@ export default async function ProductsPage({
                   href="/inventory"
                   className="inline-flex h-9 items-center justify-center rounded-lg border px-4 text-sm font-medium transition-colors hover:bg-muted"
                 >
-                  Inventory History
+                  {productsCopy.management.inventoryHistory}
                 </Link>
 
                 <Link
                   href="/products/new"
                   className="inline-flex h-9 items-center justify-center rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/80"
                 >
-                  Add Product
+                  {productsCopy.management.addProduct}
                 </Link>
               </div>
             </div>
@@ -282,7 +287,7 @@ export default async function ProductsPage({
                 type="search"
                 name="q"
                 defaultValue={q}
-                placeholder="Search name or SKU..."
+                placeholder={productsCopy.filters.searchPlaceholder}
                 className="h-9 rounded-lg border border-input bg-background px-3 text-sm outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
               />
 
@@ -291,9 +296,9 @@ export default async function ProductsPage({
                 defaultValue={status}
                 className="h-9 rounded-lg border border-input bg-background px-2.5 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
               >
-                <option value="">All statuses</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
+                <option value="">{productsCopy.filters.allStatuses}</option>
+                <option value="active">{productsCopy.filters.active}</option>
+                <option value="inactive">{productsCopy.filters.inactive}</option>
               </select>
 
               <select
@@ -301,7 +306,7 @@ export default async function ProductsPage({
                 defaultValue={category}
                 className="h-9 rounded-lg border border-input bg-background px-2.5 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
               >
-                <option value="">All categories</option>
+                <option value="">{productsCopy.filters.allCategories}</option>
                 {categories.map((item) => (
                   <option key={item.id} value={item.id}>
                     {item.name}
@@ -314,14 +319,14 @@ export default async function ProductsPage({
                 defaultValue={sort}
                 className="h-9 rounded-lg border border-input bg-background px-2.5 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
               >
-                <option value="newest">Newest</option>
-                <option value="oldest">Oldest</option>
-                <option value="name_asc">Name A-Z</option>
-                <option value="name_desc">Name Z-A</option>
-                <option value="price_asc">Price low-high</option>
-                <option value="price_desc">Price high-low</option>
-                <option value="stock_asc">Stock low-high</option>
-                <option value="stock_desc">Stock high-low</option>
+                <option value="newest">{productsCopy.filters.newest}</option>
+                <option value="oldest">{productsCopy.filters.oldest}</option>
+                <option value="name_asc">{productsCopy.filters.nameAsc}</option>
+                <option value="name_desc">{productsCopy.filters.nameDesc}</option>
+                <option value="price_asc">{productsCopy.filters.priceAsc}</option>
+                <option value="price_desc">{productsCopy.filters.priceDesc}</option>
+                <option value="stock_asc">{productsCopy.filters.stockAsc}</option>
+                <option value="stock_desc">{productsCopy.filters.stockDesc}</option>
               </select>
 
               <div className="flex gap-2">
@@ -329,14 +334,14 @@ export default async function ProductsPage({
                   type="submit"
                   className="inline-flex h-9 flex-1 items-center justify-center rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/80"
                 >
-                  Apply
+                  {productsCopy.filters.apply}
                 </button>
 
                 <Link
                   href="/products"
                   className="inline-flex h-9 items-center justify-center rounded-lg border px-3 text-sm font-medium transition-colors hover:bg-muted"
                 >
-                  Reset
+                  {productsCopy.filters.reset}
                 </Link>
               </div>
             </form>
@@ -344,9 +349,9 @@ export default async function ProductsPage({
 
           {products.length === 0 ? (
             <div className="px-6 py-12 text-center">
-              <p className="font-medium">Produk tidak ditemukan</p>
+              <p className="font-medium">{productsCopy.empty.title}</p>
               <p className="mt-1 text-sm text-muted-foreground">
-                Coba ubah search atau filter yang digunakan.
+                {productsCopy.empty.description}
               </p>
             </div>
           ) : (
@@ -355,18 +360,18 @@ export default async function ProductsPage({
                 <table className="w-full text-sm">
                   <thead className="border-b bg-muted/40 text-left">
                     <tr>
-                      <th className="px-6 py-3 font-medium">Product</th>
+                      <th className="px-6 py-3 font-medium">{productsCopy.table.product}</th>
                       <th className="px-6 py-3 font-medium">SKU</th>
-                      <th className="px-6 py-3 font-medium">Category</th>
+                      <th className="px-6 py-3 font-medium">{productsCopy.table.category}</th>
                       <th className="px-6 py-3 font-medium">
-                        Selling Price
+                        {productsCopy.table.sellingPrice}
                       </th>
                       <th className="px-6 py-3 font-medium">
-                        Cost Price
+                        {productsCopy.table.costPrice}
                       </th>
-                      <th className="px-6 py-3 font-medium">Stock</th>
-                      <th className="px-6 py-3 font-medium">Status</th>
-                      <th className="px-6 py-3 font-medium">Actions</th>
+                      <th className="px-6 py-3 font-medium">{productsCopy.table.stock}</th>
+                      <th className="px-6 py-3 font-medium">{productsCopy.table.status}</th>
+                      <th className="px-6 py-3 font-medium">{productsCopy.table.actions}</th>
                     </tr>
                   </thead>
 
@@ -392,8 +397,8 @@ export default async function ProductsPage({
                         <td className="whitespace-nowrap px-6 py-4">
                           {product.category_id
                             ? categoryNames.get(product.category_id) ??
-                              "Unknown"
-                            : "Uncategorized"}
+                              productsCopy.table.unknown
+                            : productsCopy.table.uncategorized}
                         </td>
 
                         <td className="whitespace-nowrap px-6 py-4">
@@ -410,7 +415,11 @@ export default async function ProductsPage({
 
                         <td className="px-6 py-4">
                           <span className="inline-flex rounded-full border px-2.5 py-1 text-xs font-medium capitalize">
-                            {product.status}
+                            {product.status === "active"
+                              ? productsCopy.filters.active
+                              : product.status === "inactive"
+                                ? productsCopy.filters.inactive
+                                : product.status}
                           </span>
                         </td>
 
@@ -420,47 +429,47 @@ export default async function ProductsPage({
                               href={`/products/${product.id}/edit`}
                               className="inline-flex h-7 items-center justify-center rounded-lg border px-2.5 text-[0.8rem] font-medium transition-colors hover:bg-muted"
                             >
-                              Edit
+                              {productsCopy.actions.edit}
                             </Link>
 
                             <Link
                               href={`/products/${product.id}/variants`}
                               className="inline-flex h-7 items-center justify-center rounded-lg border px-2.5 text-[0.8rem] font-medium transition-colors hover:bg-muted"
                             >
-                              Variants
+                              {productsCopy.actions.variants}
                             </Link>
 
                             <Link
                               href={`/products/${product.id}/suppliers`}
                               className="inline-flex h-7 items-center justify-center rounded-lg border px-2.5 text-[0.8rem] font-medium transition-colors hover:bg-muted"
                             >
-                              Suppliers
+                              {productsCopy.actions.suppliers}
                             </Link>
 
                             <Link
                               href={`/products/${product.id}/performance`}
                               className="inline-flex h-7 items-center justify-center rounded-lg border px-2.5 text-[0.8rem] font-medium transition-colors hover:bg-muted"
                             >
-                              Performance
+                              {productsCopy.actions.performance}
                             </Link>
                         <Link
                           href={`/products/${product.id}/description`}
                           className="inline-flex items-center text-sm font-medium hover:underline"
                         >
-                          AI Description
+                          {productsCopy.actions.aiDescription}
                         </Link>
 <Link
                               href={`/products/${product.id}/images`}
                               className="inline-flex h-7 items-center justify-center rounded-lg border px-2.5 text-[0.8rem] font-medium transition-colors hover:bg-muted"
                             >
-                              Images
+                              {productsCopy.actions.images}
                             </Link>
 
                             <Link
                               href={`/products/${product.id}/inventory/adjust`}
                               className="inline-flex h-7 items-center justify-center rounded-lg border px-2.5 text-[0.8rem] font-medium transition-colors hover:bg-muted"
                             >
-                              Adjust Stock
+                              {productsCopy.actions.adjustStock}
                             </Link>
 
                             <DeleteProductButton
@@ -480,7 +489,7 @@ export default async function ProductsPage({
 
               <div className="flex flex-col justify-between gap-3 border-t px-6 py-4 text-sm sm:flex-row sm:items-center">
                 <p className="text-muted-foreground">
-                  Page {page} of {totalPages} {"\u00B7"} {totalProducts} products
+                  {productsCopy.pagination.page} {page} {productsCopy.pagination.of} {totalPages} {" · "} {totalProducts} {productsCopy.pagination.products}
                 </p>
 
                 <div className="flex gap-2">
@@ -489,11 +498,11 @@ export default async function ProductsPage({
                       href={buildProductsUrl(filters, page - 1)}
                       className="inline-flex h-8 items-center justify-center rounded-lg border px-3 font-medium transition-colors hover:bg-muted"
                     >
-                      Previous
+                      {productsCopy.pagination.previous}
                     </Link>
                   ) : (
                     <span className="inline-flex h-8 cursor-not-allowed items-center justify-center rounded-lg border px-3 text-muted-foreground opacity-50">
-                      Previous
+                      {productsCopy.pagination.previous}
                     </span>
                   )}
 
@@ -502,11 +511,11 @@ export default async function ProductsPage({
                       href={buildProductsUrl(filters, page + 1)}
                       className="inline-flex h-8 items-center justify-center rounded-lg border px-3 font-medium transition-colors hover:bg-muted"
                     >
-                      Next
+                      {productsCopy.pagination.next}
                     </Link>
                   ) : (
                     <span className="inline-flex h-8 cursor-not-allowed items-center justify-center rounded-lg border px-3 text-muted-foreground opacity-50">
-                      Next
+                      {productsCopy.pagination.next}
                     </span>
                   )}
                 </div>
