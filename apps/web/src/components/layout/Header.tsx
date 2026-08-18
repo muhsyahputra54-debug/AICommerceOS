@@ -5,6 +5,7 @@ import { Bell, Menu, Search } from "lucide-react";
 
 import MobileSidebar from "./MobileSidebar";
 import UserProfile from "./UserProfile";
+import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -40,6 +41,8 @@ export default function Header() {
 
         {/* Right Side */}
         <div className="ml-3 flex items-center gap-2 sm:gap-3">
+          <LanguageSwitcher className="hidden sm:inline-flex" />
+
           <button
             type="button"
             title="Notifications"

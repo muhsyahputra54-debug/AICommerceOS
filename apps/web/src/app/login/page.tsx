@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
+import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
 
 export default function LoginPage() {
   const handleGitHubLogin = async () => {
@@ -18,6 +19,9 @@ export default function LoginPage() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-background px-6">
       <div className="w-full max-w-md rounded-2xl border border-border/70 bg-card p-8 shadow-lg shadow-primary/5">
+        <div className="mb-6 flex justify-end">
+          <LanguageSwitcher />
+        </div>
         <div className="text-center">
           <h1 className="text-3xl font-bold">
             LAKUVO

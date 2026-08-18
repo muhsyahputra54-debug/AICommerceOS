@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
 import { usePathname } from "next/navigation";
 import {
   BarChart3,
@@ -164,6 +165,10 @@ export default function MobileSidebar({
 
         {/* Footer */}
         <div className="border-t p-4">
+          <div className="mb-3 flex justify-end">
+            <LanguageSwitcher tone="sidebar" />
+          </div>
+
           <div className="rounded-xl bg-sidebar-accent/60 p-3">
             <p className="text-xs font-medium">
               LAKUVO
