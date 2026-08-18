@@ -386,7 +386,7 @@ export default async function ProductsPage({
                         </td>
 
                         <td className="whitespace-nowrap px-6 py-4">
-                          {product.sku || "Ã¢â‚¬â€"}
+                          {product.sku || "\u2014"}
                         </td>
 
                         <td className="whitespace-nowrap px-6 py-4">
@@ -480,7 +480,7 @@ export default async function ProductsPage({
 
               <div className="flex flex-col justify-between gap-3 border-t px-6 py-4 text-sm sm:flex-row sm:items-center">
                 <p className="text-muted-foreground">
-                  Page {page} of {totalPages} Ã‚Â· {totalProducts} products
+                  Page {page} of {totalPages} {"\u00B7"} {totalProducts} products
                 </p>
 
                 <div className="flex gap-2">
