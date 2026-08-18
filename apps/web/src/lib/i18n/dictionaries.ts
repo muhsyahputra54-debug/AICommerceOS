@@ -144,6 +144,50 @@ const dictionaries = {
         },
       },
     },
+
+    settings: {
+      title: "Pengaturan",
+      description:
+        "Kelola pengaturan dan konfigurasi LAKUVO.",
+
+      general: {
+        title: "Pengaturan Umum",
+        description:
+          "Pengaturan umum aplikasi dan informasi bisnis.",
+        businessName: "Nama Bisnis",
+        accountRole: "Peran Akun",
+        administrator: "Administrator",
+      },
+
+      ai: {
+        title: "Pengaturan AI",
+        description:
+          "Konfigurasi Asisten AI dan automasi.",
+        assistant: "Asisten AI",
+        automation: "Automasi",
+        readyToConfigure: "Siap dikonfigurasi",
+      },
+
+      account: {
+        title: "Pengaturan Akun",
+        description:
+          "Informasi akun administrator.",
+        role: "Peran",
+        status: "Status",
+        administrator: "Administrator",
+        active: "Aktif",
+      },
+
+      system: {
+        title: "Pengaturan Sistem",
+        description:
+          "Konfigurasi sistem dan infrastruktur aplikasi.",
+        environment: "Lingkungan",
+        development: "Pengembangan",
+        systemStatus: "Status Sistem",
+        operational: "Operasional",
+      },
+    },
   },
 
   en: {
@@ -287,6 +331,50 @@ const dictionaries = {
           yesterday: "Yesterday",
           twoDaysAgo: "2 days ago",
         },
+      },
+    },
+
+    settings: {
+      title: "Settings",
+      description:
+        "Manage LAKUVO settings and configuration.",
+
+      general: {
+        title: "General Settings",
+        description:
+          "General application settings and business information.",
+        businessName: "Business Name",
+        accountRole: "Account Role",
+        administrator: "Administrator",
+      },
+
+      ai: {
+        title: "AI Settings",
+        description:
+          "Configure the AI Assistant and automation.",
+        assistant: "AI Assistant",
+        automation: "Automation",
+        readyToConfigure: "Ready to configure",
+      },
+
+      account: {
+        title: "Account Settings",
+        description:
+          "Administrator account information.",
+        role: "Role",
+        status: "Status",
+        administrator: "Administrator",
+        active: "Active",
+      },
+
+      system: {
+        title: "System Settings",
+        description:
+          "Application system and infrastructure configuration.",
+        environment: "Environment",
+        development: "Development",
+        systemStatus: "System Status",
+        operational: "Operational",
       },
     },
   },
