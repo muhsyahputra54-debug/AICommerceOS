@@ -121,7 +121,7 @@ export default function Sidebar() {
 
           <div className="leading-tight">
             <p className="text-sm font-bold">
-              AI Commerce OS
+              LAKUVO
             </p>
 
             <p className="text-[11px] text-sidebar-foreground/60">
@@ -160,7 +160,7 @@ export default function Sidebar() {
       <div className="border-t p-4">
         <div className="rounded-xl bg-sidebar-accent/60 p-3">
           <p className="text-xs font-medium">
-            AI Commerce OS
+            LAKUVO
           </p>
 
           <p className="mt-1 text-[11px] text-sidebar-foreground/60">

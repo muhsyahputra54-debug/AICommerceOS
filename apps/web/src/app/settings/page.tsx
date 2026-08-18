@@ -11,7 +11,7 @@ export default function SettingsPage() {
           </h1>
 
           <p className="mt-2 text-muted-foreground">
-            Kelola pengaturan dan konfigurasi AI Commerce OS.
+            Kelola pengaturan dan konfigurasi LAKUVO.
           </p>
         </div>
 
@@ -34,7 +34,7 @@ export default function SettingsPage() {
                 </p>
 
                 <p className="mt-1 text-sm text-muted-foreground">
-                  AI Commerce OS
+                  LAKUVO
                 </p>
               </div>
 

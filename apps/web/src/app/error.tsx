@@ -26,7 +26,7 @@ export default function Error({
         className="w-full max-w-lg rounded-2xl border bg-card p-8 shadow-sm"
       >
         <p className="text-sm font-medium text-muted-foreground">
-          AI Commerce OS
+          LAKUVO
         </p>
 
         <h1 className="mt-3 text-2xl font-semibold tracking-tight">

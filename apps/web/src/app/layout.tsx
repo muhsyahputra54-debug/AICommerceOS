@@ -13,8 +13,32 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AI Commerce OS",
-  description: "AI Commerce Operating System",
+  metadataBase: new URL("https://lakuvo.com"),
+  applicationName: "LAKUVO",
+  title: {
+    default: "LAKUVO",
+    template: "%s | LAKUVO",
+  },
+  description:
+    "Platform operasi commerce berbasis AI untuk mengelola produk, pesanan, inventori, analitik, automasi, dan intelligence bisnis.",
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    type: "website",
+    locale: "id_ID",
+    url: "/",
+    siteName: "LAKUVO",
+    title: "LAKUVO",
+    description:
+      "Platform operasi commerce berbasis AI untuk mengelola produk, pesanan, inventori, analitik, automasi, dan intelligence bisnis.",
+  },
+  twitter: {
+    card: "summary",
+    title: "LAKUVO",
+    description:
+      "Platform operasi commerce berbasis AI untuk mengelola produk, pesanan, inventori, analitik, automasi, dan intelligence bisnis.",
+  },
 };
 
 export default function RootLayout({
@@ -24,7 +48,7 @@ export default function RootLayout({
 }) {
   return (
     <html
-      lang="en"
+      lang="id"
       className={`${geistSans.variable} ${geistMono.variable}`}
     >
       <body>{children}</body>

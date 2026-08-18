@@ -5,7 +5,7 @@ export default function NotFound() {
     <main className="flex min-h-screen items-center justify-center bg-background px-6 text-foreground">
       <section className="w-full max-w-lg rounded-2xl border bg-card p-8 shadow-sm">
         <p className="text-sm font-medium text-muted-foreground">
-          404 - AI Commerce OS
+          404 - LAKUVO
         </p>
 
         <h1 className="mt-3 text-2xl font-semibold tracking-tight">

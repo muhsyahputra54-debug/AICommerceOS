@@ -60,7 +60,7 @@ export default function GlobalError({
                 fontSize: "14px",
               }}
             >
-              AI Commerce OS
+              LAKUVO
             </p>
 
             <h1

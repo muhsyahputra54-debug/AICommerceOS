@@ -20,11 +20,11 @@ export default function LoginPage() {
       <div className="w-full max-w-md rounded-2xl border border-border/70 bg-card p-8 shadow-lg shadow-primary/5">
         <div className="text-center">
           <h1 className="text-3xl font-bold">
-            AI Commerce OS
+            LAKUVO
           </h1>
 
           <p className="mt-2 text-sm text-muted-foreground">
-            Masuk ke dashboard AI Commerce OS
+            Masuk ke dashboard LAKUVO
           </p>
         </div>
 
