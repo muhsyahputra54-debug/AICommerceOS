@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import {
   Card,
   CardContent,
@@ -17,21 +19,25 @@ const actions = [
     title: "Add Product",
     description: "Tambah produk baru",
     icon: PackagePlus,
+    href: "/products/new",
   },
   {
     title: "View Orders",
     description: "Kelola pesanan",
     icon: ShoppingCart,
+    href: "/orders",
   },
   {
     title: "Customers",
     description: "Lihat pelanggan",
     icon: Users,
+    href: "/customers",
   },
   {
     title: "Settings",
     description: "Pengaturan sistem",
     icon: Settings,
+    href: "/settings",
   },
 ];
 
@@ -52,9 +58,9 @@ export default function QuickActions() {
             const Icon = action.icon;
 
             return (
-              <button
+              <Link
                 key={action.title}
-                type="button"
+                href={action.href}
                 className="group flex items-center gap-4 rounded-xl border p-4 text-left transition-colors hover:bg-muted"
               >
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
@@ -70,7 +76,7 @@ export default function QuickActions() {
                     {action.description}
                   </p>
                 </div>
-              </button>
+              </Link>
             );
           })}
         </div>

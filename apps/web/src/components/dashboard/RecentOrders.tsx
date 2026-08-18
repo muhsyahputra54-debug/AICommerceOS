@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import {
   Card,
   CardContent,
@@ -74,9 +76,12 @@ export default function RecentOrders() {
             </p>
           </div>
 
-          <button className="text-sm font-medium text-primary hover:underline">
+          <Link
+            href="/orders"
+            className="text-sm font-medium text-primary hover:underline"
+          >
             Lihat semua
-          </button>
+          </Link>
         </div>
       </CardHeader>
 
