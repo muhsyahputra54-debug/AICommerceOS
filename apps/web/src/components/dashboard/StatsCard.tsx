@@ -27,7 +27,7 @@ export default function StatsCard({
               {value}
             </h2>
 
-            <p className="mt-2 text-sm text-emerald-600">
+            <p className="mt-2 text-sm text-emerald-700 dark:text-emerald-400">
               {description}
             </p>
           </div>

@@ -109,7 +109,7 @@ export default function SettingsPage() {
                   Status
                 </p>
 
-                <p className="mt-1 text-sm text-green-600">
+                <p className="mt-1 text-sm text-emerald-700 dark:text-emerald-400">
                   Active
                 </p>
               </div>
@@ -142,7 +142,7 @@ export default function SettingsPage() {
                   System Status
                 </p>
 
-                <p className="mt-1 text-sm text-green-600">
+                <p className="mt-1 text-sm text-emerald-700 dark:text-emerald-400">
                   Operational
                 </p>
               </div>
