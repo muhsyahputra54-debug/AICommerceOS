@@ -15,69 +15,88 @@ import {
   BarChart3,
   Settings,
   Sparkles,
+  type LucideIcon,
 } from "lucide-react";
+
+import { useLanguage } from "@/components/i18n/LanguageProvider";
+import {
+  getDictionary,
+  type Dictionary,
+} from "@/lib/i18n/dictionaries";
+
+type NavigationItemKey =
+  keyof Dictionary["navigation"]["items"];
+
+type NavigationItem = {
+  key: NavigationItemKey;
+  icon: LucideIcon;
+  href: string;
+};
 
 const mainMenus = [
   {
-    title: "Dashboard",
+    key: "dashboard",
     icon: LayoutDashboard,
     href: "/",
   },
   {
-    title: "AI Assistant",
+    key: "aiAssistant",
     icon: Bot,
     href: "/ai",
   },
   {
-    title: "Products",
+    key: "products",
     icon: Package,
     href: "/products",
   },
   {
-    title: "Marketplaces",
+    key: "marketplaces",
     icon: Store,
     href: "/marketplaces",
   },
   {
-    title: "Product Research",
+    key: "productResearch",
     icon: Search,
     href: "/research",
   },
   {
-    title: "Orders",
+    key: "orders",
     icon: ShoppingCart,
     href: "/orders",
   },
   {
-    title: "Customers",
+    key: "customers",
     icon: Users,
     href: "/customers",
   },
   {
-    title: "Suppliers",
+    key: "suppliers",
     icon: Truck,
     href: "/suppliers",
   },
   {
-    title: "Analytics",
+    key: "analytics",
     icon: BarChart3,
     href: "/analytics",
   },
-];
+] satisfies NavigationItem[];
 
 const systemMenus = [
   {
-    title: "Settings",
+    key: "settings",
     icon: Settings,
     href: "/settings",
   },
-];
+] satisfies NavigationItem[];
 
 export default function Sidebar() {
   const pathname = usePathname();
 
+  const { locale } = useLanguage();
+  const dictionary = getDictionary(locale);
+
   const renderMenu = (
-    item: (typeof mainMenus)[number],
+    item: NavigationItem
   ) => {
     const Icon = item.icon;
 
@@ -88,7 +107,7 @@ export default function Sidebar() {
 
     return (
       <Link
-        key={item.title}
+        key={item.key}
         href={item.href}
         className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
           isActive
@@ -102,14 +121,15 @@ export default function Sidebar() {
           }`}
         />
 
-        <span>{item.title}</span>
+        <span>
+          {dictionary.navigation.items[item.key]}
+        </span>
       </Link>
     );
   };
 
   return (
     <aside className="hidden h-screen w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground md:flex">
-      {/* Brand */}
       <div className="flex h-16 items-center border-b px-5">
         <Link
           href="/"
@@ -125,18 +145,16 @@ export default function Sidebar() {
             </p>
 
             <p className="text-[11px] text-sidebar-foreground/60">
-              Business Intelligence
+              {dictionary.brand.tagline}
             </p>
           </div>
         </Link>
       </div>
 
-      {/* Navigation */}
       <div className="flex-1 overflow-y-auto px-3 py-6">
-        {/* Main */}
         <div>
           <p className="mb-3 px-3 text-[11px] font-semibold uppercase tracking-wider text-sidebar-foreground/60">
-            Main
+            {dictionary.navigation.sections.main}
           </p>
 
           <nav className="space-y-1">
@@ -144,10 +162,9 @@ export default function Sidebar() {
           </nav>
         </div>
 
-        {/* System */}
         <div className="mt-8">
           <p className="mb-3 px-3 text-[11px] font-semibold uppercase tracking-wider text-sidebar-foreground/60">
-            System
+            {dictionary.navigation.sections.system}
           </p>
 
           <nav className="space-y-1">
@@ -156,7 +173,6 @@ export default function Sidebar() {
         </div>
       </div>
 
-      {/* Footer */}
       <div className="border-t p-4">
         <div className="rounded-xl bg-sidebar-accent/60 p-3">
           <p className="text-xs font-medium">

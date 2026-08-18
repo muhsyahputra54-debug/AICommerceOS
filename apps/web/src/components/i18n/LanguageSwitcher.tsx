@@ -2,6 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import type { Locale } from "@/lib/i18n/config";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 
 import { useLanguage } from "./LanguageProvider";
 
@@ -13,17 +14,14 @@ type LanguageSwitcherProps = {
 const options: Array<{
   locale: Locale;
   label: string;
-  title: string;
 }> = [
   {
     locale: "id",
     label: "ID",
-    title: "Bahasa Indonesia",
   },
   {
     locale: "en",
     label: "EN",
-    title: "English",
   },
 ];
 
@@ -32,13 +30,14 @@ export function LanguageSwitcher({
   className,
 }: LanguageSwitcherProps) {
   const { locale, setLocale } = useLanguage();
+  const dictionary = getDictionary(locale);
 
   const sidebar = tone === "sidebar";
 
   return (
     <div
       role="group"
-      aria-label="Language selector"
+      aria-label={dictionary.languageSwitcher.ariaLabel}
       className={cn(
         "inline-flex items-center rounded-lg border p-0.5",
         sidebar
@@ -49,6 +48,11 @@ export function LanguageSwitcher({
     >
       {options.map((option, index) => {
         const active = locale === option.locale;
+
+        const title =
+          option.locale === "id"
+            ? dictionary.common.indonesian
+            : dictionary.common.english;
 
         return (
           <div
@@ -71,7 +75,7 @@ export function LanguageSwitcher({
 
             <button
               type="button"
-              title={option.title}
+              title={title}
               aria-pressed={active}
               onClick={() => setLocale(option.locale)}
               className={cn(

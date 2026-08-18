@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
 import { usePathname } from "next/navigation";
+
 import {
   BarChart3,
   Bot,
@@ -16,65 +16,82 @@ import {
   Users,
   Truck,
   X,
+  type LucideIcon,
 } from "lucide-react";
+
+import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
+import { useLanguage } from "@/components/i18n/LanguageProvider";
+import {
+  getDictionary,
+  type Dictionary,
+} from "@/lib/i18n/dictionaries";
 
 type MobileSidebarProps = {
   open: boolean;
   onClose: () => void;
 };
 
+type NavigationItemKey =
+  keyof Dictionary["navigation"]["items"];
+
+type NavigationItem = {
+  key: NavigationItemKey;
+  icon: LucideIcon;
+  href: string;
+};
+
 const menus = [
   {
-    title: "Dashboard",
+    key: "dashboard",
     icon: LayoutDashboard,
     href: "/",
   },
   {
-    title: "AI Assistant",
+    key: "aiAssistant",
     icon: Bot,
     href: "/ai",
   },
   {
-    title: "Products",
+    key: "products",
     icon: Package,
     href: "/products",
   },
   {
-    title: "Marketplaces",
+    key: "marketplaces",
     icon: Store,
     href: "/marketplaces",
   },
   {
-    title: "Product Research",
+    key: "productResearch",
     icon: Search,
     href: "/research",
   },
   {
-    title: "Orders",
+    key: "orders",
     icon: ShoppingCart,
     href: "/orders",
   },
   {
-    title: "Customers",
+    key: "customers",
     icon: Users,
     href: "/customers",
   },
   {
-    title: "Suppliers",
+    key: "suppliers",
     icon: Truck,
     href: "/suppliers",
   },
   {
-    title: "Analytics",
+    key: "analytics",
     icon: BarChart3,
     href: "/analytics",
   },
   {
-    title: "Settings",
+    key: "settings",
     icon: Settings,
     href: "/settings",
   },
-];
+] satisfies NavigationItem[];
 
 export default function MobileSidebar({
   open,
@@ -82,23 +99,23 @@ export default function MobileSidebar({
 }: MobileSidebarProps) {
   const pathname = usePathname();
 
+  const { locale } = useLanguage();
+  const dictionary = getDictionary(locale);
+
   if (!open) {
     return null;
   }
 
   return (
     <div className="fixed inset-0 z-50 md:hidden">
-      {/* Overlay */}
       <button
         type="button"
-        aria-label="Close navigation"
+        aria-label={dictionary.navigation.closeNavigation}
         onClick={onClose}
         className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"
       />
 
-      {/* Sidebar */}
       <aside className="relative flex h-full w-72 max-w-[85vw] flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-xl">
-        {/* Header */}
         <div className="flex h-16 items-center justify-between border-b px-5">
           <Link
             href="/"
@@ -115,7 +132,7 @@ export default function MobileSidebar({
               </p>
 
               <p className="text-[11px] text-sidebar-foreground/60">
-                Business Intelligence
+                {dictionary.brand.tagline}
               </p>
             </div>
           </Link>
@@ -123,17 +140,16 @@ export default function MobileSidebar({
           <button
             type="button"
             onClick={onClose}
-            aria-label="Close sidebar"
+            aria-label={dictionary.navigation.closeSidebar}
             className="flex h-9 w-9 items-center justify-center rounded-lg text-sidebar-foreground/60 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        {/* Navigation */}
         <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-6">
           <p className="mb-3 px-3 text-[11px] font-semibold uppercase tracking-wider text-sidebar-foreground/60">
-            Navigation
+            {dictionary.navigation.sections.navigation}
           </p>
 
           {menus.map((item) => {
@@ -146,7 +162,7 @@ export default function MobileSidebar({
 
             return (
               <Link
-                key={item.title}
+                key={item.key}
                 href={item.href}
                 onClick={onClose}
                 className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-colors ${
@@ -157,13 +173,14 @@ export default function MobileSidebar({
               >
                 <Icon className="h-5 w-5 shrink-0" />
 
-                <span>{item.title}</span>
+                <span>
+                  {dictionary.navigation.items[item.key]}
+                </span>
               </Link>
             );
           })}
         </nav>
 
-        {/* Footer */}
         <div className="border-t p-4">
           <div className="mb-3 flex justify-end">
             <LanguageSwitcher tone="sidebar" />

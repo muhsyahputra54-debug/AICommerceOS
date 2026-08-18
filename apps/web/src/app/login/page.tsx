@@ -3,8 +3,13 @@
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
+import { useLanguage } from "@/components/i18n/LanguageProvider";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 
 export default function LoginPage() {
+  const { locale } = useLanguage();
+  const dictionary = getDictionary(locale);
+
   const handleGitHubLogin = async () => {
     const supabase = createClient();
 
@@ -22,13 +27,14 @@ export default function LoginPage() {
         <div className="mb-6 flex justify-end">
           <LanguageSwitcher />
         </div>
+
         <div className="text-center">
           <h1 className="text-3xl font-bold">
             LAKUVO
           </h1>
 
           <p className="mt-2 text-sm text-muted-foreground">
-            Masuk ke dashboard LAKUVO
+            {dictionary.login.subtitle}
           </p>
         </div>
 
@@ -38,7 +44,7 @@ export default function LoginPage() {
             className="w-full"
             onClick={handleGitHubLogin}
           >
-            Continue with GitHub
+            {dictionary.login.continueWithGitHub}
           </Button>
         </div>
       </div>
