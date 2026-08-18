@@ -15,6 +15,9 @@ import {
 
 import { getCurrentOrganization } from "@/lib/supabase/current-organization";
 import { createClient } from "@/lib/supabase/server";
+import { getDictionary } from "@/lib/i18n/dictionaries";
+import { getLocale } from "@/lib/i18n/server";
+import type { Locale } from "@/lib/i18n/config";
 
 type MonetaryValue = number | string;
 
@@ -42,7 +45,12 @@ const emptySummary: SalesSummary = {
 
 function toNumber(value: MonetaryValue) {
   const parsed = Number(value);
+
   return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function getIntlLocale(locale: Locale) {
+  return locale === "id" ? "id-ID" : "en-US";
 }
 
 function formatCurrency(value: MonetaryValue) {
@@ -53,18 +61,34 @@ function formatCurrency(value: MonetaryValue) {
   }).format(toNumber(value));
 }
 
-function formatNumber(value: MonetaryValue) {
-  return new Intl.NumberFormat("id-ID").format(toNumber(value));
+function formatNumber(
+  value: MonetaryValue,
+  locale: Locale
+) {
+  return new Intl.NumberFormat(
+    getIntlLocale(locale)
+  ).format(toNumber(value));
 }
 
-function formatPercent(value: MonetaryValue) {
-  return `${toNumber(value).toLocaleString("id-ID", {
-    maximumFractionDigits: 2,
-  })}%`;
+function formatPercent(
+  value: MonetaryValue,
+  locale: Locale
+) {
+  return `${toNumber(value).toLocaleString(
+    getIntlLocale(locale),
+    {
+      maximumFractionDigits: 2,
+    }
+  )}%`;
 }
 
 export default async function Home() {
-  const currentOrganization = await getCurrentOrganization();
+  const locale = await getLocale();
+  const dictionary = getDictionary(locale);
+  const dashboard = dictionary.dashboard;
+
+  const currentOrganization =
+    await getCurrentOrganization();
 
   if (!currentOrganization) {
     return (
@@ -72,11 +96,11 @@ export default async function Home() {
         <div className="mx-auto w-full max-w-[1600px] space-y-6 px-1 sm:px-2">
           <div>
             <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-              Dashboard
+              {dashboard.title}
             </h1>
 
             <p className="mt-2 text-muted-foreground">
-              Organization aktif tidak ditemukan.
+              {dashboard.noOrganization}
             </p>
           </div>
         </div>
@@ -92,11 +116,13 @@ export default async function Home() {
     customersResult,
   ] = await Promise.all([
     supabase.rpc("get_sales_performance_summary", {
-      p_organization_id: currentOrganization.organizationId,
+      p_organization_id:
+        currentOrganization.organizationId,
     }),
 
     supabase.rpc("get_sales_trend", {
-      p_organization_id: currentOrganization.organizationId,
+      p_organization_id:
+        currentOrganization.organizationId,
       p_days: 7,
     }),
 
@@ -139,47 +165,64 @@ export default async function Home() {
       <div className="mx-auto w-full max-w-[1600px] space-y-6 px-1 sm:space-y-8 sm:px-2">
         <div className="space-y-1">
           <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-            Dashboard
+            {dashboard.title}
           </h1>
 
           <p className="text-sm text-muted-foreground sm:text-base">
-            Ringkasan commerce organization aktif.
+            {dashboard.subtitle}
           </p>
         </div>
 
         <section>
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <StatsCard
-              title="Revenue"
+              title={dashboard.stats.revenue.title}
               value={formatCurrency(summary.revenue)}
-              description="Completed sales"
+              description={
+                dashboard.stats.revenue.description
+              }
               icon={
                 <DollarSign className="h-6 w-6 text-primary" />
               }
             />
 
             <StatsCard
-              title="Completed Orders"
-              value={formatNumber(summary.completed_orders)}
-              description="Order terminal completed"
+              title={
+                dashboard.stats.completedOrders.title
+              }
+              value={formatNumber(
+                summary.completed_orders,
+                locale
+              )}
+              description={
+                dashboard.stats.completedOrders
+                  .description
+              }
               icon={
                 <ShoppingCart className="h-6 w-6 text-primary" />
               }
             />
 
             <StatsCard
-              title="Customers"
-              value={formatNumber(customerCount)}
-              description="Organization aktif"
+              title={dashboard.stats.customers.title}
+              value={formatNumber(
+                customerCount,
+                locale
+              )}
+              description={
+                dashboard.stats.customers.description
+              }
               icon={
                 <Users className="h-6 w-6 text-primary" />
               }
             />
 
             <StatsCard
-              title="Gross Profit"
+              title={dashboard.stats.grossProfit.title}
               value={formatCurrency(summary.profit)}
-              description="Historical revenue - cost"
+              description={
+                dashboard.stats.grossProfit.description
+              }
               icon={
                 <TrendingUp className="h-6 w-6 text-primary" />
               }
@@ -191,58 +234,85 @@ export default async function Home() {
           <div className="min-w-0 xl:col-span-2">
             <RevenueChart
               data={trend}
-              title="Revenue & Profit"
-              description="Completed sales 7 hari terakhir"
+              locale={locale}
+              title={dashboard.revenueChart.title}
+              description={
+                dashboard.revenueChart.description
+              }
+              emptyTitle={
+                dashboard.revenueChart.emptyTitle
+              }
+              emptyDescription={
+                dashboard.revenueChart
+                  .emptyDescription
+              }
+              revenueLabel={
+                dashboard.revenueChart.revenueLabel
+              }
+              profitLabel={
+                dashboard.revenueChart.profitLabel
+              }
             />
           </div>
 
           <div className="rounded-2xl border bg-card p-6 shadow-sm">
             <h2 className="text-lg font-semibold">
-              Performance Overview
+              {dashboard.performance.title}
             </h2>
 
             <p className="mt-1 text-sm text-muted-foreground">
-              Metrics nyata dari completed orders.
+              {dashboard.performance.description}
             </p>
 
             <div className="mt-6 space-y-5">
               <div className="flex items-center justify-between gap-4">
                 <span className="text-sm text-muted-foreground">
-                  Gross Margin
+                  {dashboard.performance.grossMargin}
                 </span>
 
                 <span className="font-semibold">
-                  {formatPercent(summary.margin)}
+                  {formatPercent(
+                    summary.margin,
+                    locale
+                  )}
                 </span>
               </div>
 
               <div className="flex items-center justify-between gap-4">
                 <span className="text-sm text-muted-foreground">
-                  Average Order
+                  {dashboard.performance.averageOrder}
                 </span>
 
                 <span className="font-semibold">
-                  {formatCurrency(summary.average_order_value)}
+                  {formatCurrency(
+                    summary.average_order_value
+                  )}
                 </span>
               </div>
 
               <div className="flex items-center justify-between gap-4">
                 <span className="text-sm text-muted-foreground">
-                  Units Sold
+                  {dashboard.performance.unitsSold}
                 </span>
 
                 <span className="font-semibold">
-                  {formatNumber(summary.units_sold)}
+                  {formatNumber(
+                    summary.units_sold,
+                    locale
+                  )}
                 </span>
               </div>
 
               <div className="flex items-center justify-between gap-4">
                 <span className="text-sm text-muted-foreground">
-                  Products Sold
+                  {dashboard.performance.productsSold}
                 </span>
 
                 <span className="font-semibold">
-                  {formatNumber(summary.products_sold)}
+                  {formatNumber(
+                    summary.products_sold,
+                    locale
+                  )}
                 </span>
               </div>
             </div>
@@ -250,11 +320,15 @@ export default async function Home() {
         </section>
 
         <section className="min-w-0">
-          <RecentOrders />
+          <RecentOrders
+            copy={dashboard.recentOrders}
+          />
         </section>
 
         <section className="min-w-0">
-          <QuickActions />
+          <QuickActions
+            copy={dashboard.quickActions}
+          />
         </section>
       </div>
     </DashboardLayout>

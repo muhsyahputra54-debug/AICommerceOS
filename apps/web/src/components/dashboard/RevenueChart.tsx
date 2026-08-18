@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import {
   CartesianGrid,
@@ -17,6 +17,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
+import type { Locale } from "@/lib/i18n/config";
+
 export type SalesTrendPoint = {
   sale_date: string;
   units_sold: number | string;
@@ -28,13 +30,23 @@ export type SalesTrendPoint = {
 
 type RevenueChartProps = {
   data: SalesTrendPoint[];
+  locale?: Locale;
   title?: string;
   description?: string;
+  emptyTitle?: string;
+  emptyDescription?: string;
+  revenueLabel?: string;
+  profitLabel?: string;
 };
 
 function toNumber(value: number | string) {
   const parsed = Number(value);
+
   return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function getIntlLocale(locale: Locale) {
+  return locale === "id" ? "id-ID" : "en-US";
 }
 
 function formatCurrency(value: number | string) {
@@ -45,26 +57,41 @@ function formatCurrency(value: number | string) {
   }).format(toNumber(value));
 }
 
-function formatDay(value: string) {
-  return new Intl.DateTimeFormat("id-ID", {
-    day: "2-digit",
-    month: "short",
-  }).format(new Date(`${value}T00:00:00`));
+function formatDay(
+  value: string,
+  locale: Locale
+) {
+  return new Intl.DateTimeFormat(
+    getIntlLocale(locale),
+    {
+      day: "2-digit",
+      month: "short",
+    }
+  ).format(new Date(`${value}T00:00:00`));
 }
 
 export default function RevenueChart({
   data,
+  locale = "id",
   title = "Revenue & Profit",
   description = "Completed sales",
+  emptyTitle = "Belum ada completed sales",
+  emptyDescription = "Trend akan muncul setelah order berhasil mencapai status completed.",
+  revenueLabel = "Revenue",
+  profitLabel = "Profit",
 }: RevenueChartProps) {
+  const intlLocale = getIntlLocale(locale);
+
   const chartData = data.map((point) => ({
-    day: formatDay(point.sale_date),
+    day: formatDay(point.sale_date, locale),
     revenue: toNumber(point.revenue),
     profit: toNumber(point.profit),
   }));
 
   const hasSales = chartData.some(
-    (point) => point.revenue !== 0 || point.profit !== 0,
+    (point) =>
+      point.revenue !== 0 ||
+      point.profit !== 0,
   );
 
   return (
@@ -82,18 +109,20 @@ export default function RevenueChart({
           <div className="flex h-[320px] items-center justify-center rounded-xl border border-dashed">
             <div className="max-w-md px-6 text-center">
               <p className="font-medium">
-                Belum ada completed sales
+                {emptyTitle}
               </p>
 
               <p className="mt-2 text-sm text-muted-foreground">
-                Trend akan muncul setelah order berhasil mencapai status
-                completed.
+                {emptyDescription}
               </p>
             </div>
           </div>
         ) : (
           <div className="h-[320px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer
+              width="100%"
+              height="100%"
+            >
               <LineChart
                 data={chartData}
                 margin={{
@@ -115,10 +144,13 @@ export default function RevenueChart({
                   tickLine={false}
                   axisLine={false}
                   tickFormatter={(value) =>
-                    new Intl.NumberFormat("id-ID", {
-                      notation: "compact",
-                      maximumFractionDigits: 1,
-                    }).format(Number(value))
+                    new Intl.NumberFormat(
+                      intlLocale,
+                      {
+                        notation: "compact",
+                        maximumFractionDigits: 1,
+                      }
+                    ).format(Number(value))
                   }
                 />
 
@@ -132,7 +164,7 @@ export default function RevenueChart({
                 <Line
                   type="monotone"
                   dataKey="revenue"
-                  name="Revenue"
+                  name={revenueLabel}
                   stroke="currentColor"
                   strokeWidth={3}
                   dot={{ r: 3 }}
@@ -142,7 +174,7 @@ export default function RevenueChart({
                 <Line
                   type="monotone"
                   dataKey="profit"
-                  name="Profit"
+                  name={profitLabel}
                   stroke="currentColor"
                   strokeWidth={2}
                   strokeDasharray="6 4"

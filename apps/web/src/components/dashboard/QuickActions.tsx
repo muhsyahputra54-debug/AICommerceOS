@@ -12,43 +12,58 @@ import {
   ShoppingCart,
   Users,
   Settings,
+  type LucideIcon,
 } from "lucide-react";
+
+import type { Dictionary } from "@/lib/i18n/dictionaries";
+
+type QuickActionCopy =
+  Dictionary["dashboard"]["quickActions"];
+
+type QuickActionKey =
+  keyof QuickActionCopy["items"];
+
+type QuickAction = {
+  key: QuickActionKey;
+  icon: LucideIcon;
+  href: string;
+};
 
 const actions = [
   {
-    title: "Add Product",
-    description: "Tambah produk baru",
+    key: "addProduct",
     icon: PackagePlus,
     href: "/products/new",
   },
   {
-    title: "View Orders",
-    description: "Kelola pesanan",
+    key: "viewOrders",
     icon: ShoppingCart,
     href: "/orders",
   },
   {
-    title: "Customers",
-    description: "Lihat pelanggan",
+    key: "customers",
     icon: Users,
     href: "/customers",
   },
   {
-    title: "Settings",
-    description: "Pengaturan sistem",
+    key: "settings",
     icon: Settings,
     href: "/settings",
   },
-];
+] satisfies QuickAction[];
 
-export default function QuickActions() {
+export default function QuickActions({
+  copy,
+}: {
+  copy: QuickActionCopy;
+}) {
   return (
     <Card className="rounded-2xl shadow-sm">
       <CardHeader>
-        <CardTitle>Quick Actions</CardTitle>
+        <CardTitle>{copy.title}</CardTitle>
 
         <p className="text-sm text-muted-foreground">
-          Akses cepat ke fitur utama.
+          {copy.description}
         </p>
       </CardHeader>
 
@@ -56,10 +71,12 @@ export default function QuickActions() {
         <div className="grid gap-3 sm:grid-cols-2">
           {actions.map((action) => {
             const Icon = action.icon;
+            const itemCopy =
+              copy.items[action.key];
 
             return (
               <Link
-                key={action.title}
+                key={action.key}
                 href={action.href}
                 className="group flex items-center gap-4 rounded-xl border p-4 text-left transition-colors hover:bg-muted"
               >
@@ -69,11 +86,11 @@ export default function QuickActions() {
 
                 <div>
                   <p className="font-medium">
-                    {action.title}
+                    {itemCopy.title}
                   </p>
 
                   <p className="text-sm text-muted-foreground">
-                    {action.description}
+                    {itemCopy.description}
                   </p>
                 </div>
               </Link>

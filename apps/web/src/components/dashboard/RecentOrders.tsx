@@ -8,54 +8,74 @@ import {
 } from "@/components/ui/card";
 
 import { Badge } from "@/components/ui/badge";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
+
+type RecentOrdersCopy =
+  Dictionary["dashboard"]["recentOrders"];
+
+type OrderStatus =
+  keyof RecentOrdersCopy["statuses"];
+
+type OrderDate =
+  keyof RecentOrdersCopy["dates"];
+
+type RecentOrder = {
+  customer: string;
+  product: string;
+  amount: string;
+  status: OrderStatus;
+  date: OrderDate;
+};
 
 const orders = [
   {
     customer: "Andi Pratama",
     product: "Premium Store",
     amount: "$120.00",
-    status: "Paid",
-    date: "Hari ini",
+    status: "paid",
+    date: "today",
   },
   {
     customer: "Budi Santoso",
     product: "Business Package",
     amount: "$85.00",
-    status: "Pending",
-    date: "Hari ini",
+    status: "pending",
+    date: "today",
   },
   {
     customer: "Sinta Dewi",
     product: "AI Commerce Pro",
     amount: "$240.00",
-    status: "Paid",
-    date: "Kemarin",
+    status: "paid",
+    date: "yesterday",
   },
   {
     customer: "Rizky Maulana",
     product: "Starter Package",
     amount: "$49.00",
-    status: "Paid",
-    date: "Kemarin",
+    status: "paid",
+    date: "yesterday",
   },
   {
     customer: "Dina Putri",
     product: "Enterprise Package",
     amount: "$450.00",
-    status: "Processing",
-    date: "2 hari lalu",
+    status: "processing",
+    date: "twoDaysAgo",
   },
-];
+] satisfies RecentOrder[];
 
-function getStatusVariant(status: string) {
+function getStatusVariant(
+  status: OrderStatus
+) {
   switch (status) {
-    case "Paid":
+    case "paid":
       return "default";
 
-    case "Pending":
+    case "pending":
       return "secondary";
 
-    case "Processing":
+    case "processing":
       return "outline";
 
     default:
@@ -63,16 +83,20 @@ function getStatusVariant(status: string) {
   }
 }
 
-export default function RecentOrders() {
+export default function RecentOrders({
+  copy,
+}: {
+  copy: RecentOrdersCopy;
+}) {
   return (
     <Card className="rounded-2xl shadow-sm">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle>Recent Orders</CardTitle>
+            <CardTitle>{copy.title}</CardTitle>
 
             <p className="mt-1 text-sm text-muted-foreground">
-              Transaksi terbaru
+              {copy.description}
             </p>
           </div>
 
@@ -80,7 +104,7 @@ export default function RecentOrders() {
             href="/orders"
             className="text-sm font-medium text-primary hover:underline"
           >
-            Lihat semua
+            {copy.viewAll}
           </Link>
         </div>
       </CardHeader>
@@ -91,23 +115,23 @@ export default function RecentOrders() {
             <thead>
               <tr className="border-b text-left text-muted-foreground">
                 <th className="pb-3 font-medium">
-                  Customer
+                  {copy.columns.customer}
                 </th>
 
                 <th className="pb-3 font-medium">
-                  Product
+                  {copy.columns.product}
                 </th>
 
                 <th className="pb-3 font-medium">
-                  Amount
+                  {copy.columns.amount}
                 </th>
 
                 <th className="pb-3 font-medium">
-                  Status
+                  {copy.columns.status}
                 </th>
 
                 <th className="pb-3 font-medium">
-                  Date
+                  {copy.columns.date}
                 </th>
               </tr>
             </thead>
@@ -131,13 +155,17 @@ export default function RecentOrders() {
                   </td>
 
                   <td className="py-4">
-                    <Badge variant={getStatusVariant(order.status)}>
-                      {order.status}
+                    <Badge
+                      variant={getStatusVariant(
+                        order.status
+                      )}
+                    >
+                      {copy.statuses[order.status]}
                     </Badge>
                   </td>
 
                   <td className="py-4 text-muted-foreground">
-                    {order.date}
+                    {copy.dates[order.date]}
                   </td>
                 </tr>
               ))}
