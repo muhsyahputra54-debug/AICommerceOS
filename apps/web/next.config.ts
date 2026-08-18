@@ -1,3 +1,4 @@
+import { withSentryConfig } from "@sentry/nextjs";
 import type { NextConfig } from "next";
 
 const baseSecurityHeaders = [
@@ -45,4 +46,12 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withSentryConfig(nextConfig, {
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+
+  sourcemaps: {
+    deleteSourcemapsAfterUpload: true,
+  },
+
+  widenClientFileUpload: true,
+});
