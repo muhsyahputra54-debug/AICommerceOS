@@ -3,6 +3,8 @@ import type { ReactNode } from "react";
 
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { getCurrentOrganization } from "@/lib/supabase/current-organization";
+import { getDictionary } from "@/lib/i18n/dictionaries";
+import { getLocale } from "@/lib/i18n/server";
 import { createClient } from "@/lib/supabase/server";
 
 type InventoryMetrics = {
@@ -73,8 +75,8 @@ function MetricCard({
   );
 }
 
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat("id-ID", {
+function formatDate(value: string, locale: string) {
+  return new Intl.DateTimeFormat(locale, {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value));
@@ -84,10 +86,10 @@ function formatDelta(value: number) {
   return value > 0 ? `+${value}` : String(value);
 }
 
-function formatCurrency(value: number | string) {
+function formatCurrency(value: number | string, locale: string) {
   const numericValue = Number(value);
 
-  return new Intl.NumberFormat("id-ID", {
+  return new Intl.NumberFormat(locale, {
     style: "currency",
     currency: "IDR",
     maximumFractionDigits: 0,
@@ -95,18 +97,30 @@ function formatCurrency(value: number | string) {
 }
 
 export default async function InventoryPage() {
-  const currentOrganization = await getCurrentOrganization();
+  const locale = await getLocale();
+  const copy = getDictionary(locale).inventory;
+  const localeTag =
+    locale === "id" ? "id-ID" : "en-US";
+
+  const money = (value: number | string) =>
+    formatCurrency(value, localeTag);
+
+  const date = (value: string) =>
+    formatDate(value, localeTag);
+
+  const currentOrganization =
+    await getCurrentOrganization();
 
   if (!currentOrganization) {
     return (
       <DashboardLayout>
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
-            Inventory Intelligence
+            {copy.title}
           </h1>
 
           <p className="mt-2 text-muted-foreground">
-            Organization aktif tidak ditemukan.
+            {copy.noOrganization}
           </p>
         </div>
       </DashboardLayout>
@@ -152,23 +166,23 @@ export default async function InventoryPage() {
   ]);
 
   if (intelligenceResult.error) {
-    throw new Error(intelligenceResult.error.message);
+    throw new Error(copy.errors.loadFailed);
   }
 
   if (alertsResult.error) {
-    throw new Error(alertsResult.error.message);
+    throw new Error(copy.errors.loadFailed);
   }
 
   if (movementsResult.error) {
-    throw new Error(movementsResult.error.message);
+    throw new Error(copy.errors.loadFailed);
   }
 
   if (productsResult.error) {
-    throw new Error(productsResult.error.message);
+    throw new Error(copy.errors.loadFailed);
   }
 
   if (variantsResult.error) {
-    throw new Error(variantsResult.error.message);
+    throw new Error(copy.errors.loadFailed);
   }
 
   const intelligence =
@@ -209,12 +223,11 @@ export default async function InventoryPage() {
         <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">
-              Inventory Intelligence
+              {copy.title}
             </h1>
 
             <p className="mt-2 text-muted-foreground">
-              Monitor stock health, inventory value, profit potential,
-              alerts, dan movement history untuk organization aktif.
+              {copy.description}
             </p>
           </div>
 
@@ -222,73 +235,72 @@ export default async function InventoryPage() {
             href="/products"
             className="inline-flex h-9 items-center justify-center rounded-lg border px-4 text-sm font-medium transition-colors hover:bg-muted"
           >
-            Products
+            {copy.productsLink}
           </Link>
         </div>
 
         <section className="space-y-4">
           <div>
             <h2 className="text-lg font-semibold">
-              Product Inventory
+              {copy.productSection.title}
             </h2>
 
             <p className="mt-1 text-sm text-muted-foreground">
-              Product dan variant dihitung terpisah untuk menghindari
-              double-counting inventory.
+              {copy.productSection.description}
             </p>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <MetricCard
-              label="Total Products"
+              label={copy.metrics.totalProducts}
               value={productMetrics.total_items}
-              description={`${productMetrics.active_items} active`}
+              description={`${productMetrics.active_items} ${copy.metrics.activeSuffix}`}
             />
 
             <MetricCard
-              label="Total Product Stock"
+              label={copy.metrics.totalProductStock}
               value={productMetrics.total_stock}
             />
 
             <MetricCard
-              label="Low Stock"
+              label={copy.metrics.lowStock}
               value={productMetrics.low_stock}
             />
 
             <MetricCard
-              label="Out of Stock"
+              label={copy.metrics.outOfStock}
               value={productMetrics.out_of_stock}
             />
 
             <MetricCard
-              label="Inventory Cost"
-              value={formatCurrency(
+              label={copy.metrics.inventoryCost}
+              value={money(
                 productMetrics.inventory_cost_value,
               )}
             />
 
             <MetricCard
-              label="Selling Value"
-              value={formatCurrency(
+              label={copy.metrics.sellingValue}
+              value={money(
                 productMetrics.inventory_selling_value,
               )}
             />
 
             <MetricCard
-              label="Potential Profit"
-              value={formatCurrency(
+              label={copy.metrics.potentialProfit}
+              value={money(
                 productMetrics.potential_profit,
               )}
             />
 
             <MetricCard
-              label="Stock Health"
+              label={copy.metrics.stockHealth}
               value={
                 productMetrics.low_stock +
                   productMetrics.out_of_stock ===
                 0
-                  ? "Healthy"
-                  : "Attention"
+                  ? copy.metrics.healthy
+                  : copy.metrics.attention
               }
             />
           </div>
@@ -297,65 +309,65 @@ export default async function InventoryPage() {
         <section className="space-y-4">
           <div>
             <h2 className="text-lg font-semibold">
-              Variant Inventory
+              {copy.variantSection.title}
             </h2>
 
             <p className="mt-1 text-sm text-muted-foreground">
-              Intelligence khusus inventory product variants.
+              {copy.variantSection.description}
             </p>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <MetricCard
-              label="Total Variants"
+              label={copy.metrics.totalVariants}
               value={variantMetrics.total_items}
-              description={`${variantMetrics.active_items} active`}
+              description={`${variantMetrics.active_items} ${copy.metrics.activeSuffix}`}
             />
 
             <MetricCard
-              label="Total Variant Stock"
+              label={copy.metrics.totalVariantStock}
               value={variantMetrics.total_stock}
             />
 
             <MetricCard
-              label="Low Stock Variants"
+              label={copy.metrics.lowStockVariants}
               value={variantMetrics.low_stock}
             />
 
             <MetricCard
-              label="Out of Stock Variants"
+              label={copy.metrics.outOfStockVariants}
               value={variantMetrics.out_of_stock}
             />
 
             <MetricCard
-              label="Variant Cost Value"
-              value={formatCurrency(
+              label={copy.metrics.variantCostValue}
+              value={money(
                 variantMetrics.inventory_cost_value,
               )}
             />
 
             <MetricCard
-              label="Variant Selling Value"
-              value={formatCurrency(
+              label={copy.metrics.variantSellingValue}
+              value={money(
                 variantMetrics.inventory_selling_value,
               )}
             />
 
             <MetricCard
-              label="Variant Potential Profit"
-              value={formatCurrency(
+              label={copy.metrics.variantPotentialProfit}
+              value={money(
                 variantMetrics.potential_profit,
               )}
             />
 
             <MetricCard
-              label="Variant Stock Health"
+              label={copy.metrics.variantStockHealth}
               value={
                 variantMetrics.low_stock +
                   variantMetrics.out_of_stock ===
                 0
-                  ? "Healthy"
-                  : "Attention"
+                  ? copy.metrics.healthy
+                  : copy.metrics.attention
               }
             />
           </div>
@@ -364,24 +376,22 @@ export default async function InventoryPage() {
         <section className="overflow-hidden rounded-2xl border bg-card shadow-sm">
           <div className="border-b px-6 py-5">
             <h2 className="text-lg font-semibold">
-              Stock Alerts
+              {copy.alerts.title}
             </h2>
 
             <p className="mt-1 text-sm text-muted-foreground">
-              Out-of-stock dan low-stock inventory yang membutuhkan
-              perhatian.
+              {copy.alerts.description}
             </p>
           </div>
 
           {alerts.length === 0 ? (
             <div className="px-6 py-12 text-center">
               <p className="font-medium">
-                Tidak ada stock alert
+                {copy.alerts.emptyTitle}
               </p>
 
               <p className="mt-1 text-sm text-muted-foreground">
-                Inventory aktif saat ini berada di atas low-stock
-                threshold.
+                {copy.alerts.emptyDescription}
               </p>
             </div>
           ) : (
@@ -389,17 +399,23 @@ export default async function InventoryPage() {
               <table className="w-full text-sm">
                 <thead className="border-b bg-muted/40 text-left">
                   <tr>
-                    <th className="px-6 py-3 font-medium">Item</th>
-                    <th className="px-6 py-3 font-medium">Type</th>
-                    <th className="px-6 py-3 font-medium">Stock</th>
                     <th className="px-6 py-3 font-medium">
-                      Threshold
+                      {copy.alerts.columns.item}
                     </th>
                     <th className="px-6 py-3 font-medium">
-                      Status
+                      {copy.alerts.columns.type}
                     </th>
                     <th className="px-6 py-3 font-medium">
-                      Action
+                      {copy.alerts.columns.stock}
+                    </th>
+                    <th className="px-6 py-3 font-medium">
+                      {copy.alerts.columns.threshold}
+                    </th>
+                    <th className="px-6 py-3 font-medium">
+                      {copy.alerts.columns.status}
+                    </th>
+                    <th className="px-6 py-3 font-medium">
+                      {copy.alerts.columns.action}
                     </th>
                   </tr>
                 </thead>
@@ -421,12 +437,12 @@ export default async function InventoryPage() {
                           </div>
 
                           <div className="mt-1 text-xs text-muted-foreground">
-                            {alert.sku ?? "No SKU"}
+                            {alert.sku ?? copy.alerts.noSku}
                           </div>
                         </td>
 
                         <td className="px-6 py-4 capitalize">
-                          {alert.target_type}
+                          {copy.targetTypes[alert.target_type]}
                         </td>
 
                         <td className="px-6 py-4 font-medium">
@@ -439,7 +455,7 @@ export default async function InventoryPage() {
 
                         <td className="px-6 py-4">
                           <span className="inline-flex rounded-full border px-2.5 py-1 text-xs font-medium">
-                            {alert.stock_status.replaceAll("_", " ")}
+                            {copy.stockStatuses[alert.stock_status]}
                           </span>
                         </td>
 
@@ -448,7 +464,7 @@ export default async function InventoryPage() {
                             href={href}
                             className="inline-flex h-8 items-center justify-center rounded-lg border px-3 text-xs font-medium transition-colors hover:bg-muted"
                           >
-                            Manage
+                            {copy.alerts.manage}
                           </Link>
                         </td>
                       </tr>
@@ -463,22 +479,22 @@ export default async function InventoryPage() {
         <section className="overflow-hidden rounded-2xl border bg-card shadow-sm">
           <div className="border-b px-6 py-5">
             <h2 className="text-lg font-semibold">
-              Inventory Movements
+              {copy.movements.title}
             </h2>
 
             <p className="mt-1 text-sm text-muted-foreground">
-              50 movement inventory terbaru.
+              {copy.movements.description}
             </p>
           </div>
 
           {movements.length === 0 ? (
             <div className="px-6 py-12 text-center">
               <p className="font-medium">
-                Belum ada inventory movement
+                {copy.movements.emptyTitle}
               </p>
 
               <p className="mt-1 text-sm text-muted-foreground">
-                Perubahan stock berikutnya akan tercatat di sini.
+                {copy.movements.emptyDescription}
               </p>
             </div>
           ) : (
@@ -486,16 +502,30 @@ export default async function InventoryPage() {
               <table className="w-full text-sm">
                 <thead className="border-b bg-muted/40 text-left">
                   <tr>
-                    <th className="px-6 py-3 font-medium">Time</th>
-                    <th className="px-6 py-3 font-medium">Target</th>
-                    <th className="px-6 py-3 font-medium">Type</th>
-                    <th className="px-6 py-3 font-medium">Change</th>
-                    <th className="px-6 py-3 font-medium">Before</th>
-                    <th className="px-6 py-3 font-medium">After</th>
                     <th className="px-6 py-3 font-medium">
-                      Reference
+                      {copy.movements.columns.time}
                     </th>
-                    <th className="px-6 py-3 font-medium">Note</th>
+                    <th className="px-6 py-3 font-medium">
+                      {copy.movements.columns.target}
+                    </th>
+                    <th className="px-6 py-3 font-medium">
+                      {copy.movements.columns.type}
+                    </th>
+                    <th className="px-6 py-3 font-medium">
+                      {copy.movements.columns.change}
+                    </th>
+                    <th className="px-6 py-3 font-medium">
+                      {copy.movements.columns.before}
+                    </th>
+                    <th className="px-6 py-3 font-medium">
+                      {copy.movements.columns.after}
+                    </th>
+                    <th className="px-6 py-3 font-medium">
+                      {copy.movements.columns.reference}
+                    </th>
+                    <th className="px-6 py-3 font-medium">
+                      {copy.movements.columns.note}
+                    </th>
                   </tr>
                 </thead>
 
@@ -505,17 +535,17 @@ export default async function InventoryPage() {
                       movement.target_type === "product"
                         ? movement.product_id
                           ? productNames.get(movement.product_id) ??
-                            "Deleted product"
-                          : "Deleted product"
+                            copy.movements.deletedProduct
+                          : copy.movements.deletedProduct
                         : movement.variant_id
                           ? variantNames.get(movement.variant_id) ??
-                            "Deleted variant"
-                          : "Deleted variant";
+                            copy.movements.deletedVariant
+                          : copy.movements.deletedVariant;
 
                     return (
                       <tr key={movement.id}>
                         <td className="whitespace-nowrap px-6 py-4">
-                          {formatDate(movement.created_at)}
+                          {date(movement.created_at)}
                         </td>
 
                         <td className="px-6 py-4">
@@ -524,7 +554,11 @@ export default async function InventoryPage() {
                           </div>
 
                           <div className="mt-1 text-xs capitalize text-muted-foreground">
-                            {movement.target_type}
+                            {movement.target_type === "product"
+                              ? copy.targetTypes.product
+                              : movement.target_type === "variant"
+                                ? copy.targetTypes.variant
+                                : movement.target_type}
                           </div>
                         </td>
 
@@ -547,11 +581,11 @@ export default async function InventoryPage() {
                         </td>
 
                         <td className="px-6 py-4">
-                          {movement.reference_type ?? "—"}
+                          {movement.reference_type ?? "\u2014"}
                         </td>
 
                         <td className="max-w-xs px-6 py-4 text-muted-foreground">
-                          {movement.note ?? "—"}
+                          {movement.note ?? "\u2014"}
                         </td>
                       </tr>
                     );

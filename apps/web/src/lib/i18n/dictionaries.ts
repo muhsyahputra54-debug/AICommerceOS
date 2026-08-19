@@ -320,6 +320,113 @@ const dictionaries = {
       },
     },
 
+    inventory: {
+      title: "Wawasan Inventaris",
+      noOrganization:
+        "Organisasi aktif tidak ditemukan.",
+      description:
+        "Pantau kesehatan stok, nilai inventaris, potensi laba, peringatan, dan riwayat pergerakan untuk organisasi aktif.",
+      productsLink: "Produk",
+
+      productSection: {
+        title: "Inventaris Produk",
+        description:
+          "Produk dan varian dihitung secara terpisah untuk mencegah penghitungan inventaris ganda.",
+      },
+
+      variantSection: {
+        title: "Inventaris Varian",
+        description:
+          "Wawasan inventaris khusus untuk varian produk.",
+      },
+
+      metrics: {
+        totalProducts: "Total Produk",
+        activeSuffix: "aktif",
+        totalProductStock: "Total Stok Produk",
+        lowStock: "Stok Rendah",
+        outOfStock: "Stok Habis",
+        inventoryCost: "Biaya Inventaris",
+        sellingValue: "Nilai Jual",
+        potentialProfit: "Potensi Laba",
+        stockHealth: "Kesehatan Stok",
+        healthy: "Sehat",
+        attention: "Perlu Perhatian",
+
+        totalVariants: "Total Varian",
+        totalVariantStock: "Total Stok Varian",
+        lowStockVariants: "Varian Stok Rendah",
+        outOfStockVariants: "Varian Stok Habis",
+        variantCostValue: "Nilai Biaya Varian",
+        variantSellingValue: "Nilai Jual Varian",
+        variantPotentialProfit: "Potensi Laba Varian",
+        variantStockHealth: "Kesehatan Stok Varian",
+      },
+
+      targetTypes: {
+        product: "Produk",
+        variant: "Varian",
+      },
+
+      stockStatuses: {
+        low_stock: "Stok Rendah",
+        out_of_stock: "Stok Habis",
+      },
+
+      alerts: {
+        title: "Peringatan Stok",
+        description:
+          "Inventaris dengan stok habis atau stok rendah yang membutuhkan perhatian.",
+        emptyTitle:
+          "Tidak ada peringatan stok",
+        emptyDescription:
+          "Inventaris aktif saat ini berada di atas ambang stok rendah.",
+
+        columns: {
+          item: "Item",
+          type: "Tipe",
+          stock: "Stok",
+          threshold: "Ambang",
+          status: "Status",
+          action: "Aksi",
+        },
+
+        noSku: "Tanpa SKU",
+        manage: "Kelola",
+      },
+
+      movements: {
+        title: "Pergerakan Inventaris",
+        description:
+          "50 pergerakan inventaris terbaru.",
+        emptyTitle:
+          "Belum ada pergerakan inventaris",
+        emptyDescription:
+          "Perubahan stok berikutnya akan tercatat di sini.",
+
+        columns: {
+          time: "Waktu",
+          target: "Target",
+          type: "Tipe",
+          change: "Perubahan",
+          before: "Sebelum",
+          after: "Sesudah",
+          reference: "Referensi",
+          note: "Catatan",
+        },
+
+        deletedProduct:
+          "Produk dihapus",
+        deletedVariant:
+          "Varian dihapus",
+      },
+
+      errors: {
+        loadFailed:
+          "Gagal memuat data inventaris. Silakan coba lagi.",
+      },
+    },
+
     products: {
       title: "Produk",
       description: "Kelola produk dan katalog bisnis Anda.",
@@ -1804,6 +1911,113 @@ const dictionaries = {
         development: "Development",
         systemStatus: "System Status",
         operational: "Operational",
+      },
+    },
+
+    inventory: {
+      title: "Inventory Intelligence",
+      noOrganization:
+        "No active organization found.",
+      description:
+        "Monitor stock health, inventory value, profit potential, alerts, and movement history for the active organization.",
+      productsLink: "Products",
+
+      productSection: {
+        title: "Product Inventory",
+        description:
+          "Products and variants are counted separately to prevent inventory double-counting.",
+      },
+
+      variantSection: {
+        title: "Variant Inventory",
+        description:
+          "Inventory intelligence specifically for product variants.",
+      },
+
+      metrics: {
+        totalProducts: "Total Products",
+        activeSuffix: "active",
+        totalProductStock: "Total Product Stock",
+        lowStock: "Low Stock",
+        outOfStock: "Out of Stock",
+        inventoryCost: "Inventory Cost",
+        sellingValue: "Selling Value",
+        potentialProfit: "Potential Profit",
+        stockHealth: "Stock Health",
+        healthy: "Healthy",
+        attention: "Attention",
+
+        totalVariants: "Total Variants",
+        totalVariantStock: "Total Variant Stock",
+        lowStockVariants: "Low Stock Variants",
+        outOfStockVariants: "Out of Stock Variants",
+        variantCostValue: "Variant Cost Value",
+        variantSellingValue: "Variant Selling Value",
+        variantPotentialProfit: "Variant Potential Profit",
+        variantStockHealth: "Variant Stock Health",
+      },
+
+      targetTypes: {
+        product: "Product",
+        variant: "Variant",
+      },
+
+      stockStatuses: {
+        low_stock: "Low Stock",
+        out_of_stock: "Out of Stock",
+      },
+
+      alerts: {
+        title: "Stock Alerts",
+        description:
+          "Out-of-stock and low-stock inventory that requires attention.",
+        emptyTitle:
+          "No stock alerts",
+        emptyDescription:
+          "Active inventory is currently above its low-stock threshold.",
+
+        columns: {
+          item: "Item",
+          type: "Type",
+          stock: "Stock",
+          threshold: "Threshold",
+          status: "Status",
+          action: "Action",
+        },
+
+        noSku: "No SKU",
+        manage: "Manage",
+      },
+
+      movements: {
+        title: "Inventory Movements",
+        description:
+          "The latest 50 inventory movements.",
+        emptyTitle:
+          "No inventory movements yet",
+        emptyDescription:
+          "Future stock changes will be recorded here.",
+
+        columns: {
+          time: "Time",
+          target: "Target",
+          type: "Type",
+          change: "Change",
+          before: "Before",
+          after: "After",
+          reference: "Reference",
+          note: "Note",
+        },
+
+        deletedProduct:
+          "Deleted product",
+        deletedVariant:
+          "Deleted variant",
+      },
+
+      errors: {
+        loadFailed:
+          "Failed to load inventory data. Please try again.",
       },
     },
 
