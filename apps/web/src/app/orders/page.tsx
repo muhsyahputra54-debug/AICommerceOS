@@ -2,18 +2,20 @@ import Link from "next/link";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import OrderStatusActions from "@/components/orders/OrderStatusActions";
 import { getCurrentOrganization } from "@/lib/supabase/current-organization";
+import { getDictionary } from "@/lib/i18n/dictionaries";
+import { getLocale } from "@/lib/i18n/server";
 import { createClient } from "@/lib/supabase/server";
 
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat("id-ID", {
+function formatCurrency(value: number, locale: string) {
+  return new Intl.NumberFormat(locale, {
     style: "currency",
     currency: "IDR",
     maximumFractionDigits: 0,
   }).format(value);
 }
 
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat("id-ID", {
+function formatDate(value: string, locale: string) {
+  return new Intl.DateTimeFormat(locale, {
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -24,23 +26,29 @@ function getCustomerName(
   customer: { name: string } | { name: string }[] | null,
 ) {
   if (Array.isArray(customer)) {
-    return customer[0]?.name ?? "—";
+    return customer[0]?.name ?? "\u2014";
   }
 
-  return customer?.name ?? "—";
+  return customer?.name ?? "\u2014";
 }
 export default async function OrdersPage() {
-  const currentOrganization = await getCurrentOrganization();
+  const locale = await getLocale();
+  const copy = getDictionary(locale).orders;
+  const localeTag =
+    locale === "id" ? "id-ID" : "en-US";
+
+  const currentOrganization =
+    await getCurrentOrganization();
 
   if (!currentOrganization) {
     return (
       <DashboardLayout>
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
-            Orders
+            {copy.list.title}
           </h1>
           <p className="mt-2 text-muted-foreground">
-            Organization aktif tidak ditemukan.
+            {copy.list.noOrganization}
           </p>
         </div>
       </DashboardLayout>
@@ -64,7 +72,7 @@ export default async function OrdersPage() {
     .order("created_at", { ascending: false });
 
   if (error) {
-    throw new Error(error.message);
+    throw new Error(copy.errors.loadFailed);
   }
 
   return (
@@ -73,10 +81,10 @@ export default async function OrdersPage() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">
-              Orders
+              {copy.list.title}
             </h1>
             <p className="mt-2 text-muted-foreground">
-              Kelola dan pantau seluruh pesanan bisnis Anda.
+              {copy.list.description}
             </p>
           </div>
 
@@ -84,29 +92,29 @@ export default async function OrdersPage() {
             href="/orders/new"
             className="inline-flex h-10 items-center justify-center rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
-            Add Order
+            {copy.list.addOrder}
           </Link>
         </div>
 
         <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
           <div className="border-b px-6 py-5">
             <h2 className="text-lg font-semibold">
-              Order Management
+              {copy.list.managementTitle}
             </h2>
 
             <p className="mt-1 text-sm text-muted-foreground">
-              {orders.length} pesanan pada organization aktif.
+              {orders.length} {copy.list.managementCountSuffix}
             </p>
           </div>
 
           {orders.length === 0 ? (
             <div className="px-6 py-16 text-center">
               <h3 className="font-medium">
-                Belum ada pesanan
+                {copy.list.emptyTitle}
               </h3>
 
               <p className="mt-2 text-sm text-muted-foreground">
-                Pesanan yang dibuat nanti akan tampil di sini.
+                {copy.list.emptyDescription}
               </p>
             </div>
           ) : (
@@ -115,22 +123,22 @@ export default async function OrdersPage() {
                 <thead className="border-b bg-muted/30">
                   <tr>
                     <th className="px-6 py-4 text-left font-medium">
-                      Order
+                      {copy.list.columns.order}
                     </th>
                     <th className="px-6 py-4 text-left font-medium">
-                      Customer
+                      {copy.list.columns.customer}
                     </th>
                     <th className="px-6 py-4 text-left font-medium">
-                      Total
+                      {copy.list.columns.total}
                     </th>
                     <th className="px-6 py-4 text-left font-medium">
-                      Status
+                      {copy.list.columns.status}
                     </th>
                     <th className="px-6 py-4 text-left font-medium">
-                      Created
+                      {copy.list.columns.created}
                     </th>
                     <th className="px-6 py-4 text-left font-medium">
-                      Actions
+                      {copy.list.columns.actions}
                     </th>
                   </tr>
                 </thead>
@@ -150,15 +158,19 @@ export default async function OrdersPage() {
                       </td>
 
                       <td className="px-6 py-4">
-                        {formatCurrency(Number(order.total))}
+                        {formatCurrency(Number(order.total), localeTag)}
                       </td>
 
                       <td className="px-6 py-4 capitalize">
-                        {order.status}
+                        {
+                          copy.statuses[
+                            order.status as keyof typeof copy.statuses
+                          ] ?? order.status
+                        }
                       </td>
 
                       <td className="px-6 py-4 text-muted-foreground">
-                        {formatDate(order.created_at)}
+                        {formatDate(order.created_at, localeTag)}
                       </td>
 
                       <td className="px-6 py-4">

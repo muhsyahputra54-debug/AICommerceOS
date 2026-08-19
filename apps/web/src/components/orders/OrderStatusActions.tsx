@@ -3,7 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { useLanguage } from "@/components/i18n/LanguageProvider";
 import { Button } from "@/components/ui/button";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 import { createClient } from "@/lib/supabase/client";
 
 type OrderStatus =
@@ -24,6 +26,9 @@ export default function OrderStatusActions({
   status,
 }: OrderStatusActionsProps) {
   const router = useRouter();
+  const { locale } = useLanguage();
+  const copy =
+    getDictionary(locale).orders.statusActions;
 
   const [isUpdating, setIsUpdating] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(
@@ -35,7 +40,7 @@ export default function OrderStatusActions({
   ) {
     if (newStatus === "cancelled") {
       const confirmed = window.confirm(
-        "Batalkan order ini? Perubahan status mengikuti aturan inventory yang berlaku.",
+        copy.cancelConfirm,
       );
 
       if (!confirmed) {
@@ -55,7 +60,7 @@ export default function OrderStatusActions({
     });
 
     if (error) {
-      setErrorMessage(error.message);
+      setErrorMessage(copy.errors.updateFailed);
       setIsUpdating(false);
       return;
     }
@@ -67,7 +72,7 @@ export default function OrderStatusActions({
   if (status === "completed" || status === "cancelled") {
     return (
       <span className="text-xs text-muted-foreground">
-        Final
+        {copy.final}
       </span>
     );
   }
@@ -82,7 +87,7 @@ export default function OrderStatusActions({
             onClick={() => updateStatus("processing")}
             disabled={isUpdating}
           >
-            {isUpdating ? "Updating..." : "Process"}
+            {isUpdating ? copy.updating : copy.process}
           </Button>
         ) : null}
 
@@ -93,7 +98,7 @@ export default function OrderStatusActions({
             onClick={() => updateStatus("completed")}
             disabled={isUpdating}
           >
-            {isUpdating ? "Updating..." : "Complete"}
+            {isUpdating ? copy.updating : copy.complete}
           </Button>
         ) : null}
 
@@ -104,7 +109,7 @@ export default function OrderStatusActions({
           onClick={() => updateStatus("cancelled")}
           disabled={isUpdating}
         >
-          Cancel
+          {copy.cancel}
         </Button>
       </div>
 

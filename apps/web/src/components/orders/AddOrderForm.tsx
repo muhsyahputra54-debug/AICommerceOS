@@ -1,9 +1,11 @@
-﻿"use client";
+"use client";
 
 import { FormEvent, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { useLanguage } from "@/components/i18n/LanguageProvider";
 import { Button } from "@/components/ui/button";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 import { createClient } from "@/lib/supabase/client";
 
 type Customer = {
@@ -40,8 +42,8 @@ type AddOrderFormProps = {
   variants: ProductVariant[];
 };
 
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat("id-ID", {
+function formatCurrency(value: number, locale: string) {
+  return new Intl.NumberFormat(locale, {
     style: "currency",
     currency: "IDR",
     maximumFractionDigits: 0,
@@ -55,6 +57,14 @@ export default function AddOrderForm({
   variants,
 }: AddOrderFormProps) {
   const router = useRouter();
+  const { locale } = useLanguage();
+  const copy =
+    getDictionary(locale).orders.newOrder.form;
+  const localeTag =
+    locale === "id" ? "id-ID" : "en-US";
+
+  const money = (value: number) =>
+    formatCurrency(value, localeTag);
 
   const [customerId, setCustomerId] = useState("");
 
@@ -167,7 +177,7 @@ export default function AddOrderForm({
 
     if (!customerId) {
       setErrorMessage(
-        "Pilih customer terlebih dahulu.",
+        copy.validation.customerRequired,
       );
       return;
     }
@@ -182,7 +192,7 @@ export default function AddOrderForm({
       )
     ) {
       setErrorMessage(
-        "Setiap item harus memiliki produk dan quantity lebih dari 0.",
+        copy.validation.itemInvalid,
       );
       return;
     }
@@ -201,7 +211,7 @@ export default function AddOrderForm({
 
     if (invalidVariant) {
       setErrorMessage(
-        "Variant tidak sesuai dengan produk yang dipilih.",
+        copy.validation.variantMismatch,
       );
       return;
     }
@@ -228,7 +238,7 @@ export default function AddOrderForm({
     );
 
     if (error) {
-      setErrorMessage(error.message);
+      setErrorMessage(copy.errors.createFailed);
       setIsSubmitting(false);
       return;
     }
@@ -249,8 +259,8 @@ export default function AddOrderForm({
       {cannotCreateOrder ? (
         <div className="rounded-xl border bg-muted/30 p-4 text-sm text-muted-foreground">
           {customers.length === 0
-            ? "Tambahkan minimal satu customer sebelum membuat order."
-            : "Tambahkan minimal satu produk aktif sebelum membuat order."}
+            ? copy.notices.customerRequired
+            : copy.notices.productRequired}
         </div>
       ) : null}
 
@@ -265,7 +275,7 @@ export default function AddOrderForm({
           htmlFor="customer"
           className="text-sm font-medium"
         >
-          Customer
+          {copy.customerLabel}
         </label>
 
         <select
@@ -281,7 +291,7 @@ export default function AddOrderForm({
           className="flex h-10 w-full rounded-lg border bg-background px-3 py-2 text-sm"
         >
           <option value="">
-            Pilih customer
+            {copy.selectCustomer}
           </option>
 
           {customers.map((customer) => (
@@ -299,11 +309,11 @@ export default function AddOrderForm({
         <div className="flex items-center justify-between gap-4">
           <div>
             <h2 className="font-medium">
-              Order Items
+              {copy.itemsTitle}
             </h2>
 
             <p className="mt-1 text-sm text-muted-foreground">
-              Harga final dan total dihitung ulang oleh database.
+              {copy.itemsDescription}
             </p>
           </div>
 
@@ -316,7 +326,7 @@ export default function AddOrderForm({
               isSubmitting
             }
           >
-            Add item
+            {copy.addItem}
           </Button>
         </div>
 
@@ -341,7 +351,7 @@ export default function AddOrderForm({
             >
               <div className="space-y-2">
                 <label className="text-sm font-medium">
-                  Product
+                  {copy.productLabel}
                 </label>
 
                 <select
@@ -359,7 +369,7 @@ export default function AddOrderForm({
                   className="flex h-10 w-full rounded-lg border bg-background px-3 py-2 text-sm"
                 >
                   <option value="">
-                    Pilih produk
+                    {copy.selectProduct}
                   </option>
 
                   {products.map((product) => (
@@ -369,10 +379,10 @@ export default function AddOrderForm({
                     >
                       {product.name}
                       {" — "}
-                      {formatCurrency(
+                      {money(
                         Number(product.price),
                       )}
-                      {" — stock "}
+                      {" \u2014 "}{copy.stockLabel}{" "}
                       {product.stock}
                     </option>
                   ))}
@@ -381,7 +391,7 @@ export default function AddOrderForm({
 
               <div className="space-y-2">
                 <label className="text-sm font-medium">
-                  Variant
+                  {copy.variantLabel}
                 </label>
 
                 <select
@@ -401,8 +411,8 @@ export default function AddOrderForm({
                 >
                   <option value="">
                     {productVariants.length > 0
-                      ? "Base product"
-                      : "Tidak ada variant"}
+                      ? copy.baseProduct
+                      : copy.noVariant}
                   </option>
 
                   {productVariants.map(
@@ -416,12 +426,12 @@ export default function AddOrderForm({
                           ? ` (${variant.sku})`
                           : ""}
                         {" — "}
-                        {formatCurrency(
+                        {money(
                           Number(
                             variant.price,
                           ),
                         )}
-                        {" — stock "}
+                        {" \u2014 "}{copy.stockLabel}{" "}
                         {variant.stock}
                       </option>
                     ),
@@ -431,15 +441,14 @@ export default function AddOrderForm({
                 {selectedProduct &&
                 productVariants.length > 0 ? (
                   <p className="text-xs text-muted-foreground">
-                    Pilih Base product untuk memakai harga
-                    dan stock produk utama.
+                    {copy.baseProductHelp}
                   </p>
                 ) : null}
               </div>
 
               <div className="space-y-2">
                 <label className="text-sm font-medium">
-                  Quantity
+                  {copy.quantityLabel}
                 </label>
 
                 <input
@@ -474,7 +483,7 @@ export default function AddOrderForm({
                     isSubmitting
                   }
                 >
-                  Remove
+                  {copy.remove}
                 </Button>
               </div>
             </div>
@@ -485,17 +494,17 @@ export default function AddOrderForm({
       <div className="flex flex-col gap-4 border-t pt-6 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-sm text-muted-foreground">
-            Estimated Total
+            {copy.estimatedTotal}
           </p>
 
           <p className="mt-1 text-2xl font-semibold tracking-tight">
-            {formatCurrency(
+            {money(
               estimatedTotal,
             )}
           </p>
 
           <p className="mt-1 text-xs text-muted-foreground">
-            Nilai final tetap dihitung server-side saat order dibuat.
+            {copy.finalTotalNote}
           </p>
         </div>
 
@@ -507,8 +516,8 @@ export default function AddOrderForm({
           }
         >
           {isSubmitting
-            ? "Creating..."
-            : "Create Order"}
+            ? copy.creating
+            : copy.createOrder}
         </Button>
       </div>
     </form>

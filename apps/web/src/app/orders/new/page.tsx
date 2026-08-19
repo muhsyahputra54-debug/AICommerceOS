@@ -1,21 +1,28 @@
-﻿import DashboardLayout from "@/components/layout/DashboardLayout";
+import DashboardLayout from "@/components/layout/DashboardLayout";
 import AddOrderForm from "@/components/orders/AddOrderForm";
 import { getCurrentOrganization } from "@/lib/supabase/current-organization";
+import { getDictionary } from "@/lib/i18n/dictionaries";
+import { getLocale } from "@/lib/i18n/server";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function NewOrderPage() {
-  const currentOrganization = await getCurrentOrganization();
+  const locale = await getLocale();
+  const copy =
+    getDictionary(locale).orders.newOrder;
+
+  const currentOrganization =
+    await getCurrentOrganization();
 
   if (!currentOrganization) {
     return (
       <DashboardLayout>
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
-            Add Order
+            {copy.title}
           </h1>
 
           <p className="mt-2 text-muted-foreground">
-            Organization aktif tidak ditemukan.
+            {copy.noOrganization}
           </p>
         </div>
       </DashboardLayout>
@@ -62,15 +69,15 @@ export default async function NewOrderPage() {
   ]);
 
   if (customersResult.error) {
-    throw new Error(customersResult.error.message);
+    throw new Error(copy.errors.loadDependencies);
   }
 
   if (productsResult.error) {
-    throw new Error(productsResult.error.message);
+    throw new Error(copy.errors.loadDependencies);
   }
 
   if (variantsResult.error) {
-    throw new Error(variantsResult.error.message);
+    throw new Error(copy.errors.loadDependencies);
   }
 
   return (
@@ -78,11 +85,11 @@ export default async function NewOrderPage() {
       <div className="mx-auto max-w-4xl space-y-8">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
-            Add Order
+            {copy.title}
           </h1>
 
           <p className="mt-2 text-muted-foreground">
-            Buat pesanan baru untuk organization aktif.
+            {copy.description}
           </p>
         </div>
 

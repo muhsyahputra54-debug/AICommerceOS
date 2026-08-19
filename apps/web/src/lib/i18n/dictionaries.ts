@@ -48,6 +48,135 @@ const dictionaries = {
       closeSidebar: "Tutup sidebar",
     },
 
+    orders: {
+      list: {
+        title: "Pesanan",
+        noOrganization:
+          "Organisasi aktif tidak ditemukan.",
+        description:
+          "Kelola dan pantau seluruh pesanan bisnis Anda.",
+        addOrder: "Tambah Pesanan",
+        managementTitle:
+          "Manajemen Pesanan",
+        managementCountSuffix:
+          "pesanan pada organisasi aktif.",
+        emptyTitle:
+          "Belum ada pesanan",
+        emptyDescription:
+          "Pesanan yang dibuat nanti akan tampil di sini.",
+
+        columns: {
+          order: "Pesanan",
+          customer: "Pelanggan",
+          total: "Total",
+          status: "Status",
+          created: "Dibuat",
+          actions: "Aksi",
+        },
+      },
+
+      statuses: {
+        pending: "Tertunda",
+        processing: "Diproses",
+        completed: "Selesai",
+        cancelled: "Dibatalkan",
+      },
+
+      errors: {
+        loadFailed:
+          "Gagal memuat data pesanan. Silakan coba lagi.",
+      },
+
+      newOrder: {
+        title: "Tambah Pesanan",
+        noOrganization:
+          "Organisasi aktif tidak ditemukan.",
+        description:
+          "Buat pesanan baru untuk organisasi aktif.",
+
+        errors: {
+          loadDependencies:
+            "Gagal memuat data pendukung pesanan. Silakan coba lagi.",
+        },
+
+        form: {
+          notices: {
+            customerRequired:
+              "Tambahkan minimal satu pelanggan sebelum membuat pesanan.",
+            productRequired:
+              "Tambahkan minimal satu produk aktif sebelum membuat pesanan.",
+          },
+
+          validation: {
+            customerRequired:
+              "Pilih pelanggan terlebih dahulu.",
+            itemInvalid:
+              "Setiap item harus memiliki produk dan jumlah lebih dari 0.",
+            variantMismatch:
+              "Varian tidak sesuai dengan produk yang dipilih.",
+          },
+
+          errors: {
+            createFailed:
+              "Gagal membuat pesanan. Silakan coba lagi.",
+          },
+
+          customerLabel: "Pelanggan",
+          selectCustomer:
+            "Pilih pelanggan",
+
+          itemsTitle:
+            "Item Pesanan",
+          itemsDescription:
+            "Harga final dan total dihitung ulang oleh database.",
+          addItem:
+            "Tambah item",
+
+          productLabel: "Produk",
+          selectProduct:
+            "Pilih produk",
+          stockLabel: "stok",
+
+          variantLabel: "Varian",
+          baseProduct:
+            "Produk utama",
+          noVariant:
+            "Tidak ada varian",
+          baseProductHelp:
+            "Pilih Produk utama untuk menggunakan harga dan stok produk utama.",
+
+          quantityLabel: "Jumlah",
+          remove: "Hapus",
+
+          estimatedTotal:
+            "Perkiraan Total",
+          finalTotalNote:
+            "Nilai final tetap dihitung di server saat pesanan dibuat.",
+
+          creating:
+            "Membuat...",
+          createOrder:
+            "Buat Pesanan",
+        },
+      },
+
+      statusActions: {
+        cancelConfirm:
+          "Batalkan pesanan ini? Perubahan status akan mengikuti aturan inventaris yang berlaku.",
+        final: "Final",
+        updating:
+          "Memperbarui...",
+        process: "Proses",
+        complete: "Selesaikan",
+        cancel: "Batalkan",
+
+        errors: {
+          updateFailed:
+            "Gagal memperbarui status pesanan. Silakan coba lagi.",
+        },
+      },
+    },
+
     login: {
       subtitle: "Masuk ke dasbor LAKUVO",
       continueWithGitHub: "Lanjutkan dengan GitHub",
@@ -1404,6 +1533,135 @@ const dictionaries = {
 
       closeNavigation: "Close navigation",
       closeSidebar: "Close sidebar",
+    },
+
+    orders: {
+      list: {
+        title: "Orders",
+        noOrganization:
+          "No active organization found.",
+        description:
+          "Manage and monitor all of your business orders.",
+        addOrder: "Add Order",
+        managementTitle:
+          "Order Management",
+        managementCountSuffix:
+          "orders in the active organization.",
+        emptyTitle:
+          "No orders yet",
+        emptyDescription:
+          "Orders you create will appear here.",
+
+        columns: {
+          order: "Order",
+          customer: "Customer",
+          total: "Total",
+          status: "Status",
+          created: "Created",
+          actions: "Actions",
+        },
+      },
+
+      statuses: {
+        pending: "Pending",
+        processing: "Processing",
+        completed: "Completed",
+        cancelled: "Cancelled",
+      },
+
+      errors: {
+        loadFailed:
+          "Failed to load orders. Please try again.",
+      },
+
+      newOrder: {
+        title: "Add Order",
+        noOrganization:
+          "No active organization found.",
+        description:
+          "Create a new order for the active organization.",
+
+        errors: {
+          loadDependencies:
+            "Failed to load order dependencies. Please try again.",
+        },
+
+        form: {
+          notices: {
+            customerRequired:
+              "Add at least one customer before creating an order.",
+            productRequired:
+              "Add at least one active product before creating an order.",
+          },
+
+          validation: {
+            customerRequired:
+              "Select a customer first.",
+            itemInvalid:
+              "Every item must have a product and a quantity greater than 0.",
+            variantMismatch:
+              "The selected variant does not belong to the selected product.",
+          },
+
+          errors: {
+            createFailed:
+              "Failed to create the order. Please try again.",
+          },
+
+          customerLabel: "Customer",
+          selectCustomer:
+            "Select customer",
+
+          itemsTitle:
+            "Order Items",
+          itemsDescription:
+            "Final prices and totals are recalculated by the database.",
+          addItem:
+            "Add item",
+
+          productLabel: "Product",
+          selectProduct:
+            "Select product",
+          stockLabel: "stock",
+
+          variantLabel: "Variant",
+          baseProduct:
+            "Base product",
+          noVariant:
+            "No variants",
+          baseProductHelp:
+            "Select Base product to use the main product price and stock.",
+
+          quantityLabel: "Quantity",
+          remove: "Remove",
+
+          estimatedTotal:
+            "Estimated Total",
+          finalTotalNote:
+            "The final value is still calculated server-side when the order is created.",
+
+          creating:
+            "Creating...",
+          createOrder:
+            "Create Order",
+        },
+      },
+
+      statusActions: {
+        cancelConfirm:
+          "Cancel this order? The status transition will follow the applicable inventory rules.",
+        final: "Final",
+        updating:
+          "Updating...",
+        process: "Process",
+        complete: "Complete",
+        cancel: "Cancel",
+
+        errors: {
+          updateFailed:
+            "Failed to update the order status. Please try again.",
+        },
+      },
     },
 
     login: {
