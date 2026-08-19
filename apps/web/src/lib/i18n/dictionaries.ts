@@ -268,8 +268,86 @@ const dictionaries = {
         deleting: "Menghapus...",
         delete: "Hapus",
       },
-    },  },
+    },
+    marketplaces: {
+      title: "Integrasi Marketplace",
+      description:
+        "Kelola kanal marketplace dan pemetaan commerce organisasi aktif.",
+      noOrganization:
+        "Organisasi aktif tidak ditemukan.",
 
+      accountManager: {
+        validation: {
+          required:
+            "Provider dan nama marketplace wajib diisi.",
+          alreadyRegistered:
+            "Toko marketplace tersebut sudah terdaftar.",
+          alreadyUsed:
+            "Toko marketplace tersebut sudah digunakan.",
+          notFound:
+            "Akun marketplace tidak ditemukan.",
+        },
+
+        connect: {
+          title: "Hubungkan Marketplace",
+          description:
+            "Tambahkan identitas toko atau kanal marketplace. Kredensial API tidak disimpan di sini.",
+          provider: "Provider",
+          providerPlaceholder:
+            "Shopee, Tokopedia, TikTok Shop...",
+          accountName: "Nama akun",
+          accountNamePlaceholder:
+            "Contoh: Toko Utama",
+          externalShopId: "ID Toko Eksternal",
+          optional: "Opsional",
+          saving: "Menyimpan...",
+          addMarketplace: "Tambah marketplace",
+        },
+
+        accounts: {
+          title: "Akun Marketplace",
+          countSuffix:
+            "akun marketplace ditemukan.",
+          emptyTitle: "Belum ada marketplace",
+          emptyDescription:
+            "Tambahkan kanal marketplace untuk memulai pemetaan.",
+        },
+
+        table: {
+          marketplace: "Marketplace",
+          provider: "Provider",
+          shopId: "ID Toko",
+          status: "Status",
+          actions: "Aksi",
+        },
+
+        statuses: {
+          active: "Aktif",
+          inactive: "Tidak Aktif",
+          error: "Error",
+        },
+
+        actions: {
+          open: "Buka",
+          edit: "Edit",
+          delete: "Hapus",
+        },
+
+        edit: {
+          title: "Edit Marketplace",
+          saving: "Menyimpan...",
+          saveChanges: "Simpan perubahan",
+          cancel: "Batal",
+        },
+
+        delete: {
+          confirmPrefix: "Hapus marketplace ",
+          confirmSuffix:
+            "? Listing, tautan pesanan, dan log sinkronisasi akun ini juga akan dihapus.",
+        },
+      },
+    },
+  },
   en: {
     common: {
       language: "Language",
@@ -537,7 +615,86 @@ const dictionaries = {
         deleting: "Deleting...",
         delete: "Delete",
       },
-    },  },
+    },
+    marketplaces: {
+      title: "Marketplace Integration",
+      description:
+        "Manage marketplace channels and commerce mapping for the active organization.",
+      noOrganization:
+        "No active organization found.",
+
+      accountManager: {
+        validation: {
+          required:
+            "Provider and marketplace name are required.",
+          alreadyRegistered:
+            "That marketplace shop is already registered.",
+          alreadyUsed:
+            "That marketplace shop is already in use.",
+          notFound:
+            "Marketplace account was not found.",
+        },
+
+        connect: {
+          title: "Connect Marketplace",
+          description:
+            "Add a marketplace shop or channel identity. API credentials are not stored here.",
+          provider: "Provider",
+          providerPlaceholder:
+            "Shopee, Tokopedia, TikTok Shop...",
+          accountName: "Account name",
+          accountNamePlaceholder:
+            "Example: Main Store",
+          externalShopId: "External Shop ID",
+          optional: "Optional",
+          saving: "Saving...",
+          addMarketplace: "Add marketplace",
+        },
+
+        accounts: {
+          title: "Marketplace Accounts",
+          countSuffix:
+            "marketplace accounts found.",
+          emptyTitle: "No marketplaces yet",
+          emptyDescription:
+            "Add a marketplace channel to start mapping.",
+        },
+
+        table: {
+          marketplace: "Marketplace",
+          provider: "Provider",
+          shopId: "Shop ID",
+          status: "Status",
+          actions: "Actions",
+        },
+
+        statuses: {
+          active: "Active",
+          inactive: "Inactive",
+          error: "Error",
+        },
+
+        actions: {
+          open: "Open",
+          edit: "Edit",
+          delete: "Delete",
+        },
+
+        edit: {
+          title: "Edit Marketplace",
+          saving: "Saving...",
+          saveChanges: "Save changes",
+          cancel: "Cancel",
+        },
+
+        delete: {
+          confirmPrefix: "Delete marketplace ",
+          confirmSuffix:
+            "? Listings, order links, and sync logs for this account will also be deleted.",
+        },
+      },
+    },
+  },
 } as const;
 
 export type Dictionary =
