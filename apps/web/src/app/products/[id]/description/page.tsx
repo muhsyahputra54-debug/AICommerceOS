@@ -1,8 +1,10 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import AIProductDescriptionPanel from "@/components/products/AIProductDescriptionPanel";
+import { getDictionary } from "@/lib/i18n/dictionaries";
+import { getLocale } from "@/lib/i18n/server";
 import { getCurrentOrganization } from "@/lib/supabase/current-organization";
 import { createClient } from "@/lib/supabase/server";
 
@@ -15,6 +17,10 @@ type PageProps = {
 export default async function ProductDescriptionPage({
   params,
 }: PageProps) {
+  const locale = await getLocale();
+  const productsCopy = getDictionary(locale).products;
+  const copy = productsCopy.aiDescription;
+
   const currentOrganization =
     await getCurrentOrganization();
 
@@ -23,11 +29,11 @@ export default async function ProductDescriptionPage({
       <DashboardLayout>
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
-            AI Description Generator
+            {copy.title}
           </h1>
 
           <p className="mt-2 text-muted-foreground">
-            Organization aktif tidak ditemukan.
+            {copy.noOrganization}
           </p>
         </div>
       </DashboardLayout>
@@ -85,18 +91,15 @@ export default async function ProductDescriptionPage({
             href="/products"
             className="text-sm font-medium text-muted-foreground hover:text-foreground"
           >
-            Back to Products
+            {copy.backToProducts}
           </Link>
 
           <h1 className="mt-3 text-2xl font-semibold tracking-tight">
-            AI Description Generator
+            {copy.title}
           </h1>
 
           <p className="mt-2 text-muted-foreground">
-            {productResult.data.name}
-            {productResult.data.sku
-              ? ` • ${productResult.data.sku}`
-              : ""}
+            {copy.description}
           </p>
         </div>
 

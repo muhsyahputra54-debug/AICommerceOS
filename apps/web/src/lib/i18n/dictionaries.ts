@@ -499,6 +499,97 @@ const dictionaries = {
           confirmSuffix: "?",
         },
       },
+      aiDescription: {
+        title: "Generator Deskripsi AI",
+        description:
+          "Buat draft deskripsi produk dan metadata SEO dengan bantuan AI.",
+        noOrganization:
+          "Organisasi aktif tidak ditemukan.",
+        backToProducts: "Kembali ke Produk",
+
+        current: {
+          title: "Deskripsi Produk Saat Ini",
+          empty: "Belum ada deskripsi produk.",
+        },
+
+        generator: {
+          title: "Buat Deskripsi",
+          description:
+            "AI hanya membuat draft. Deskripsi produk tidak berubah sampai Anda memilih Terapkan Deskripsi.",
+
+          form: {
+            tone: "Gaya",
+            tones: {
+              professional: "Profesional",
+              friendly: "Ramah",
+            },
+            languagePlaceholder: "Bahasa",
+            defaultLanguage: "Indonesian",
+            targetAudiencePlaceholder:
+              "Target audiens",
+            instructionsPlaceholder:
+              "Instruksi opsional...",
+          },
+
+          generating: "Membuat...",
+          generate: "Buat Deskripsi AI",
+        },
+
+        latest: {
+          title: "Konten Terbaru dari AI",
+          applying: "Menerapkan...",
+          apply: "Terapkan Deskripsi",
+          productDescription: "Deskripsi Produk",
+          shortDescription: "Deskripsi Singkat",
+          seoTitle: "Judul SEO",
+          metaDescription: "Meta Deskripsi",
+          keywords: "Kata Kunci",
+          applyNote:
+            "Terapkan Deskripsi hanya memperbarui products.description.",
+          empty:
+            "Belum ada deskripsi AI yang selesai.",
+        },
+
+        history: {
+          title: "Riwayat Generasi",
+          empty: "Belum ada riwayat generasi.",
+          date: "Tanggal",
+          created: "Dibuat",
+          provider: "Provider",
+          model: "Model",
+          tone: "Gaya",
+          language: "Bahasa",
+          status: "Status",
+          error: "Error",
+        },
+
+        messages: {
+          generated:
+            "Generasi deskripsi AI selesai.",
+          generationFailed:
+            "Pembuatan deskripsi AI gagal. Silakan coba lagi.",
+          applied:
+            "Deskripsi hasil AI berhasil diterapkan ke produk.",
+          applyFailed:
+            "Gagal menerapkan deskripsi. Silakan coba lagi.",
+          authenticationRequired:
+            "Autentikasi diperlukan.",
+          noOrganization:
+            "Organisasi aktif tidak ditemukan.",
+          toneTooLong:
+            "Gaya terlalu panjang.",
+          languageTooLong:
+            "Bahasa terlalu panjang.",
+          targetAudienceTooLong:
+            "Target audiens terlalu panjang.",
+          instructionsTooLong:
+            "Instruksi terlalu panjang.",
+          productNotFound:
+            "Produk tidak ditemukan.",
+          generationUnavailable:
+            "Pembuatan deskripsi tidak dapat dibuat.",
+        },
+      },
     },
     marketplaces: {
       title: "Integrasi Marketplace",
@@ -1147,6 +1238,97 @@ const dictionaries = {
         delete: {
           confirmPrefix: "Delete image ",
           confirmSuffix: "?",
+        },
+      },
+      aiDescription: {
+        title: "AI Description Generator",
+        description:
+          "Create product-description drafts and SEO metadata with AI assistance.",
+        noOrganization:
+          "No active organization was found.",
+        backToProducts: "Back to Products",
+
+        current: {
+          title: "Current Product Description",
+          empty: "No product description yet.",
+        },
+
+        generator: {
+          title: "Generate Description",
+          description:
+            "AI only creates a draft. The product description will not change until you select Apply Description.",
+
+          form: {
+            tone: "Tone",
+            tones: {
+              professional: "Professional",
+              friendly: "Friendly",
+            },
+            languagePlaceholder: "Language",
+            defaultLanguage: "English",
+            targetAudiencePlaceholder:
+              "Target audience",
+            instructionsPlaceholder:
+              "Optional instructions...",
+          },
+
+          generating: "Generating...",
+          generate: "Generate AI Description",
+        },
+
+        latest: {
+          title: "Latest Generated Content",
+          applying: "Applying...",
+          apply: "Apply Description",
+          productDescription: "Product Description",
+          shortDescription: "Short Description",
+          seoTitle: "SEO Title",
+          metaDescription: "Meta Description",
+          keywords: "Keywords",
+          applyNote:
+            "Apply Description only updates products.description.",
+          empty:
+            "No completed AI description yet.",
+        },
+
+        history: {
+          title: "Generation History",
+          empty: "No generation history.",
+          date: "Date",
+          created: "Created",
+          provider: "Provider",
+          model: "Model",
+          tone: "Tone",
+          language: "Language",
+          status: "Status",
+          error: "Error",
+        },
+
+        messages: {
+          generated:
+            "AI description generation completed.",
+          generationFailed:
+            "AI description generation failed. Please try again.",
+          applied:
+            "The generated description was applied to the product.",
+          applyFailed:
+            "Failed to apply the description. Please try again.",
+          authenticationRequired:
+            "Authentication is required.",
+          noOrganization:
+            "No active organization was found.",
+          toneTooLong:
+            "Tone is too long.",
+          languageTooLong:
+            "Language is too long.",
+          targetAudienceTooLong:
+            "Target audience is too long.",
+          instructionsTooLong:
+            "Instructions are too long.",
+          productNotFound:
+            "Product was not found.",
+          generationUnavailable:
+            "The description generation could not be created.",
         },
       },
     },

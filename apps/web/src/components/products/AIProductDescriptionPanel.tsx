@@ -1,10 +1,12 @@
-﻿"use client";
+"use client";
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
+import { useLanguage } from "@/components/i18n/LanguageProvider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 import { createClient } from "@/lib/supabase/client";
 
 type Product = {
@@ -54,8 +56,8 @@ function stringArray(value: unknown) {
   );
 }
 
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat("id-ID", {
+function formatDate(value: string, locale: "id" | "en") {
+  return new Intl.DateTimeFormat(locale === "id" ? "id-ID" : "en-US", {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value));
@@ -66,6 +68,9 @@ export default function AIProductDescriptionPanel({
   generations,
 }: Props) {
   const router = useRouter();
+  const { locale } = useLanguage();
+  const copy =
+    getDictionary(locale).products.aiDescription;
 
   const [isGenerating, setIsGenerating] =
     useState(false);
@@ -82,6 +87,38 @@ export default function AIProductDescriptionPanel({
         generation.status === "completed",
     ) ?? null;
 
+  function localizeGenerationError(
+    error?: string,
+  ) {
+    switch (error) {
+      case "Organization aktif tidak ditemukan.":
+        return copy.messages.noOrganization;
+
+      case "Authentication required.":
+        return copy.messages.authenticationRequired;
+
+      case "Tone terlalu panjang.":
+        return copy.messages.toneTooLong;
+
+      case "Language terlalu panjang.":
+        return copy.messages.languageTooLong;
+
+      case "Target audience terlalu panjang.":
+        return copy.messages.targetAudienceTooLong;
+
+      case "Instructions terlalu panjang.":
+        return copy.messages.instructionsTooLong;
+
+      case "Product tidak ditemukan.":
+        return copy.messages.productNotFound;
+
+      case "Description generation tidak dapat dibuat.":
+        return copy.messages.generationUnavailable;
+
+      default:
+        return copy.messages.generationFailed;
+    }
+  }
   async function handleGenerate(
     event: FormEvent<HTMLFormElement>,
   ) {
@@ -135,13 +172,12 @@ export default function AIProductDescriptionPanel({
 
       if (!response.ok) {
         throw new Error(
-          data.error ??
-            "Description generation gagal.",
+          localizeGenerationError(data.error),
         );
       }
 
       setMessage(
-        "AI description generation selesai.",
+        copy.messages.generated,
       );
 
       router.refresh();
@@ -149,7 +185,7 @@ export default function AIProductDescriptionPanel({
       setMessage(
         error instanceof Error
           ? error.message
-          : "Description generation gagal.",
+          : copy.messages.generationFailed,
       );
     } finally {
       setIsGenerating(false);
@@ -172,13 +208,13 @@ export default function AIProductDescriptionPanel({
     );
 
     if (error) {
-      setMessage(error.message);
+      setMessage(copy.messages.applyFailed);
       setApplyingId(null);
       return;
     }
 
     setMessage(
-      "Generated description diterapkan ke product.",
+      copy.messages.applied,
     );
 
     setApplyingId(null);
@@ -189,23 +225,22 @@ export default function AIProductDescriptionPanel({
     <div className="space-y-6">
       <div className="rounded-2xl border bg-card p-6 shadow-sm">
         <h2 className="text-lg font-semibold">
-          Current Product Description
+          {copy.current.title}
         </h2>
 
         <div className="mt-4 whitespace-pre-wrap rounded-xl border bg-muted/30 p-4 text-sm leading-6">
           {product.description?.trim() ||
-            "Belum ada product description."}
+            copy.current.empty}
         </div>
       </div>
 
       <div className="rounded-2xl border bg-card p-6 shadow-sm">
         <h2 className="text-lg font-semibold">
-          Generate Description
+          {copy.generator.title}
         </h2>
 
         <p className="mt-1 text-sm text-muted-foreground">
-          AI hanya membuat draft. Product description tidak
-          berubah sampai Anda memilih Apply Description.
+          {copy.generator.description}
         </p>
 
         <form
@@ -219,10 +254,10 @@ export default function AIProductDescriptionPanel({
               className="h-10 rounded-lg border bg-background px-3 text-sm"
             >
               <option value="professional">
-                Professional
+                {copy.generator.form.tones.professional}
               </option>
               <option value="friendly">
-                Friendly
+                {copy.generator.form.tones.friendly}
               </option>
               <option value="premium">
                 Premium
@@ -237,13 +272,13 @@ export default function AIProductDescriptionPanel({
 
             <Input
               name="language"
-              defaultValue="Indonesian"
-              placeholder="Language"
+              defaultValue={copy.generator.form.defaultLanguage}
+              placeholder={copy.generator.form.languagePlaceholder}
             />
 
             <Input
               name="target_audience"
-              placeholder="Target audience"
+              placeholder={copy.generator.form.targetAudiencePlaceholder}
             />
           </div>
 
@@ -251,7 +286,7 @@ export default function AIProductDescriptionPanel({
             name="instructions"
             rows={4}
             className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
-            placeholder="Optional instructions..."
+            placeholder={copy.generator.form.instructionsPlaceholder}
           />
 
           <Button
@@ -259,8 +294,8 @@ export default function AIProductDescriptionPanel({
             disabled={isGenerating}
           >
             {isGenerating
-              ? "Generating..."
-              : "Generate AI Description"}
+              ? copy.generator.generating
+              : copy.generator.generate}
           </Button>
         </form>
 
@@ -276,13 +311,14 @@ export default function AIProductDescriptionPanel({
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <h2 className="text-lg font-semibold">
-                Latest Generated Content
+                {copy.latest.title}
               </h2>
 
               <p className="mt-1 text-sm text-muted-foreground">
                 {latestCompleted.model} •{" "}
                 {formatDate(
                   latestCompleted.created_at,
+                  locale,
                 )}
               </p>
             </div>
@@ -298,14 +334,14 @@ export default function AIProductDescriptionPanel({
               }
             >
               {applyingId === latestCompleted.id
-                ? "Applying..."
-                : "Apply Description"}
+                ? copy.latest.applying
+                : copy.latest.apply}
             </Button>
           </div>
 
           <div>
             <div className="text-sm font-medium">
-              Product Description
+              {copy.latest.productDescription}
             </div>
 
             <div className="mt-2 whitespace-pre-wrap rounded-xl border p-4 text-sm leading-6">
@@ -315,7 +351,7 @@ export default function AIProductDescriptionPanel({
 
           <div>
             <div className="text-sm font-medium">
-              Short Description
+              {copy.latest.shortDescription}
             </div>
 
             <p className="mt-2 text-sm text-muted-foreground">
@@ -327,7 +363,7 @@ export default function AIProductDescriptionPanel({
           <div className="grid gap-6 md:grid-cols-2">
             <div>
               <div className="text-sm font-medium">
-                SEO Title
+                {copy.latest.seoTitle}
               </div>
 
               <p className="mt-2 text-sm text-muted-foreground">
@@ -337,7 +373,7 @@ export default function AIProductDescriptionPanel({
 
             <div>
               <div className="text-sm font-medium">
-                Meta Description
+                {copy.latest.metaDescription}
               </div>
 
               <p className="mt-2 text-sm text-muted-foreground">
@@ -349,7 +385,7 @@ export default function AIProductDescriptionPanel({
 
           <div>
             <div className="text-sm font-medium">
-              Keywords
+              {copy.latest.keywords}
             </div>
 
             <div className="mt-3 flex flex-wrap gap-2">
@@ -367,14 +403,13 @@ export default function AIProductDescriptionPanel({
           </div>
 
           <p className="text-xs text-muted-foreground">
-            Apply Description hanya memperbarui
-            products.description.
+            {copy.latest.applyNote}
           </p>
         </div>
       ) : (
         <div className="rounded-2xl border bg-card px-6 py-10 text-center shadow-sm">
           <p className="font-medium">
-            Belum ada completed AI description.
+            {copy.latest.empty}
           </p>
         </div>
       )}
@@ -382,7 +417,7 @@ export default function AIProductDescriptionPanel({
       <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
         <div className="border-b px-6 py-5">
           <h2 className="text-lg font-semibold">
-            Generation History
+            {copy.history.title}
           </h2>
 
           <p className="mt-1 text-sm text-muted-foreground">
@@ -392,7 +427,7 @@ export default function AIProductDescriptionPanel({
 
         {generations.length === 0 ? (
           <div className="px-6 py-10 text-center text-sm text-muted-foreground">
-            No generation history.
+            {copy.history.empty}
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -400,11 +435,11 @@ export default function AIProductDescriptionPanel({
               <thead className="border-b bg-muted/40 text-left">
                 <tr>
                   <th className="px-6 py-3">Time</th>
-                  <th className="px-6 py-3">Model</th>
-                  <th className="px-6 py-3">Tone</th>
-                  <th className="px-6 py-3">Language</th>
-                  <th className="px-6 py-3">Status</th>
-                  <th className="px-6 py-3">Error</th>
+                  <th className="px-6 py-3">{copy.history.model}</th>
+                  <th className="px-6 py-3">{copy.history.tone}</th>
+                  <th className="px-6 py-3">{copy.history.language}</th>
+                  <th className="px-6 py-3">{copy.history.status}</th>
+                  <th className="px-6 py-3">{copy.history.error}</th>
                 </tr>
               </thead>
 
@@ -415,6 +450,7 @@ export default function AIProductDescriptionPanel({
                       <td className="whitespace-nowrap px-6 py-4">
                         {formatDate(
                           generation.created_at,
+                          locale,
                         )}
                       </td>
 
