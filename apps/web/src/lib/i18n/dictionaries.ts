@@ -50,6 +50,28 @@ const dictionaries = {
       closeSidebar: "Tutup sidebar",
     },
 
+    aiAssistant: {
+      title: "Asisten AI",
+      description:
+        "Asisten AI untuk membantu mengelola dan menganalisis bisnis Anda.",
+
+      assistant: {
+        title: "Asisten AI Commerce",
+        status:
+          "Siap membantu bisnis Anda.",
+      },
+
+      workspace: {
+        title:
+          "Asisten Bisnis AI Anda",
+        description:
+          "Asisten AI akan membantu Anda menganalisis penjualan, memahami pelanggan, mengelola produk, dan menjalankan automasi bisnis.",
+      },
+
+      inputPlaceholder:
+        "Antarmuka chat AI akan tersedia pada tahap berikutnya...",
+    },
+
     agents: {
       page: {
         title: "Agen AI",
@@ -2041,6 +2063,28 @@ const dictionaries = {
 
       closeNavigation: "Close navigation",
       closeSidebar: "Close sidebar",
+    },
+
+    aiAssistant: {
+      title: "AI Assistant",
+      description:
+        "AI assistant to help manage and analyze your business.",
+
+      assistant: {
+        title: "AI Commerce Assistant",
+        status:
+          "Ready to assist your business.",
+      },
+
+      workspace: {
+        title:
+          "Your AI Business Assistant",
+        description:
+          "AI Assistant will help you analyze sales, understand customers, manage products, and run business automation.",
+      },
+
+      inputPlaceholder:
+        "The AI chat interface will be available in the next phase...",
     },
 
     agents: {
