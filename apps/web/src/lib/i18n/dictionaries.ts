@@ -1238,6 +1238,123 @@ const dictionaries = {
           stock: "Stok",
         },
       },
+
+      intelligence: {
+        title: "Analitik & Wawasan",
+        description:
+          "Kinerja perdagangan, inventaris, riset, pemantauan harga, otomasi, dan aktivitas AI selama 30 hari terakhir.",
+        noOrganization:
+          "Organisasi aktif tidak ditemukan.",
+
+        errors: {
+          loadFailed:
+            "Gagal memuat data Analytics & Intelligence.",
+          dataUnavailable:
+            "Data Analytics & Intelligence tidak tersedia.",
+        },
+
+        metrics: {
+          completedRevenue: "Pendapatan Selesai",
+          completedOrdersSuffix: "pesanan selesai",
+          grossProfit: "Laba Kotor",
+          grossMarginSuffix: "margin kotor",
+          averageOrderValue:
+            "Rata-rata Nilai Pesanan",
+          totalOrdersSuffix: "total pesanan",
+          pendingAutomation:
+            "Aksi Otomasi Tertunda",
+          executedRunsSuffix:
+            "eksekusi dijalankan",
+        },
+
+        salesTrend: {
+          title: "Tren Penjualan",
+          descriptionPrefix:
+            "Aktivitas pesanan harian dan pendapatan selesai selama",
+          descriptionSuffix:
+            "hari terakhir.",
+          generated: "Dibuat",
+          orders: "pesanan",
+        },
+
+        orderIntelligence: {
+          title: "Wawasan Pesanan",
+          completed: "Selesai",
+          processing: "Diproses",
+          pending: "Tertunda",
+          cancelled: "Dibatalkan",
+          revenue: "Pendapatan",
+          costOfGoods: "Biaya Barang",
+          grossProfit: "Laba Kotor",
+        },
+
+        catalog: {
+          title: "Katalog & Inventaris",
+          products: "Produk",
+          activeSuffix: "aktif",
+          variants: "Varian",
+          baseStock: "Stok Produk Dasar",
+          variantStock: "Stok Varian",
+          note:
+            "Inventaris Produk Dasar dan Varian dilaporkan secara terpisah untuk mencegah penghitungan ganda.",
+        },
+
+        research: {
+          title: "Riset Produk",
+          totalCandidates:
+            "Total kandidat",
+          shortlisted:
+            "Masuk shortlist",
+          approved: "Disetujui",
+          rejected: "Ditolak",
+          averageOpportunity:
+            "Rata-rata Peluang",
+        },
+
+        price: {
+          title: "Wawasan Harga",
+          monitorTargets:
+            "Target pemantauan",
+          activeTargets:
+            "Target aktif",
+          observations:
+            "Observasi",
+          thresholdAlerts:
+            "Peringatan ambang",
+        },
+
+        automation: {
+          title: "Otomasi",
+          rules: "Aturan",
+          activeRules:
+            "Aturan aktif",
+          executedRuns:
+            "Eksekusi dijalankan",
+          failedRuns:
+            "Eksekusi gagal",
+          pendingActions:
+            "Aksi tertunda",
+        },
+
+        aiActivity: {
+          title: "Aktivitas AI",
+          description:
+            "Aktivitas workflow terkait AI selama periode analitik yang dipilih.",
+          researchAI:
+            "AI Riset",
+          descriptionAI:
+            "AI Deskripsi",
+          agentRuns:
+            "Eksekusi Agent",
+          agentCompleted:
+            "Agent Selesai",
+          agentFailed:
+            "Agent Gagal",
+        },
+
+        readOnlyNote:
+          "Analitik bersifat hanya-baca. Dashboard ini tidak mengubah Produk, Varian, Inventaris, Pesanan, Pemantauan Harga, Otomasi, atau status AI Agent.",
+      },
     },
   },
   en: {
@@ -2475,6 +2592,119 @@ const dictionaries = {
           margin: "Margin",
           stock: "Stock",
         },
+      },
+
+      intelligence: {
+        title: "Analytics & Intelligence",
+        description:
+          "Commerce performance, inventory, research, price monitoring, automation, and AI activity for the last 30 days.",
+        noOrganization:
+          "No active organization found.",
+
+        errors: {
+          loadFailed:
+            "Failed to load Analytics & Intelligence data.",
+          dataUnavailable:
+            "Analytics & Intelligence data is unavailable.",
+        },
+
+        metrics: {
+          completedRevenue: "Completed Revenue",
+          completedOrdersSuffix: "completed orders",
+          grossProfit: "Gross Profit",
+          grossMarginSuffix: "gross margin",
+          averageOrderValue:
+            "Average Order Value",
+          totalOrdersSuffix: "total orders",
+          pendingAutomation:
+            "Pending Automation",
+          executedRunsSuffix:
+            "executed runs",
+        },
+
+        salesTrend: {
+          title: "Sales Trend",
+          descriptionPrefix:
+            "Daily order activity and completed revenue during the last",
+          descriptionSuffix:
+            "days.",
+          generated: "Generated",
+          orders: "orders",
+        },
+
+        orderIntelligence: {
+          title: "Order Intelligence",
+          completed: "Completed",
+          processing: "Processing",
+          pending: "Pending",
+          cancelled: "Cancelled",
+          revenue: "Revenue",
+          costOfGoods: "Cost of Goods",
+          grossProfit: "Gross Profit",
+        },
+
+        catalog: {
+          title: "Catalog & Inventory",
+          products: "Products",
+          activeSuffix: "active",
+          variants: "Variants",
+          baseStock: "Base Stock",
+          variantStock: "Variant Stock",
+          note:
+            "Base Product and Variant inventory are intentionally reported separately to prevent accidental double-counting.",
+        },
+
+        research: {
+          title: "Product Research",
+          totalCandidates:
+            "Total candidates",
+          shortlisted: "Shortlisted",
+          approved: "Approved",
+          rejected: "Rejected",
+          averageOpportunity:
+            "Avg. Opportunity",
+        },
+
+        price: {
+          title: "Price Intelligence",
+          monitorTargets:
+            "Monitor targets",
+          activeTargets:
+            "Active targets",
+          observations:
+            "Observations",
+          thresholdAlerts:
+            "Threshold alerts",
+        },
+
+        automation: {
+          title: "Automation",
+          rules: "Rules",
+          activeRules: "Active rules",
+          executedRuns:
+            "Executed runs",
+          failedRuns: "Failed runs",
+          pendingActions:
+            "Pending actions",
+        },
+
+        aiActivity: {
+          title: "AI Activity",
+          description:
+            "AI-related workflow activity during the selected analytics period.",
+          researchAI:
+            "Research AI",
+          descriptionAI:
+            "Description AI",
+          agentRuns: "Agent Runs",
+          agentCompleted:
+            "Agent Completed",
+          agentFailed:
+            "Agent Failed",
+        },
+
+        readOnlyNote:
+          "Analytics is read-only. This dashboard does not mutate Products, Variants, Inventory, Orders, Price Monitoring, Automation, or AI Agent state.",
       },
     },
   },

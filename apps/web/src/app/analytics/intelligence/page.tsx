@@ -1,11 +1,15 @@
-﻿import DashboardLayout from "@/components/layout/DashboardLayout";
+import DashboardLayout from "@/components/layout/DashboardLayout";
 import CommerceAnalyticsDashboard, {
   type CommerceAnalyticsData,
 } from "@/components/analytics/CommerceAnalyticsDashboard";
+import { getDictionary } from "@/lib/i18n/dictionaries";
+import { getLocale } from "@/lib/i18n/server";
 import { getCurrentOrganization } from "@/lib/supabase/current-organization";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function AnalyticsIntelligencePage() {
+  const locale = await getLocale();
+  const copy = getDictionary(locale).analytics.intelligence;
   const currentOrganization =
     await getCurrentOrganization();
 
@@ -14,11 +18,11 @@ export default async function AnalyticsIntelligencePage() {
       <DashboardLayout>
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
-            Analytics & Intelligence
+            {copy.title}
           </h1>
 
           <p className="mt-2 text-muted-foreground">
-            Organization aktif tidak ditemukan.
+            {copy.noOrganization}
           </p>
         </div>
       </DashboardLayout>
@@ -45,12 +49,12 @@ export default async function AnalyticsIntelligencePage() {
   );
 
   if (error) {
-    throw new Error(error.message);
+    throw new Error(copy.errors.loadFailed);
   }
 
   if (!data) {
     throw new Error(
-      "Analytics intelligence data tidak tersedia.",
+      copy.errors.dataUnavailable,
     );
   }
 
@@ -59,13 +63,11 @@ export default async function AnalyticsIntelligencePage() {
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
-            Analytics & Intelligence
+            {copy.title}
           </h1>
 
           <p className="mt-2 text-muted-foreground">
-            Commerce performance, inventory,
-            research, price monitoring, automation,
-            and AI activity for the last 30 days.
+            {copy.description}
           </p>
         </div>
 
@@ -73,6 +75,7 @@ export default async function AnalyticsIntelligencePage() {
           data={
             data as CommerceAnalyticsData
           }
+          locale={locale}
         />
       </div>
     </DashboardLayout>

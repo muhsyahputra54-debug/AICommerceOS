@@ -1,4 +1,6 @@
-﻿export type CommerceAnalyticsData = {
+import { getDictionary } from "@/lib/i18n/dictionaries";
+
+export type CommerceAnalyticsData = {
   generated_at: string;
   period_days: number;
   period_start: string;
@@ -79,6 +81,7 @@
 
 type Props = {
   data: CommerceAnalyticsData;
+  locale: "id" | "en";
 };
 
 function numeric(
@@ -92,11 +95,12 @@ function numeric(
     : 0;
 }
 
-function money(
+function formatMoney(
   value: number | string | null | undefined,
+  locale: string,
 ) {
   return new Intl.NumberFormat(
-    "id-ID",
+    locale,
     {
       style: "currency",
       currency: "IDR",
@@ -107,11 +111,12 @@ function money(
   );
 }
 
-function number(
+function formatNumber(
   value: number | string | null | undefined,
+  locale: string,
 ) {
   return new Intl.NumberFormat(
-    "id-ID",
+    locale,
     {
       maximumFractionDigits: 2,
     },
@@ -120,11 +125,12 @@ function number(
   );
 }
 
-function date(
+function formatDate(
   value: string,
+  locale: string,
 ) {
   return new Intl.DateTimeFormat(
-    "id-ID",
+    locale,
     {
       day: "2-digit",
       month: "short",
@@ -164,7 +170,24 @@ function MetricCard({
 
 export default function CommerceAnalyticsDashboard({
   data,
+  locale,
 }: Props) {
+  const copy =
+    getDictionary(locale).analytics.intelligence;
+  const localeTag =
+    locale === "id" ? "id-ID" : "en-US";
+
+  const money = (
+    value: number | string | null | undefined,
+  ) => formatMoney(value, localeTag);
+
+  const number = (
+    value: number | string | null | undefined,
+  ) => formatNumber(value, localeTag);
+
+  const date = (value: string) =>
+    formatDate(value, localeTag);
+
   const maxRevenue =
     Math.max(
       ...data.daily_sales.map(
@@ -192,43 +215,43 @@ export default function CommerceAnalyticsDashboard({
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <MetricCard
-          label="Completed Revenue"
+          label={copy.metrics.completedRevenue}
           value={money(
             data.sales.revenue,
           )}
           detail={`${number(
             data.sales.completed_orders,
-          )} completed orders`}
+          )} ${copy.metrics.completedOrdersSuffix}`}
         />
 
         <MetricCard
-          label="Gross Profit"
+          label={copy.metrics.grossProfit}
           value={money(
             data.sales.gross_profit,
           )}
-          detail={`${grossMargin.toFixed(
-            2,
-          )}% gross margin`}
+          detail={`${number(
+            grossMargin,
+          )}% ${copy.metrics.grossMarginSuffix}`}
         />
 
         <MetricCard
-          label="Average Order Value"
+          label={copy.metrics.averageOrderValue}
           value={money(
             data.sales.average_order_value,
           )}
           detail={`${number(
             data.sales.orders,
-          )} total orders`}
+          )} ${copy.metrics.totalOrdersSuffix}`}
         />
 
         <MetricCard
-          label="Pending Automation"
+          label={copy.metrics.pendingAutomation}
           value={number(
             data.automation.pending_actions,
           )}
           detail={`${number(
             data.automation.executed_runs,
-          )} executed runs`}
+          )} ${copy.metrics.executedRunsSuffix}`}
         />
       </div>
 
@@ -236,20 +259,20 @@ export default function CommerceAnalyticsDashboard({
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <h2 className="text-lg font-semibold">
-              Sales Trend
+              {copy.salesTrend.title}
             </h2>
 
             <p className="mt-1 text-sm text-muted-foreground">
-              Daily order activity and completed
-              revenue during the last{" "}
-              {data.period_days} days.
+              {copy.salesTrend.descriptionPrefix}{" "}
+              {data.period_days}{" "}
+              {copy.salesTrend.descriptionSuffix}
             </p>
           </div>
 
           <div className="text-xs text-muted-foreground">
-            Generated{" "}
+            {copy.salesTrend.generated}{" "}
             {new Intl.DateTimeFormat(
-              "id-ID",
+              localeTag,
               {
                 dateStyle: "medium",
                 timeStyle: "short",
@@ -312,7 +335,7 @@ export default function CommerceAnalyticsDashboard({
                     <div className="text-muted-foreground">
                       {number(
                         item.orders,
-                      )} orders
+                      )} {copy.salesTrend.orders}
                     </div>
                   </div>
                 </div>
@@ -325,33 +348,33 @@ export default function CommerceAnalyticsDashboard({
       <div className="grid gap-6 xl:grid-cols-2">
         <div className="rounded-2xl border bg-card p-6 shadow-sm">
           <h2 className="text-lg font-semibold">
-            Order Intelligence
+            {copy.orderIntelligence.title}
           </h2>
 
           <div className="mt-5 grid gap-4 sm:grid-cols-2">
             <MetricCard
-              label="Completed"
+              label={copy.orderIntelligence.completed}
               value={number(
                 data.sales.completed_orders,
               )}
             />
 
             <MetricCard
-              label="Processing"
+              label={copy.orderIntelligence.processing}
               value={number(
                 data.sales.processing_orders,
               )}
             />
 
             <MetricCard
-              label="Pending"
+              label={copy.orderIntelligence.pending}
               value={number(
                 data.sales.pending_orders,
               )}
             />
 
             <MetricCard
-              label="Cancelled"
+              label={copy.orderIntelligence.cancelled}
               value={number(
                 data.sales.cancelled_orders,
               )}
@@ -361,7 +384,7 @@ export default function CommerceAnalyticsDashboard({
           <div className="mt-5 grid gap-3 text-sm">
             <div className="flex justify-between border-b pb-3">
               <span className="text-muted-foreground">
-                Revenue
+                {copy.orderIntelligence.revenue}
               </span>
 
               <span className="font-medium">
@@ -373,7 +396,7 @@ export default function CommerceAnalyticsDashboard({
 
             <div className="flex justify-between border-b pb-3">
               <span className="text-muted-foreground">
-                Cost of Goods
+                {copy.orderIntelligence.costOfGoods}
               </span>
 
               <span className="font-medium">
@@ -385,7 +408,7 @@ export default function CommerceAnalyticsDashboard({
 
             <div className="flex justify-between">
               <span className="text-muted-foreground">
-                Gross Profit
+                {copy.orderIntelligence.grossProfit}
               </span>
 
               <span className="font-medium">
@@ -399,29 +422,29 @@ export default function CommerceAnalyticsDashboard({
 
         <div className="rounded-2xl border bg-card p-6 shadow-sm">
           <h2 className="text-lg font-semibold">
-            Catalog & Inventory
+            {copy.catalog.title}
           </h2>
 
           <div className="mt-5 grid gap-4 sm:grid-cols-2">
             <MetricCard
-              label="Products"
+              label={copy.catalog.products}
               value={number(
                 data.catalog.products,
               )}
               detail={`${number(
                 data.catalog.active_products,
-              )} active`}
+              )} ${copy.catalog.activeSuffix}`}
             />
 
             <MetricCard
-              label="Variants"
+              label={copy.catalog.variants}
               value={number(
                 data.catalog.variants,
               )}
             />
 
             <MetricCard
-              label="Base Stock"
+              label={copy.catalog.baseStock}
               value={number(
                 data.catalog.base_stock_units,
               )}
@@ -431,7 +454,7 @@ export default function CommerceAnalyticsDashboard({
             />
 
             <MetricCard
-              label="Variant Stock"
+              label={copy.catalog.variantStock}
               value={number(
                 data.catalog.variant_stock_units,
               )}
@@ -442,9 +465,7 @@ export default function CommerceAnalyticsDashboard({
           </div>
 
           <p className="mt-4 text-xs text-muted-foreground">
-            Base Product and Variant inventory are
-            intentionally reported separately to
-            prevent accidental double-counting.
+            {copy.catalog.note}
           </p>
         </div>
       </div>
@@ -452,12 +473,12 @@ export default function CommerceAnalyticsDashboard({
       <div className="grid gap-6 xl:grid-cols-3">
         <div className="rounded-2xl border bg-card p-6 shadow-sm">
           <h2 className="text-lg font-semibold">
-            Product Research
+            {copy.research.title}
           </h2>
 
           <div className="mt-5 space-y-3 text-sm">
             <div className="flex justify-between">
-              <span>Total candidates</span>
+              <span>{copy.research.totalCandidates}</span>
               <strong>
                 {number(
                   data.research.total,
@@ -466,7 +487,7 @@ export default function CommerceAnalyticsDashboard({
             </div>
 
             <div className="flex justify-between">
-              <span>Shortlisted</span>
+              <span>{copy.research.shortlisted}</span>
               <strong>
                 {number(
                   data.research.shortlisted,
@@ -475,7 +496,7 @@ export default function CommerceAnalyticsDashboard({
             </div>
 
             <div className="flex justify-between">
-              <span>Approved</span>
+              <span>{copy.research.approved}</span>
               <strong>
                 {number(
                   data.research.approved,
@@ -484,7 +505,7 @@ export default function CommerceAnalyticsDashboard({
             </div>
 
             <div className="flex justify-between">
-              <span>Rejected</span>
+              <span>{copy.research.rejected}</span>
               <strong>
                 {number(
                   data.research.rejected,
@@ -494,7 +515,7 @@ export default function CommerceAnalyticsDashboard({
 
             <div className="flex justify-between border-t pt-3">
               <span>
-                Avg. Opportunity
+                {copy.research.averageOpportunity}
               </span>
 
               <strong>
@@ -509,12 +530,12 @@ export default function CommerceAnalyticsDashboard({
 
         <div className="rounded-2xl border bg-card p-6 shadow-sm">
           <h2 className="text-lg font-semibold">
-            Price Intelligence
+            {copy.price.title}
           </h2>
 
           <div className="mt-5 space-y-3 text-sm">
             <div className="flex justify-between">
-              <span>Monitor targets</span>
+              <span>{copy.price.monitorTargets}</span>
 
               <strong>
                 {number(
@@ -525,7 +546,7 @@ export default function CommerceAnalyticsDashboard({
             </div>
 
             <div className="flex justify-between">
-              <span>Active targets</span>
+              <span>{copy.price.activeTargets}</span>
 
               <strong>
                 {number(
@@ -536,7 +557,7 @@ export default function CommerceAnalyticsDashboard({
             </div>
 
             <div className="flex justify-between">
-              <span>Observations</span>
+              <span>{copy.price.observations}</span>
 
               <strong>
                 {number(
@@ -547,7 +568,7 @@ export default function CommerceAnalyticsDashboard({
             </div>
 
             <div className="flex justify-between border-t pt-3">
-              <span>Threshold alerts</span>
+              <span>{copy.price.thresholdAlerts}</span>
 
               <strong>
                 {number(
@@ -561,12 +582,12 @@ export default function CommerceAnalyticsDashboard({
 
         <div className="rounded-2xl border bg-card p-6 shadow-sm">
           <h2 className="text-lg font-semibold">
-            Automation
+            {copy.automation.title}
           </h2>
 
           <div className="mt-5 space-y-3 text-sm">
             <div className="flex justify-between">
-              <span>Rules</span>
+              <span>{copy.automation.rules}</span>
 
               <strong>
                 {number(
@@ -576,7 +597,7 @@ export default function CommerceAnalyticsDashboard({
             </div>
 
             <div className="flex justify-between">
-              <span>Active rules</span>
+              <span>{copy.automation.activeRules}</span>
 
               <strong>
                 {number(
@@ -586,7 +607,7 @@ export default function CommerceAnalyticsDashboard({
             </div>
 
             <div className="flex justify-between">
-              <span>Executed runs</span>
+              <span>{copy.automation.executedRuns}</span>
 
               <strong>
                 {number(
@@ -596,7 +617,7 @@ export default function CommerceAnalyticsDashboard({
             </div>
 
             <div className="flex justify-between">
-              <span>Failed runs</span>
+              <span>{copy.automation.failedRuns}</span>
 
               <strong>
                 {number(
@@ -606,7 +627,7 @@ export default function CommerceAnalyticsDashboard({
             </div>
 
             <div className="flex justify-between border-t pt-3">
-              <span>Pending actions</span>
+              <span>{copy.automation.pendingActions}</span>
 
               <strong>
                 {number(
@@ -620,45 +641,44 @@ export default function CommerceAnalyticsDashboard({
 
       <div className="rounded-2xl border bg-card p-6 shadow-sm">
         <h2 className="text-lg font-semibold">
-          AI Activity
+          {copy.aiActivity.title}
         </h2>
 
         <p className="mt-1 text-sm text-muted-foreground">
-          AI-related workflow activity during
-          the selected analytics period.
+          {copy.aiActivity.description}
         </p>
 
         <div className="mt-5 grid gap-4 md:grid-cols-5">
           <MetricCard
-            label="Research AI"
+            label={copy.aiActivity.researchAI}
             value={number(
               data.ai_activity.research_runs,
             )}
           />
 
           <MetricCard
-            label="Description AI"
+            label={copy.aiActivity.descriptionAI}
             value={number(
               data.ai_activity.description_runs,
             )}
           />
 
           <MetricCard
-            label="Agent Runs"
+            label={copy.aiActivity.agentRuns}
             value={number(
               data.ai_activity.agent_runs,
             )}
           />
 
           <MetricCard
-            label="Agent Completed"
+            label={copy.aiActivity.agentCompleted}
             value={number(
               data.ai_activity.agent_completed,
             )}
           />
 
           <MetricCard
-            label="Agent Failed"
+            label={copy.aiActivity.agentFailed}
             value={number(
               data.ai_activity.agent_failed,
             )}
@@ -667,10 +687,7 @@ export default function CommerceAnalyticsDashboard({
       </div>
 
       <div className="rounded-xl border bg-muted/30 px-5 py-4 text-sm text-muted-foreground">
-        Analytics is read-only. This dashboard does
-        not mutate Products, Variants, Inventory,
-        Orders, Price Monitoring, Automation, or
-        AI Agent state.
+        {copy.readOnlyNote}
       </div>
     </div>
   );
