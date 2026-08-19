@@ -219,7 +219,11 @@ export async function POST(
 
   const [
     productsResult,
+    productsCountResult,
+    nonpositiveStockCountResult,
+    nonpositivePriceCountResult,
     ordersResult,
+    ordersCountResult,
     customersResult,
     priceTargetsResult,
     priceObservationsResult,
@@ -234,6 +238,56 @@ export async function POST(
         organizationId,
       )
       .limit(30),
+
+    supabase
+      .from("products")
+      .select(
+        "id",
+        {
+          count: "exact",
+          head: true,
+        },
+      )
+      .eq(
+        "organization_id",
+        organizationId,
+      ),
+
+    supabase
+      .from("products")
+      .select(
+        "id",
+        {
+          count: "exact",
+          head: true,
+        },
+      )
+      .eq(
+        "organization_id",
+        organizationId,
+      )
+      .lte(
+        "stock",
+        0,
+      ),
+
+    supabase
+      .from("products")
+      .select(
+        "id",
+        {
+          count: "exact",
+          head: true,
+        },
+      )
+      .eq(
+        "organization_id",
+        organizationId,
+      )
+      .lte(
+        "price",
+        0,
+      ),
 
     supabase
       .from("orders")
@@ -251,6 +305,20 @@ export async function POST(
         },
       )
       .limit(30),
+
+    supabase
+      .from("orders")
+      .select(
+        "id",
+        {
+          count: "exact",
+          head: true,
+        },
+      )
+      .eq(
+        "organization_id",
+        organizationId,
+      ),
 
     supabase
       .from("customers")
@@ -297,7 +365,11 @@ export async function POST(
 
   const contextError =
     productsResult.error ??
+    productsCountResult.error ??
+    nonpositiveStockCountResult.error ??
+    nonpositivePriceCountResult.error ??
     ordersResult.error ??
+    ordersCountResult.error ??
     customersResult.error ??
     priceTargetsResult.error ??
     priceObservationsResult.error;
@@ -314,16 +386,90 @@ export async function POST(
     );
   }
 
+  const products =
+    productsResult.data ?? [];
+
+  const recentOrders =
+    ordersResult.data ?? [];
+
+  const recentOrdersByStatus =
+    recentOrders.reduce<Record<string, number>>(
+      (summary, order) => {
+        const status =
+          order.status?.trim() ||
+          "unknown";
+
+        summary[status] =
+          (summary[status] ?? 0) + 1;
+
+        return summary;
+      },
+      {},
+    );
+
+  const recentOrderValue =
+    recentOrders.reduce(
+      (sum, order) => {
+        const total =
+          Number(order.total ?? 0);
+
+        return (
+          sum +
+          (Number.isFinite(total)
+            ? total
+            : 0)
+        );
+      },
+      0,
+    );
+
   const businessContext = {
     generated_at:
       new Date().toISOString(),
 
-    products:
-      productsResult.data ?? [],
+    business_summary: {
+      products: {
+        total_count:
+          productsCountResult.count ??
+          products.length,
+
+        nonpositive_stock_count:
+          nonpositiveStockCountResult.count ??
+          0,
+
+        nonpositive_price_count:
+          nonpositivePriceCountResult.count ??
+          0,
+      },
+
+      orders: {
+        total_count:
+          ordersCountResult.count ??
+          recentOrders.length,
+
+        recent_count:
+          recentOrders.length,
+
+        recent_value:
+          recentOrderValue,
+
+        recent_by_status:
+          recentOrdersByStatus,
+
+        recent_window_limit: 30,
+      },
+
+      customers: {
+        total_count:
+          customersResult.count ?? 0,
+      },
+    },
+
+    products,
 
     sales: {
       recent_orders:
-        ordersResult.data ?? [],
+        recentOrders,
 
       customer_count:
         customersResult.count ?? 0,
@@ -338,8 +484,12 @@ export async function POST(
     },
 
     limitations: [
-      "Only the 30 selected product records are included.",
-      "Only the 30 most recent orders are included.",
+      "Only the 30 selected product records are included as product details.",
+      "Only the 30 most recent orders are included as order details.",
+      "business_summary.orders.recent_value is only the sum of total from those recent order records. It is not official revenue, profit, or completed-sales value.",
+      "The recent order value includes all order statuses in the recent window.",
+      "nonpositive_stock_count means products where stock is less than or equal to zero.",
+      "nonpositive_price_count means products where price is less than or equal to zero.",
       "Order item details are not included.",
       "Customer names, email addresses, and phone numbers are not included.",
       "Competitor prices come only from stored price monitoring observations.",
@@ -381,6 +531,10 @@ export async function POST(
           "Give one primary recommendation first. Add more recommendations only when they are clearly useful.",
           "",
           "For facts about the current organization, use only the supplied business context.",
+          "Use business_summary as the primary source for high-level business counts and recent-order summaries.",
+          "Do not describe business_summary.orders.recent_value as revenue, profit, net sales, or completed sales. It is only the sum of order totals in the recent order window and may include different statuses.",
+          "Use business_summary.orders.recent_by_status when the distinction between order statuses matters.",
+          "Do not infer official profit or margin from product price and cost alone. If the user explicitly asks for a simple estimate and sufficient data exists, clearly label it as an estimate.",
           "Do not invent unavailable products, orders, customers, prices, costs, inventory, competitor prices, or sales data.",
           "For competitor-price questions, use only price_monitoring targets and observations supplied in the business context.",
           "Do not claim that competitor pricing is live or current unless the supplied data explicitly supports that claim.",
