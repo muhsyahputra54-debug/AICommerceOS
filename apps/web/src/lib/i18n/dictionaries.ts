@@ -1265,7 +1265,7 @@ const dictionaries = {
               friendly: "Friendly",
             },
             languagePlaceholder: "Language",
-            defaultLanguage: "English",
+            defaultLanguage: "Indonesian",
             targetAudiencePlaceholder:
               "Target audience",
             instructionsPlaceholder:
