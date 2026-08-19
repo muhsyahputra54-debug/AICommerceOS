@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import EditProductForm from "@/components/products/EditProductForm";
+import { getDictionary } from "@/lib/i18n/dictionaries";
+import { getLocale } from "@/lib/i18n/server";
 import { getCurrentOrganization } from "@/lib/supabase/current-organization";
 import { createClient } from "@/lib/supabase/server";
 
@@ -14,17 +16,23 @@ type EditProductPageProps = {
 export default async function EditProductPage({
   params,
 }: EditProductPageProps) {
-  const currentOrganization = await getCurrentOrganization();
+  const locale = await getLocale();
+  const productsCopy =
+    getDictionary(locale).products;
+
+  const currentOrganization =
+    await getCurrentOrganization();
 
   if (!currentOrganization) {
     return (
       <DashboardLayout>
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
-            Edit Product
+            {productsCopy.workflow.edit.title}
           </h1>
+
           <p className="mt-2 text-muted-foreground">
-            Organization aktif tidak ditemukan.
+            {productsCopy.noOrganization}
           </p>
         </div>
       </DashboardLayout>
@@ -35,8 +43,14 @@ export default async function EditProductPage({
   const supabase = await createClient();
 
   const [
-    { data: product, error: productError },
-    { data: categories, error: categoriesError },
+    {
+      data: product,
+      error: productError,
+    },
+    {
+      data: categories,
+      error: categoriesError,
+    },
   ] = await Promise.all([
     supabase
       .from("products")
@@ -44,14 +58,22 @@ export default async function EditProductPage({
         "id, name, description, sku, category_id, price, cost_price, stock, status",
       )
       .eq("id", id)
-      .eq("organization_id", currentOrganization.organizationId)
+      .eq(
+        "organization_id",
+        currentOrganization.organizationId,
+      )
       .maybeSingle(),
 
     supabase
       .from("categories")
       .select("id, name")
-      .eq("organization_id", currentOrganization.organizationId)
-      .order("name", { ascending: true }),
+      .eq(
+        "organization_id",
+        currentOrganization.organizationId,
+      )
+      .order("name", {
+        ascending: true,
+      }),
   ]);
 
   if (productError) {
@@ -59,7 +81,9 @@ export default async function EditProductPage({
   }
 
   if (categoriesError) {
-    throw new Error(categoriesError.message);
+    throw new Error(
+      categoriesError.message,
+    );
   }
 
   if (!product) {
@@ -71,18 +95,22 @@ export default async function EditProductPage({
       <div className="mx-auto max-w-3xl space-y-6">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
-            Edit Product
+            {productsCopy.workflow.edit.title}
           </h1>
+
           <p className="mt-2 text-muted-foreground">
-            Perbarui informasi produk pada organization aktif.
+            {productsCopy.workflow.edit.description}
           </p>
         </div>
 
         <div className="rounded-2xl border bg-card p-6 shadow-sm">
           <EditProductForm
-            organizationId={currentOrganization.organizationId}
+            organizationId={
+              currentOrganization.organizationId
+            }
             product={product}
             categories={categories}
+            copy={productsCopy.workflow}
           />
         </div>
       </div>

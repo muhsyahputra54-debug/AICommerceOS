@@ -268,6 +268,66 @@ const dictionaries = {
         deleting: "Menghapus...",
         delete: "Hapus",
       },
+
+      workflow: {
+        add: {
+          title: "Tambah Produk",
+          description:
+            "Tambahkan produk baru ke katalog organisasi aktif.",
+          saveProduct: "Simpan produk",
+        },
+
+        edit: {
+          title: "Edit Produk",
+          description:
+            "Perbarui informasi produk pada organisasi aktif.",
+          saveChanges: "Simpan perubahan",
+        },
+
+        fields: {
+          productName: "Nama produk",
+          productNamePlaceholder:
+            "Contoh: Kaos Premium",
+          sku: "SKU",
+          skuPlaceholder:
+            "Contoh: TSHIRT-BLK-M",
+          skuHelp:
+            "Opsional. Harus unik dalam organisasi.",
+          category: "Kategori",
+          noCategory: "Tanpa kategori",
+          description: "Deskripsi",
+          descriptionPlaceholder:
+            "Deskripsi singkat produk",
+          sellingPrice: "Harga Jual",
+          costPrice: "Harga Modal",
+          stock: "Stok",
+          status: "Status",
+          active: "Aktif",
+          inactive: "Tidak Aktif",
+        },
+
+        validation: {
+          nameRequired:
+            "Nama produk wajib diisi.",
+          priceInvalid:
+            "Harga harus bernilai 0 atau lebih.",
+          costPriceInvalid:
+            "Harga modal harus bernilai 0 atau lebih.",
+          stockInvalid:
+            "Stok harus berupa bilangan bulat 0 atau lebih.",
+          statusInvalid:
+            "Status produk tidak valid.",
+          skuInUse:
+            "SKU sudah digunakan pada organisasi ini.",
+          notFound:
+            "Produk tidak ditemukan atau tidak dapat diubah.",
+        },
+
+        actions: {
+          cancel: "Batal",
+          saving: "Menyimpan...",
+        },
+      },
     },
     marketplaces: {
       title: "Integrasi Marketplace",
@@ -686,6 +746,66 @@ const dictionaries = {
           "The product was not found or cannot be deleted.",
         deleting: "Deleting...",
         delete: "Delete",
+      },
+
+      workflow: {
+        add: {
+          title: "Add Product",
+          description:
+            "Add a new product to the active organization's catalog.",
+          saveProduct: "Save product",
+        },
+
+        edit: {
+          title: "Edit Product",
+          description:
+            "Update product information for the active organization.",
+          saveChanges: "Save changes",
+        },
+
+        fields: {
+          productName: "Product name",
+          productNamePlaceholder:
+            "Example: Premium T-Shirt",
+          sku: "SKU",
+          skuPlaceholder:
+            "Example: TSHIRT-BLK-M",
+          skuHelp:
+            "Optional. Must be unique within the organization.",
+          category: "Category",
+          noCategory: "No category",
+          description: "Description",
+          descriptionPlaceholder:
+            "Short product description",
+          sellingPrice: "Selling Price",
+          costPrice: "Cost Price",
+          stock: "Stock",
+          status: "Status",
+          active: "Active",
+          inactive: "Inactive",
+        },
+
+        validation: {
+          nameRequired:
+            "Product name is required.",
+          priceInvalid:
+            "Price must be 0 or greater.",
+          costPriceInvalid:
+            "Cost price must be 0 or greater.",
+          stockInvalid:
+            "Stock must be an integer of 0 or greater.",
+          statusInvalid:
+            "Product status is invalid.",
+          skuInUse:
+            "SKU is already used in this organization.",
+          notFound:
+            "The product was not found or cannot be updated.",
+        },
+
+        actions: {
+          cancel: "Cancel",
+          saving: "Saving...",
+        },
       },
     },
     marketplaces: {
