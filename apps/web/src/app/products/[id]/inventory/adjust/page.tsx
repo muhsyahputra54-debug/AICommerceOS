@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
 
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import { getDictionary } from "@/lib/i18n/dictionaries";
+import { getLocale } from "@/lib/i18n/server";
 import AdjustInventoryForm from "@/components/inventory/AdjustInventoryForm";
 import SetLowStockThresholdForm from "@/components/inventory/SetLowStockThresholdForm";
 import { getCurrentOrganization } from "@/lib/supabase/current-organization";
@@ -15,6 +17,10 @@ type ProductInventoryAdjustPageProps = {
 export default async function ProductInventoryAdjustPage({
   params,
 }: ProductInventoryAdjustPageProps) {
+  const locale = await getLocale();
+  const copy =
+    getDictionary(locale).products.inventoryAdjustment;
+
   const currentOrganization = await getCurrentOrganization();
 
   if (!currentOrganization) {
@@ -22,11 +28,11 @@ export default async function ProductInventoryAdjustPage({
       <DashboardLayout>
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
-            Adjust Product Stock
+            {copy.page.noOrganizationTitle}
           </h1>
 
           <p className="mt-2 text-muted-foreground">
-            Organization aktif tidak ditemukan.
+            {copy.page.noOrganization}
           </p>
         </div>
       </DashboardLayout>
@@ -56,11 +62,11 @@ export default async function ProductInventoryAdjustPage({
       <div className="mx-auto max-w-3xl space-y-6">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
-            Product Inventory
+            {copy.page.title}
           </h1>
 
           <p className="mt-2 text-muted-foreground">
-            Kelola stock dan low-stock intelligence untuk product.
+            {copy.page.description}
           </p>
         </div>
 

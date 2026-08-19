@@ -590,6 +590,51 @@ const dictionaries = {
             "Pembuatan deskripsi tidak dapat dibuat.",
         },
       },
+      inventoryAdjustment: {
+        page: {
+          noOrganizationTitle: "Sesuaikan Stok Produk",
+          noOrganization:
+            "Organisasi aktif tidak ditemukan.",
+          title: "Inventori Produk",
+          description:
+            "Kelola stok dan peringatan stok rendah untuk produk.",
+        },
+
+        adjustForm: {
+          target: "Target inventori",
+          currentStock: "Stok saat ini",
+          adjustment: "Penyesuaian stok",
+          adjustmentPlaceholder:
+            "Contoh: 10 atau -3",
+          adjustmentHelp:
+            "Gunakan angka positif untuk menambah stok dan angka negatif untuk mengurangi stok.",
+          note: "Catatan",
+          notePlaceholder:
+            "Contoh: Stock opname gudang",
+          cancel: "Batal",
+          adjusting: "Menyesuaikan...",
+          submit: "Sesuaikan stok",
+          invalidAdjustment:
+            "Perubahan stok harus berupa bilangan bulat selain 0.",
+          updateFailed:
+            "Gagal memperbarui stok. Silakan coba lagi.",
+        },
+
+        thresholdForm: {
+          title: "Peringatan Stok Rendah",
+          description:
+            "Inventori akan ditandai stok rendah ketika stok lebih besar dari 0 dan kurang dari atau sama dengan ambang ini.",
+          label: "Ambang stok rendah",
+          saving: "Menyimpan...",
+          submit: "Simpan ambang",
+          invalidThreshold:
+            "Ambang stok rendah harus berupa bilangan bulat 0 atau lebih.",
+          success:
+            "Ambang stok rendah berhasil diperbarui.",
+          updateFailed:
+            "Gagal memperbarui ambang stok rendah. Silakan coba lagi.",
+        },
+      },
     },
     marketplaces: {
       title: "Integrasi Marketplace",
@@ -1329,6 +1374,51 @@ const dictionaries = {
             "Product was not found.",
           generationUnavailable:
             "The description generation could not be created.",
+        },
+      },
+      inventoryAdjustment: {
+        page: {
+          noOrganizationTitle: "Adjust Product Stock",
+          noOrganization:
+            "No active organization was found.",
+          title: "Product Inventory",
+          description:
+            "Manage stock and low-stock alerts for this product.",
+        },
+
+        adjustForm: {
+          target: "Inventory target",
+          currentStock: "Current stock",
+          adjustment: "Stock adjustment",
+          adjustmentPlaceholder:
+            "Example: 10 or -3",
+          adjustmentHelp:
+            "Use a positive number to increase stock and a negative number to reduce stock.",
+          note: "Note",
+          notePlaceholder:
+            "Example: Warehouse stock count",
+          cancel: "Cancel",
+          adjusting: "Adjusting...",
+          submit: "Adjust stock",
+          invalidAdjustment:
+            "The stock adjustment must be a non-zero integer.",
+          updateFailed:
+            "Failed to update stock. Please try again.",
+        },
+
+        thresholdForm: {
+          title: "Low Stock Alert",
+          description:
+            "Inventory is marked as low stock when stock is greater than 0 and less than or equal to this threshold.",
+          label: "Low stock threshold",
+          saving: "Saving...",
+          submit: "Save threshold",
+          invalidThreshold:
+            "The low stock threshold must be an integer of 0 or greater.",
+          success:
+            "Low stock threshold updated successfully.",
+          updateFailed:
+            "Failed to update the low stock threshold. Please try again.",
         },
       },
     },

@@ -3,8 +3,10 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
+import { useLanguage } from "@/components/i18n/LanguageProvider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 import { createClient } from "@/lib/supabase/client";
 
 type SetLowStockThresholdFormProps = {
@@ -21,6 +23,9 @@ export default function SetLowStockThresholdForm({
   currentThreshold,
 }: SetLowStockThresholdFormProps) {
   const router = useRouter();
+  const { locale } = useLanguage();
+  const copy =
+    getDictionary(locale).products.inventoryAdjustment.thresholdForm;
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -38,7 +43,7 @@ export default function SetLowStockThresholdForm({
 
     if (!Number.isInteger(threshold) || threshold < 0) {
       setErrorMessage(
-        "Low stock threshold harus berupa bilangan bulat 0 atau lebih.",
+        copy.invalidThreshold,
       );
       setIsSubmitting(false);
       return;
@@ -54,12 +59,12 @@ export default function SetLowStockThresholdForm({
     });
 
     if (error) {
-      setErrorMessage(error.message);
+      setErrorMessage(copy.updateFailed);
       setIsSubmitting(false);
       return;
     }
 
-    setSuccessMessage("Low stock threshold berhasil diperbarui.");
+    setSuccessMessage(copy.success);
     setIsSubmitting(false);
 
     router.refresh();
@@ -69,12 +74,11 @@ export default function SetLowStockThresholdForm({
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <h2 className="text-lg font-semibold">
-          Low Stock Alert
+          {copy.title}
         </h2>
 
         <p className="mt-1 text-sm text-muted-foreground">
-          Inventory akan ditandai low stock ketika stock lebih besar
-          dari 0 dan kurang dari atau sama dengan threshold ini.
+          {copy.description}
         </p>
       </div>
 
@@ -83,7 +87,7 @@ export default function SetLowStockThresholdForm({
           htmlFor="low_stock_threshold"
           className="text-sm font-medium"
         >
-          Low stock threshold
+          {copy.label}
         </label>
 
         <Input
@@ -110,7 +114,7 @@ export default function SetLowStockThresholdForm({
       ) : null}
 
       <Button type="submit" disabled={isSubmitting}>
-        {isSubmitting ? "Saving..." : "Save threshold"}
+        {isSubmitting ? copy.saving : copy.submit}
       </Button>
     </form>
   );
