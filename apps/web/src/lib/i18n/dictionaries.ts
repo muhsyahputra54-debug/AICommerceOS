@@ -347,6 +347,78 @@ const dictionaries = {
         },
       },
     },
+    analytics: {
+      title: "Analitik",
+      description:
+        "Kinerja produk berdasarkan pesanan selesai pada organisasi aktif.",
+      noOrganization:
+        "Organisasi aktif tidak ditemukan.",
+
+      emptySales: {
+        title: "Belum ada penjualan selesai",
+        description:
+          "Pendapatan, biaya, laba, margin, dan tren penjualan akan dihitung dari pesanan nyata setelah mencapai status selesai.",
+      },
+
+      metrics: {
+        revenue: {
+          label: "Pendapatan",
+          description:
+            "Hanya penjualan selesai",
+        },
+        cost: {
+          label: "Biaya",
+          description:
+            "Snapshot biaya historis",
+        },
+        grossProfit: {
+          label: "Laba Kotor",
+          description:
+            "Pendapatan dikurangi biaya historis",
+        },
+        grossMargin: {
+          label: "Margin Kotor",
+          description:
+            "Laba kotor / pendapatan",
+        },
+        completedOrders: "Pesanan Selesai",
+        unitsSold: "Unit Terjual",
+        productsSold: "Produk Terjual",
+        averageOrderValue:
+          "Rata-rata Nilai Pesanan",
+      },
+
+      chart: {
+        title: "Tren Penjualan",
+        description:
+          "Pendapatan dan laba kotor dalam 30 hari terakhir",
+        emptyTitle:
+          "Belum ada penjualan selesai",
+        emptyDescription:
+          "Tren akan muncul setelah pesanan mencapai status selesai.",
+        revenueLabel: "Pendapatan",
+        profitLabel: "Laba",
+      },
+
+      productPerformance: {
+        title: "Kinerja Produk",
+        description:
+          "Metrik penjualan menggunakan pesanan selesai dan biaya historis.",
+        empty:
+          "Belum ada produk pada organisasi aktif.",
+
+        columns: {
+          product: "Produk",
+          sku: "SKU",
+          units: "Unit",
+          revenue: "Pendapatan",
+          cost: "Biaya",
+          profit: "Laba",
+          margin: "Margin",
+          stock: "Stok",
+        },
+      },
+    },
   },
   en: {
     common: {
@@ -691,6 +763,78 @@ const dictionaries = {
           confirmPrefix: "Delete marketplace ",
           confirmSuffix:
             "? Listings, order links, and sync logs for this account will also be deleted.",
+        },
+      },
+    },
+    analytics: {
+      title: "Analytics",
+      description:
+        "Product performance based on completed orders for the active organization.",
+      noOrganization:
+        "No active organization found.",
+
+      emptySales: {
+        title: "No completed sales yet",
+        description:
+          "Revenue, cost, profit, margin, and sales trends will be calculated from real orders after they reach completed status.",
+      },
+
+      metrics: {
+        revenue: {
+          label: "Revenue",
+          description:
+            "Completed sales only",
+        },
+        cost: {
+          label: "Cost",
+          description:
+            "Historical cost snapshots",
+        },
+        grossProfit: {
+          label: "Gross Profit",
+          description:
+            "Revenue minus historical cost",
+        },
+        grossMargin: {
+          label: "Gross Margin",
+          description:
+            "Gross profit / revenue",
+        },
+        completedOrders: "Completed Orders",
+        unitsSold: "Units Sold",
+        productsSold: "Products Sold",
+        averageOrderValue:
+          "Average Order Value",
+      },
+
+      chart: {
+        title: "Sales Trend",
+        description:
+          "Revenue and gross profit over the last 30 days",
+        emptyTitle:
+          "No completed sales yet",
+        emptyDescription:
+          "The trend will appear after an order reaches completed status.",
+        revenueLabel: "Revenue",
+        profitLabel: "Profit",
+      },
+
+      productPerformance: {
+        title: "Product Performance",
+        description:
+          "Sales metrics use completed orders and historical cost.",
+        empty:
+          "No products found in the active organization.",
+
+        columns: {
+          product: "Product",
+          sku: "SKU",
+          units: "Units",
+          revenue: "Revenue",
+          cost: "Cost",
+          profit: "Profit",
+          margin: "Margin",
+          stock: "Stock",
         },
       },
     },

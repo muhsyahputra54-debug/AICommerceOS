@@ -1,12 +1,16 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import type { ReactNode } from "react";
 
 import RevenueChart, {
   type SalesTrendPoint,
 } from "@/components/dashboard/RevenueChart";
 import DashboardLayout from "@/components/layout/DashboardLayout";
+
 import { getCurrentOrganization } from "@/lib/supabase/current-organization";
 import { createClient } from "@/lib/supabase/server";
+import { getDictionary } from "@/lib/i18n/dictionaries";
+import { getLocale } from "@/lib/i18n/server";
+import type { Locale } from "@/lib/i18n/config";
 
 type MonetaryValue = number | string;
 
@@ -52,25 +56,51 @@ const emptySummary: SalesSummary = {
 
 function toNumber(value: MonetaryValue) {
   const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : 0;
+
+  return Number.isFinite(parsed)
+    ? parsed
+    : 0;
 }
 
-function formatCurrency(value: MonetaryValue) {
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    maximumFractionDigits: 0,
-  }).format(toNumber(value));
+function getIntlLocale(locale: Locale) {
+  return locale === "id"
+    ? "id-ID"
+    : "en-US";
 }
 
-function formatNumber(value: MonetaryValue) {
-  return new Intl.NumberFormat("id-ID").format(toNumber(value));
+function formatCurrency(
+  value: MonetaryValue,
+  locale: Locale,
+) {
+  return new Intl.NumberFormat(
+    getIntlLocale(locale),
+    {
+      style: "currency",
+      currency: "IDR",
+      maximumFractionDigits: 0,
+    },
+  ).format(toNumber(value));
 }
 
-function formatPercent(value: MonetaryValue) {
-  return `${toNumber(value).toLocaleString("id-ID", {
-    maximumFractionDigits: 2,
-  })}%`;
+function formatNumber(
+  value: MonetaryValue,
+  locale: Locale,
+) {
+  return new Intl.NumberFormat(
+    getIntlLocale(locale),
+  ).format(toNumber(value));
+}
+
+function formatPercent(
+  value: MonetaryValue,
+  locale: Locale,
+) {
+  return `${toNumber(value).toLocaleString(
+    getIntlLocale(locale),
+    {
+      maximumFractionDigits: 2,
+    },
+  )}%`;
 }
 
 function MetricCard({
@@ -98,18 +128,23 @@ function MetricCard({
 }
 
 export default async function AnalyticsPage() {
-  const currentOrganization = await getCurrentOrganization();
+  const locale = await getLocale();
+  const analytics =
+    getDictionary(locale).analytics;
+
+  const currentOrganization =
+    await getCurrentOrganization();
 
   if (!currentOrganization) {
     return (
       <DashboardLayout>
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
-            Analytics
+            {analytics.title}
           </h1>
 
           <p className="mt-2 text-muted-foreground">
-            Organization aktif tidak ditemukan.
+            {analytics.noOrganization}
           </p>
         </div>
       </DashboardLayout>
@@ -123,43 +158,64 @@ export default async function AnalyticsPage() {
     performanceResult,
     trendResult,
   ] = await Promise.all([
-    supabase.rpc("get_sales_performance_summary", {
-      p_organization_id: currentOrganization.organizationId,
-    }),
+    supabase.rpc(
+      "get_sales_performance_summary",
+      {
+        p_organization_id:
+          currentOrganization.organizationId,
+      },
+    ),
 
-    supabase.rpc("get_product_performance", {
-      p_organization_id: currentOrganization.organizationId,
-      p_product_id: null,
-    }),
+    supabase.rpc(
+      "get_product_performance",
+      {
+        p_organization_id:
+          currentOrganization.organizationId,
+        p_product_id: null,
+      },
+    ),
 
-    supabase.rpc("get_sales_trend", {
-      p_organization_id: currentOrganization.organizationId,
-      p_days: 30,
-    }),
+    supabase.rpc(
+      "get_sales_trend",
+      {
+        p_organization_id:
+          currentOrganization.organizationId,
+        p_days: 30,
+      },
+    ),
   ]);
 
   if (summaryResult.error) {
-    throw new Error(summaryResult.error.message);
+    throw new Error(
+      summaryResult.error.message,
+    );
   }
 
   if (performanceResult.error) {
-    throw new Error(performanceResult.error.message);
+    throw new Error(
+      performanceResult.error.message,
+    );
   }
 
   if (trendResult.error) {
-    throw new Error(trendResult.error.message);
+    throw new Error(
+      trendResult.error.message,
+    );
   }
 
   const summary = {
     ...emptySummary,
-    ...((summaryResult.data ?? {}) as unknown as Partial<SalesSummary>),
+    ...((summaryResult.data ??
+      {}) as unknown as Partial<SalesSummary>),
   };
 
   const products =
-    (performanceResult.data ?? []) as unknown as ProductPerformanceRow[];
+    (performanceResult.data ??
+      []) as unknown as ProductPerformanceRow[];
 
   const trend =
-    (trendResult.data ?? []) as unknown as SalesTrendPoint[];
+    (trendResult.data ??
+      []) as unknown as SalesTrendPoint[];
 
   const hasCompletedSales =
     toNumber(summary.completed_orders) > 0;
@@ -169,95 +225,168 @@ export default async function AnalyticsPage() {
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
-            Analytics
+            {analytics.title}
           </h1>
 
           <p className="mt-2 text-muted-foreground">
-            Product performance berdasarkan completed orders organization aktif.
+            {analytics.description}
           </p>
         </div>
 
         {!hasCompletedSales ? (
           <div className="rounded-2xl border border-dashed bg-card p-6">
             <h2 className="font-semibold">
-              Belum ada completed sales
+              {analytics.emptySales.title}
             </h2>
 
             <p className="mt-2 text-sm text-muted-foreground">
-              Revenue, cost, profit, margin, dan sales trend akan dihitung
-              dari order nyata setelah mencapai status completed.
+              {analytics.emptySales.description}
             </p>
           </div>
         ) : null}
 
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <MetricCard
-            label="Revenue"
-            value={formatCurrency(summary.revenue)}
-            description="Completed sales only"
+            label={
+              analytics.metrics.revenue.label
+            }
+            value={formatCurrency(
+              summary.revenue,
+              locale,
+            )}
+            description={
+              analytics.metrics.revenue
+                .description
+            }
           />
 
           <MetricCard
-            label="Cost"
-            value={formatCurrency(summary.cost)}
-            description="Historical cost snapshots"
+            label={
+              analytics.metrics.cost.label
+            }
+            value={formatCurrency(
+              summary.cost,
+              locale,
+            )}
+            description={
+              analytics.metrics.cost
+                .description
+            }
           />
 
           <MetricCard
-            label="Gross Profit"
-            value={formatCurrency(summary.profit)}
-            description="Revenue dikurangi historical cost"
+            label={
+              analytics.metrics.grossProfit
+                .label
+            }
+            value={formatCurrency(
+              summary.profit,
+              locale,
+            )}
+            description={
+              analytics.metrics.grossProfit
+                .description
+            }
           />
 
           <MetricCard
-            label="Gross Margin"
-            value={formatPercent(summary.margin)}
-            description="Gross profit / revenue"
+            label={
+              analytics.metrics.grossMargin
+                .label
+            }
+            value={formatPercent(
+              summary.margin,
+              locale,
+            )}
+            description={
+              analytics.metrics.grossMargin
+                .description
+            }
           />
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <MetricCard
-            label="Completed Orders"
-            value={formatNumber(summary.completed_orders)}
+            label={
+              analytics.metrics
+                .completedOrders
+            }
+            value={formatNumber(
+              summary.completed_orders,
+              locale,
+            )}
           />
 
           <MetricCard
-            label="Units Sold"
-            value={formatNumber(summary.units_sold)}
+            label={
+              analytics.metrics.unitsSold
+            }
+            value={formatNumber(
+              summary.units_sold,
+              locale,
+            )}
           />
 
           <MetricCard
-            label="Products Sold"
-            value={formatNumber(summary.products_sold)}
+            label={
+              analytics.metrics.productsSold
+            }
+            value={formatNumber(
+              summary.products_sold,
+              locale,
+            )}
           />
 
           <MetricCard
-            label="Average Order Value"
-            value={formatCurrency(summary.average_order_value)}
+            label={
+              analytics.metrics
+                .averageOrderValue
+            }
+            value={formatCurrency(
+              summary.average_order_value,
+              locale,
+            )}
           />
         </div>
 
         <RevenueChart
           data={trend}
-          title="Sales Trend"
-          description="Revenue dan gross profit 30 hari terakhir"
+          locale={locale}
+          title={analytics.chart.title}
+          description={
+            analytics.chart.description
+          }
+          emptyTitle={
+            analytics.chart.emptyTitle
+          }
+          emptyDescription={
+            analytics.chart.emptyDescription
+          }
+          revenueLabel={
+            analytics.chart.revenueLabel
+          }
+          profitLabel={
+            analytics.chart.profitLabel
+          }
         />
 
         <div className="rounded-2xl border bg-card shadow-sm">
           <div className="border-b p-5">
             <h2 className="text-lg font-semibold">
-              Product Performance
+              {analytics.productPerformance.title}
             </h2>
 
             <p className="mt-1 text-sm text-muted-foreground">
-              Sales metrics menggunakan completed orders dan historical cost.
+              {
+                analytics.productPerformance
+                  .description
+              }
             </p>
           </div>
 
           {products.length === 0 ? (
             <div className="p-8 text-center text-sm text-muted-foreground">
-              Belum ada product pada organization aktif.
+              {analytics.productPerformance.empty}
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -265,28 +394,67 @@ export default async function AnalyticsPage() {
                 <thead className="border-b bg-muted/40">
                   <tr>
                     <th className="px-5 py-3 text-left font-medium">
-                      Product
+                      {
+                        analytics
+                          .productPerformance
+                          .columns.product
+                      }
                     </th>
+
                     <th className="px-5 py-3 text-left font-medium">
-                      SKU
+                      {
+                        analytics
+                          .productPerformance
+                          .columns.sku
+                      }
                     </th>
+
                     <th className="px-5 py-3 text-right font-medium">
-                      Units
+                      {
+                        analytics
+                          .productPerformance
+                          .columns.units
+                      }
                     </th>
+
                     <th className="px-5 py-3 text-right font-medium">
-                      Revenue
+                      {
+                        analytics
+                          .productPerformance
+                          .columns.revenue
+                      }
                     </th>
+
                     <th className="px-5 py-3 text-right font-medium">
-                      Cost
+                      {
+                        analytics
+                          .productPerformance
+                          .columns.cost
+                      }
                     </th>
+
                     <th className="px-5 py-3 text-right font-medium">
-                      Profit
+                      {
+                        analytics
+                          .productPerformance
+                          .columns.profit
+                      }
                     </th>
+
                     <th className="px-5 py-3 text-right font-medium">
-                      Margin
+                      {
+                        analytics
+                          .productPerformance
+                          .columns.margin
+                      }
                     </th>
+
                     <th className="px-5 py-3 text-right font-medium">
-                      Stock
+                      {
+                        analytics
+                          .productPerformance
+                          .columns.stock
+                      }
                     </th>
                   </tr>
                 </thead>
@@ -311,27 +479,45 @@ export default async function AnalyticsPage() {
                       </td>
 
                       <td className="px-5 py-4 text-right">
-                        {formatNumber(product.total_units_sold)}
+                        {formatNumber(
+                          product.total_units_sold,
+                          locale,
+                        )}
                       </td>
 
                       <td className="px-5 py-4 text-right">
-                        {formatCurrency(product.revenue)}
+                        {formatCurrency(
+                          product.revenue,
+                          locale,
+                        )}
                       </td>
 
                       <td className="px-5 py-4 text-right">
-                        {formatCurrency(product.cost)}
+                        {formatCurrency(
+                          product.cost,
+                          locale,
+                        )}
                       </td>
 
                       <td className="px-5 py-4 text-right">
-                        {formatCurrency(product.profit)}
+                        {formatCurrency(
+                          product.profit,
+                          locale,
+                        )}
                       </td>
 
                       <td className="px-5 py-4 text-right">
-                        {formatPercent(product.margin)}
+                        {formatPercent(
+                          product.margin,
+                          locale,
+                        )}
                       </td>
 
                       <td className="px-5 py-4 text-right">
-                        {formatNumber(product.stock)}
+                        {formatNumber(
+                          product.stock,
+                          locale,
+                        )}
                       </td>
                     </tr>
                   ))}
