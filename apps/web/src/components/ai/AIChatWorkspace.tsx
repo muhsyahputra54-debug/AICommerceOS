@@ -48,8 +48,27 @@ type AIChatWorkspaceProps = {
 
 type ChatResponse = {
   message?: string;
+  conversationId?: string | null;
   error?: string;
 };
+
+type ConversationRecord = {
+  id: string;
+  archived_at?: string | null;
+};
+
+type ConversationResponse = {
+  conversation?:
+    | ConversationRecord
+    | null;
+
+  error?: string;
+};
+
+type ConversationDetailResponse =
+  ConversationResponse & {
+    messages?: ChatMessage[];
+  };
 
 const MAX_MESSAGE_LENGTH = 4000;
 const MAX_CONTEXT_MESSAGES = 20;
@@ -60,17 +79,163 @@ export default function AIChatWorkspace({
   const [messages, setMessages] =
     useState<ChatMessage[]>([]);
 
+  const [conversationId, setConversationId] =
+    useState<string | null>(null);
+
   const [input, setInput] =
     useState("");
 
   const [isLoading, setIsLoading] =
     useState(false);
 
+  const [
+    isConversationLoading,
+    setIsConversationLoading,
+  ] = useState(true);
+
   const [errorMessage, setErrorMessage] =
     useState<string | null>(null);
 
   const conversationEndRef =
     useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const controller =
+      new AbortController();
+
+    async function loadConversation() {
+      setIsConversationLoading(true);
+      setErrorMessage(null);
+
+      try {
+        const activeResponse =
+          await fetch(
+            "/api/ai/conversations",
+            {
+              cache: "no-store",
+              signal:
+                controller.signal,
+            },
+          );
+
+        const activeData =
+          (await activeResponse
+            .json()
+            .catch(
+              () => ({}),
+            )) as ConversationResponse;
+
+        if (!activeResponse.ok) {
+          throw new Error(
+            activeData.error?.trim() ||
+              copy.errorFallback,
+          );
+        }
+
+        const activeConversationId =
+          activeData.conversation?.id;
+
+        if (!activeConversationId) {
+          setConversationId(null);
+          setMessages([]);
+          return;
+        }
+
+        const detailResponse =
+          await fetch(
+            `/api/ai/conversations/${activeConversationId}`,
+            {
+              cache: "no-store",
+              signal:
+                controller.signal,
+            },
+          );
+
+        const detailData =
+          (await detailResponse
+            .json()
+            .catch(
+              () => ({}),
+            )) as ConversationDetailResponse;
+
+        if (!detailResponse.ok) {
+          throw new Error(
+            detailData.error?.trim() ||
+              copy.errorFallback,
+          );
+        }
+
+        if (
+          detailData.conversation
+            ?.archived_at
+        ) {
+          setConversationId(null);
+          setMessages([]);
+          return;
+        }
+
+        const persistedMessages =
+          Array.isArray(
+            detailData.messages,
+          )
+            ? detailData.messages.filter(
+                (message) =>
+                  (
+                    message.role ===
+                      "user" ||
+                    message.role ===
+                      "assistant"
+                  ) &&
+                  typeof message.content ===
+                    "string" &&
+                  Boolean(
+                    message.content.trim(),
+                  ),
+              )
+            : [];
+
+        setConversationId(
+          activeConversationId,
+        );
+
+        setMessages(
+          persistedMessages,
+        );
+      } catch (error) {
+        if (
+          controller.signal.aborted
+        ) {
+          return;
+        }
+
+        setConversationId(null);
+        setMessages([]);
+
+        setErrorMessage(
+          error instanceof Error &&
+            error.message.trim()
+            ? error.message
+            : copy.errorFallback,
+        );
+      } finally {
+        if (
+          !controller.signal.aborted
+        ) {
+          setIsConversationLoading(
+            false,
+          );
+        }
+      }
+    }
+
+    void loadConversation();
+
+    return () => {
+      controller.abort();
+    };
+  }, [
+    copy.errorFallback,
+  ]);
 
   useEffect(() => {
     conversationEndRef.current?.scrollIntoView({
@@ -86,7 +251,10 @@ export default function AIChatWorkspace({
   async function sendMessage(
     rawContent: string,
   ) {
-    if (isLoading) {
+    if (
+      isLoading ||
+      isConversationLoading
+    ) {
       return;
     }
 
@@ -97,31 +265,94 @@ export default function AIChatWorkspace({
       return;
     }
 
-    const userMessage: ChatMessage = {
-      role: "user",
-      content,
-    };
+    if (
+      content.length >
+      MAX_MESSAGE_LENGTH
+    ) {
+      return;
+    }
 
-    const previousContext =
-      messages.slice(
-        -(MAX_CONTEXT_MESSAGES - 1),
-      );
-
-    const requestMessages = [
-      ...previousContext,
-      userMessage,
-    ];
-
-    setMessages((current) => [
-      ...current,
-      userMessage,
-    ]);
-
-    setInput("");
     setErrorMessage(null);
     setIsLoading(true);
 
+    let activeConversationId =
+      conversationId;
+
     try {
+      if (!activeConversationId) {
+        const createResponse =
+          await fetch(
+            "/api/ai/conversations",
+            {
+              method: "POST",
+
+              headers: {
+                "Content-Type":
+                  "application/json",
+              },
+
+              body: JSON.stringify({
+                firstMessage:
+                  content,
+              }),
+            },
+          );
+
+        const createData =
+          (await createResponse
+            .json()
+            .catch(
+              () => ({}),
+            )) as ConversationResponse;
+
+        const createdId =
+          createData.conversation?.id;
+
+        if (
+          !createResponse.ok ||
+          !createdId
+        ) {
+          setErrorMessage(
+            createData.error?.trim() ||
+              copy.errorFallback,
+          );
+
+          return;
+        }
+
+        activeConversationId =
+          createdId;
+
+        setConversationId(
+          createdId,
+        );
+      }
+
+      const userMessage: ChatMessage = {
+        role: "user",
+        content,
+      };
+
+      const previousContext =
+        messages.slice(
+          -(
+            MAX_CONTEXT_MESSAGES -
+            1
+          ),
+        );
+
+      const requestMessages = [
+        ...previousContext,
+        userMessage,
+      ];
+
+      setMessages((current) => [
+        ...current,
+        userMessage,
+      ]);
+
+      setInput("");
+
       const response =
         await fetch(
           "/api/ai/chat",
@@ -134,6 +365,9 @@ export default function AIChatWorkspace({
             },
 
             body: JSON.stringify({
+              conversationId:
+                activeConversationId,
+
               messages:
                 requestMessages,
             }),
@@ -154,6 +388,17 @@ export default function AIChatWorkspace({
         setErrorMessage(
           data.error?.trim() ||
             copy.errorFallback,
+        );
+
+        return;
+      }
+
+      if (
+        data.conversationId !==
+        activeConversationId
+      ) {
+        setErrorMessage(
+          copy.errorFallback,
         );
 
         return;
@@ -198,18 +443,72 @@ export default function AIChatWorkspace({
     }
   }
 
-  function clearConversation() {
-    if (isLoading) {
+  async function clearConversation() {
+    if (
+      isLoading ||
+      isConversationLoading
+    ) {
       return;
     }
 
-    setMessages([]);
-    setInput("");
+    const activeConversationId =
+      conversationId;
+
+    if (!activeConversationId) {
+      setMessages([]);
+      setInput("");
+      setErrorMessage(null);
+      return;
+    }
+
+    setIsConversationLoading(true);
     setErrorMessage(null);
+
+    try {
+      const response =
+        await fetch(
+          `/api/ai/conversations/${activeConversationId}`,
+          {
+            method: "PATCH",
+          },
+        );
+
+      const data =
+        (await response
+          .json()
+          .catch(
+            () => ({}),
+          )) as ConversationResponse;
+
+      if (!response.ok) {
+        setErrorMessage(
+          data.error?.trim() ||
+            copy.errorFallback,
+        );
+
+        return;
+      }
+
+      setConversationId(null);
+      setMessages([]);
+      setInput("");
+    } catch {
+      setErrorMessage(
+        copy.errorFallback,
+      );
+    } finally {
+      setIsConversationLoading(
+        false,
+      );
+    }
   }
 
   const hasConversation =
     messages.length > 0;
+
+  const canClearConversation =
+    Boolean(conversationId) ||
+    hasConversation;
 
   return (
     <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
@@ -242,8 +541,9 @@ export default function AIChatWorkspace({
           type="button"
           onClick={clearConversation}
           disabled={
-            !hasConversation ||
-            isLoading
+            !canClearConversation ||
+            isLoading ||
+            isConversationLoading
           }
           className="inline-flex h-9 items-center gap-2 rounded-lg border px-3 text-sm font-medium transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
         >
@@ -255,7 +555,11 @@ export default function AIChatWorkspace({
 
       {/* Conversation */}
       <div className="min-h-[430px] max-h-[620px] overflow-y-auto p-4 sm:p-6">
-        {!hasConversation ? (
+        {isConversationLoading ? (
+          <div className="flex min-h-[380px] items-center justify-center">
+            <LoaderCircle className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : !hasConversation ? (
           <div className="flex min-h-[380px] flex-col items-center justify-center text-center">
             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
               <Sparkles className="h-8 w-8 text-primary" />
@@ -275,7 +579,7 @@ export default function AIChatWorkspace({
                   <button
                     key={suggestion}
                     type="button"
-                    disabled={isLoading}
+                    disabled={isLoading || isConversationLoading}
                     onClick={() => {
                       void sendMessage(
                         suggestion,
@@ -407,7 +711,7 @@ export default function AIChatWorkspace({
             maxLength={
               MAX_MESSAGE_LENGTH
             }
-            disabled={isLoading}
+            disabled={isLoading || isConversationLoading}
             placeholder={
               copy.inputPlaceholder
             }
