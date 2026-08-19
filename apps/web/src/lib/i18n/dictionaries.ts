@@ -328,6 +328,104 @@ const dictionaries = {
           saving: "Menyimpan...",
         },
       },
+
+      variants: {
+        title: "Varian Produk",
+        backToProducts: "Kembali ke Produk",
+        descriptionPrefix:
+          "Kelola varian untuk",
+        addVariant: "Tambah Varian",
+
+        management: {
+          title: "Manajemen Varian",
+          countSuffix: "varian ditemukan.",
+          emptyTitle: "Belum ada varian produk",
+          emptyDescription:
+            "Varian yang ditambahkan nanti akan tampil di sini.",
+        },
+
+        table: {
+          variant: "Varian",
+          sku: "SKU",
+          sellingPrice: "Harga Jual",
+          costPrice: "Harga Modal",
+          stock: "Stok",
+          status: "Status",
+          actions: "Aksi",
+        },
+
+        statuses: {
+          active: "Aktif",
+          inactive: "Tidak Aktif",
+        },
+
+        actions: {
+          edit: "Edit",
+          adjustStock: "Sesuaikan Stok",
+        },
+
+        add: {
+          title: "Tambah Varian Produk",
+          descriptionPrefix:
+            "Tambahkan varian untuk",
+          saveVariant: "Simpan varian",
+        },
+
+        edit: {
+          title: "Edit Varian Produk",
+          descriptionPrefix:
+            "Perbarui varian untuk",
+          saveChanges: "Simpan perubahan",
+        },
+
+        form: {
+          variantName: "Nama varian",
+          variantNamePlaceholder:
+            "Contoh: Hitam / Medium",
+          sku: "SKU",
+          skuPlaceholder:
+            "Contoh: TSHIRT-BLK-M",
+          skuHelp:
+            "SKU harus unik dalam organisasi, termasuk terhadap SKU produk.",
+          sellingPrice: "Harga Jual",
+          costPrice: "Harga Modal",
+          stock: "Stok",
+          status: "Status",
+          active: "Aktif",
+          inactive: "Tidak Aktif",
+          cancel: "Batal",
+          saving: "Menyimpan...",
+        },
+
+        validation: {
+          nameRequired:
+            "Nama varian wajib diisi.",
+          skuRequired:
+            "SKU varian wajib diisi.",
+          priceInvalid:
+            "Harga jual harus bernilai 0 atau lebih.",
+          costPriceInvalid:
+            "Harga modal harus bernilai 0 atau lebih.",
+          stockInvalid:
+            "Stok harus berupa bilangan bulat 0 atau lebih.",
+          statusInvalid:
+            "Status varian tidak valid.",
+          skuInUse:
+            "SKU sudah digunakan pada organisasi ini.",
+          notFound:
+            "Varian tidak ditemukan atau tidak dapat diubah.",
+        },
+
+        delete: {
+          confirmPrefix: "Hapus varian ",
+          confirmSuffix:
+            "? Tindakan ini tidak dapat dibatalkan.",
+          notFound:
+            "Varian tidak ditemukan atau tidak dapat dihapus.",
+          deleting: "Menghapus...",
+          delete: "Hapus",
+        },
+      },
     },
     marketplaces: {
       title: "Integrasi Marketplace",
@@ -805,6 +903,104 @@ const dictionaries = {
         actions: {
           cancel: "Cancel",
           saving: "Saving...",
+        },
+      },
+
+      variants: {
+        title: "Product Variants",
+        backToProducts: "Back to Products",
+        descriptionPrefix:
+          "Manage variants for",
+        addVariant: "Add Variant",
+
+        management: {
+          title: "Variant Management",
+          countSuffix: "variants found.",
+          emptyTitle: "No product variants yet",
+          emptyDescription:
+            "Variants you add will appear here.",
+        },
+
+        table: {
+          variant: "Variant",
+          sku: "SKU",
+          sellingPrice: "Selling Price",
+          costPrice: "Cost Price",
+          stock: "Stock",
+          status: "Status",
+          actions: "Actions",
+        },
+
+        statuses: {
+          active: "Active",
+          inactive: "Inactive",
+        },
+
+        actions: {
+          edit: "Edit",
+          adjustStock: "Adjust Stock",
+        },
+
+        add: {
+          title: "Add Product Variant",
+          descriptionPrefix:
+            "Add a variant for",
+          saveVariant: "Save variant",
+        },
+
+        edit: {
+          title: "Edit Product Variant",
+          descriptionPrefix:
+            "Update the variant for",
+          saveChanges: "Save changes",
+        },
+
+        form: {
+          variantName: "Variant name",
+          variantNamePlaceholder:
+            "Example: Black / Medium",
+          sku: "SKU",
+          skuPlaceholder:
+            "Example: TSHIRT-BLK-M",
+          skuHelp:
+            "SKU must be unique within the organization, including product SKUs.",
+          sellingPrice: "Selling Price",
+          costPrice: "Cost Price",
+          stock: "Stock",
+          status: "Status",
+          active: "Active",
+          inactive: "Inactive",
+          cancel: "Cancel",
+          saving: "Saving...",
+        },
+
+        validation: {
+          nameRequired:
+            "Variant name is required.",
+          skuRequired:
+            "Variant SKU is required.",
+          priceInvalid:
+            "Selling price must be 0 or greater.",
+          costPriceInvalid:
+            "Cost price must be 0 or greater.",
+          stockInvalid:
+            "Stock must be an integer of 0 or greater.",
+          statusInvalid:
+            "Variant status is invalid.",
+          skuInUse:
+            "SKU is already used in this organization.",
+          notFound:
+            "The variant was not found or cannot be updated.",
+        },
+
+        delete: {
+          confirmPrefix: "Delete variant ",
+          confirmSuffix:
+            "? This action cannot be undone.",
+          notFound:
+            "The variant was not found or cannot be deleted.",
+          deleting: "Deleting...",
+          delete: "Delete",
         },
       },
     },

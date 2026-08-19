@@ -4,13 +4,18 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
 import { createClient } from "@/lib/supabase/client";
+
+type DeleteCopy =
+  Dictionary["products"]["variants"]["delete"];
 
 type DeleteProductVariantButtonProps = {
   organizationId: string;
   productId: string;
   variantId: string;
   variantName: string;
+  copy: DeleteCopy;
 };
 
 export default function DeleteProductVariantButton({
@@ -18,15 +23,25 @@ export default function DeleteProductVariantButton({
   productId,
   variantId,
   variantName,
+  copy,
 }: DeleteProductVariantButtonProps) {
   const router = useRouter();
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const [
+    isDeleting,
+    setIsDeleting,
+  ] = useState(false);
+
+  const [
+    errorMessage,
+    setErrorMessage,
+  ] = useState<string | null>(null);
 
   async function handleDelete() {
-    const confirmed = window.confirm(
-      `Hapus variant "${variantName}"? Tindakan ini tidak dapat dibatalkan.`,
-    );
+    const confirmed =
+      window.confirm(
+        `${copy.confirmPrefix}"${variantName}"${copy.confirmSuffix}`,
+      );
 
     if (!confirmed) {
       return;
@@ -37,12 +52,21 @@ export default function DeleteProductVariantButton({
 
     const supabase = createClient();
 
-    const { data, error } = await supabase
+    const {
+      data,
+      error,
+    } = await supabase
       .from("product_variants")
       .delete()
       .eq("id", variantId)
-      .eq("product_id", productId)
-      .eq("organization_id", organizationId)
+      .eq(
+        "product_id",
+        productId,
+      )
+      .eq(
+        "organization_id",
+        organizationId,
+      )
       .select("id")
       .maybeSingle();
 
@@ -54,8 +78,9 @@ export default function DeleteProductVariantButton({
 
     if (!data) {
       setErrorMessage(
-        "Variant tidak ditemukan atau tidak dapat dihapus.",
+        copy.notFound,
       );
+
       setIsDeleting(false);
       return;
     }
@@ -72,7 +97,9 @@ export default function DeleteProductVariantButton({
         onClick={handleDelete}
         disabled={isDeleting}
       >
-        {isDeleting ? "Deleting..." : "Delete"}
+        {isDeleting
+          ? copy.deleting
+          : copy.delete}
       </Button>
 
       {errorMessage ? (
