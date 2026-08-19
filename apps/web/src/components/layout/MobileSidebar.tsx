@@ -56,6 +56,11 @@ const menus = [
     href: "/ai",
   },
   {
+    key: "aiAgents",
+    icon: Sparkles,
+    href: "/agents",
+  },
+  {
     key: "products",
     icon: Package,
     href: "/products",
