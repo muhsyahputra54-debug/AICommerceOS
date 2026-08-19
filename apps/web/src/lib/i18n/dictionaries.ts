@@ -635,6 +635,157 @@ const dictionaries = {
             "Gagal memperbarui ambang stok rendah. Silakan coba lagi.",
         },
       },
+      performance: {
+        title: "Performa Produk",
+        noOrganization:
+          "Organisasi aktif tidak ditemukan.",
+        description:
+          "Penjualan, pendapatan, biaya historis, laba, margin, dan stok saat ini.",
+        analytics: "Analitik",
+        backToProducts: "Kembali ke Produk",
+        noSalesTitle:
+          "Belum ada penjualan selesai",
+        noSalesDescription:
+          "Produk ini belum memiliki penjualan yang selesai. Metrik performa tetap ditampilkan sebagai nilai nol.",
+        metrics: {
+          unitsSold: "Unit Terjual",
+          revenue: "Pendapatan",
+          historicalCost: "Biaya Historis",
+          grossProfit: "Laba Kotor",
+          grossMargin: "Margin Kotor",
+          currentStock: "Stok Saat Ini",
+        },
+        note:
+          "Pendapatan dan biaya menggunakan snapshot pesanan yang sudah selesai. Perubahan harga jual atau biaya produk setelah pesanan dibuat tidak mengubah performa historis.",
+      },
+
+      supplierSourcing: {
+        noOrganizationTitle:
+          "Supplier Produk",
+        noOrganization:
+          "Organisasi aktif tidak ditemukan.",
+        backToProducts:
+          "Kembali ke Produk",
+        title:
+          "Sourcing Supplier Produk",
+        descriptionPrefix:
+          "Kelola supplier untuk",
+
+        manager: {
+          addTitle:
+            "Tambah Sumber Supplier",
+          addDescription:
+            "Hubungkan supplier ke produk utama atau varian produk.",
+          noActiveTitle:
+            "Belum ada supplier aktif",
+          noActiveDescription:
+            "Tambahkan supplier terlebih dahulu sebelum membuat relasi sourcing.",
+          addSupplier:
+            "Tambah Supplier",
+
+          selectSupplier:
+            "Pilih supplier",
+          baseProduct:
+            "Produk Utama",
+          variant:
+            "Varian",
+          unitCost:
+            "Biaya Unit",
+          minimumOrderQuantity:
+            "Jumlah Pesanan Minimum",
+          leadTimeDays:
+            "Lead Time (hari)",
+          leadTime:
+            "Lead Time",
+          notes:
+            "Catatan",
+          optional:
+            "Opsional",
+          notesPlaceholder:
+            "Catatan sourcing opsional",
+          preferredForTarget:
+            "Supplier utama untuk target ini",
+
+          saving:
+            "Menyimpan...",
+          addSource:
+            "Tambah sumber supplier",
+
+          relationsTitle:
+            "Relasi Sourcing",
+          relationsCount:
+            "{count} relasi supplier ditemukan.",
+          noRelationsTitle:
+            "Belum ada relasi supplier",
+          noRelationsDescription:
+            "Tambahkan sumber supplier untuk produk atau varian.",
+
+          preferred:
+            "Utama",
+          actions:
+            "Aksi",
+          edit:
+            "Edit",
+          delete:
+            "Hapus",
+          editTitle:
+            "Edit Ketentuan Sourcing",
+          saveChanges:
+            "Simpan perubahan",
+          cancel:
+            "Batal",
+
+          unknownVariant:
+            "Varian tidak dikenal",
+          unknownTarget:
+            "Target tidak dikenal",
+          unknownSupplier:
+            "Tidak dikenal",
+          genericSupplier:
+            "supplier",
+
+          days:
+            "{count} hari",
+
+          supplierRequired:
+            "Supplier wajib dipilih.",
+          targetInvalid:
+            "Target sourcing tidak valid.",
+          moqInvalid:
+            "MOQ minimal 1.",
+
+          duplicateAdd:
+            "Relasi supplier sudah ada atau target sudah memiliki supplier utama.",
+          duplicateEdit:
+            "Target sudah memiliki supplier utama lain.",
+
+          addFailed:
+            "Gagal menambahkan sumber supplier. Silakan coba lagi.",
+          editFailed:
+            "Gagal memperbarui sumber supplier. Silakan coba lagi.",
+          deleteFailed:
+            "Gagal menghapus sumber supplier. Silakan coba lagi.",
+
+          relationNotEditable:
+            "Relasi supplier tidak ditemukan atau tidak dapat diubah.",
+          relationNotDeletable:
+            "Relasi supplier tidak ditemukan atau tidak dapat dihapus.",
+
+          deleteConfirm:
+            "Hapus relasi {supplier} dari {target}?",
+        },
+      },
+
+      variantInventory: {
+        noOrganizationTitle:
+          "Sesuaikan Stok Varian",
+        noOrganization:
+          "Organisasi aktif tidak ditemukan.",
+        title:
+          "Inventori Varian",
+        description:
+          "Kelola stok dan peringatan stok rendah untuk varian.",
+      },
     },
     marketplaces: {
       title: "Integrasi Marketplace",
@@ -1420,6 +1571,157 @@ const dictionaries = {
           updateFailed:
             "Failed to update the low stock threshold. Please try again.",
         },
+      },
+      performance: {
+        title: "Product Performance",
+        noOrganization:
+          "No active organization was found.",
+        description:
+          "Sales, revenue, historical cost, profit, margin, and current stock.",
+        analytics: "Analytics",
+        backToProducts: "Back to Products",
+        noSalesTitle:
+          "No completed sales yet",
+        noSalesDescription:
+          "This product has no completed sales yet. Performance metrics are still displayed as actual zero values.",
+        metrics: {
+          unitsSold: "Units Sold",
+          revenue: "Revenue",
+          historicalCost: "Historical Cost",
+          grossProfit: "Gross Profit",
+          grossMargin: "Gross Margin",
+          currentStock: "Current Stock",
+        },
+        note:
+          "Revenue and cost use snapshots from completed orders. Changes to the product selling price or cost after an order is created do not change historical performance.",
+      },
+
+      supplierSourcing: {
+        noOrganizationTitle:
+          "Product Suppliers",
+        noOrganization:
+          "No active organization was found.",
+        backToProducts:
+          "Back to Products",
+        title:
+          "Product Supplier Sourcing",
+        descriptionPrefix:
+          "Manage suppliers for",
+
+        manager: {
+          addTitle:
+            "Add Supplier Source",
+          addDescription:
+            "Connect a supplier to the base product or a product variant.",
+          noActiveTitle:
+            "No active suppliers yet",
+          noActiveDescription:
+            "Add a supplier before creating a sourcing relation.",
+          addSupplier:
+            "Add Supplier",
+
+          selectSupplier:
+            "Select supplier",
+          baseProduct:
+            "Base Product",
+          variant:
+            "Variant",
+          unitCost:
+            "Unit Cost",
+          minimumOrderQuantity:
+            "Minimum Order Quantity",
+          leadTimeDays:
+            "Lead Time (days)",
+          leadTime:
+            "Lead Time",
+          notes:
+            "Notes",
+          optional:
+            "Optional",
+          notesPlaceholder:
+            "Optional sourcing notes",
+          preferredForTarget:
+            "Preferred supplier for this target",
+
+          saving:
+            "Saving...",
+          addSource:
+            "Add supplier source",
+
+          relationsTitle:
+            "Sourcing Relations",
+          relationsCount:
+            "{count} supplier relations found.",
+          noRelationsTitle:
+            "No supplier relations yet",
+          noRelationsDescription:
+            "Add a supplier source for the product or a variant.",
+
+          preferred:
+            "Preferred",
+          actions:
+            "Actions",
+          edit:
+            "Edit",
+          delete:
+            "Delete",
+          editTitle:
+            "Edit Sourcing Terms",
+          saveChanges:
+            "Save changes",
+          cancel:
+            "Cancel",
+
+          unknownVariant:
+            "Unknown variant",
+          unknownTarget:
+            "Unknown target",
+          unknownSupplier:
+            "Unknown",
+          genericSupplier:
+            "supplier",
+
+          days:
+            "{count} days",
+
+          supplierRequired:
+            "A supplier is required.",
+          targetInvalid:
+            "The sourcing target is invalid.",
+          moqInvalid:
+            "MOQ must be at least 1.",
+
+          duplicateAdd:
+            "The supplier relation already exists or the target already has a preferred supplier.",
+          duplicateEdit:
+            "The target already has another preferred supplier.",
+
+          addFailed:
+            "Failed to add the supplier source. Please try again.",
+          editFailed:
+            "Failed to update the supplier source. Please try again.",
+          deleteFailed:
+            "Failed to delete the supplier source. Please try again.",
+
+          relationNotEditable:
+            "The supplier relation was not found or cannot be changed.",
+          relationNotDeletable:
+            "The supplier relation was not found or cannot be deleted.",
+
+          deleteConfirm:
+            "Delete the {supplier} relation from {target}?",
+        },
+      },
+
+      variantInventory: {
+        noOrganizationTitle:
+          "Adjust Variant Stock",
+        noOrganization:
+          "No active organization was found.",
+        title:
+          "Variant Inventory",
+        description:
+          "Manage stock and low-stock alerts for this variant.",
       },
     },
     marketplaces: {

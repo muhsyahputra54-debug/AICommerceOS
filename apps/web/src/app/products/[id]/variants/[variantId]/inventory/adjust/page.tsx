@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
 
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import { getDictionary } from "@/lib/i18n/dictionaries";
+import { getLocale } from "@/lib/i18n/server";
 import AdjustInventoryForm from "@/components/inventory/AdjustInventoryForm";
 import SetLowStockThresholdForm from "@/components/inventory/SetLowStockThresholdForm";
 import { getCurrentOrganization } from "@/lib/supabase/current-organization";
@@ -16,6 +18,9 @@ type VariantInventoryAdjustPageProps = {
 export default async function VariantInventoryAdjustPage({
   params,
 }: VariantInventoryAdjustPageProps) {
+  const locale = await getLocale();
+  const copy =
+    getDictionary(locale).products.variantInventory;
   const currentOrganization = await getCurrentOrganization();
 
   if (!currentOrganization) {
@@ -23,11 +28,11 @@ export default async function VariantInventoryAdjustPage({
       <DashboardLayout>
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
-            Adjust Variant Stock
+            {copy.noOrganizationTitle}
           </h1>
 
           <p className="mt-2 text-muted-foreground">
-            Organization aktif tidak ditemukan.
+            {copy.noOrganization}
           </p>
         </div>
       </DashboardLayout>
@@ -73,11 +78,11 @@ export default async function VariantInventoryAdjustPage({
       <div className="mx-auto max-w-3xl space-y-6">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
-            Variant Inventory
+            {copy.title}
           </h1>
 
           <p className="mt-2 text-muted-foreground">
-            Kelola stock dan low-stock intelligence untuk variant.
+            {copy.description}
           </p>
         </div>
 

@@ -1,7 +1,9 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import { getDictionary } from "@/lib/i18n/dictionaries";
+import { getLocale } from "@/lib/i18n/server";
 import ProductSupplierManager from "@/components/suppliers/ProductSupplierManager";
 import { getCurrentOrganization } from "@/lib/supabase/current-organization";
 import { createClient } from "@/lib/supabase/server";
@@ -15,6 +17,9 @@ type ProductSuppliersPageProps = {
 export default async function ProductSuppliersPage({
   params,
 }: ProductSuppliersPageProps) {
+  const locale = await getLocale();
+  const copy =
+    getDictionary(locale).products.supplierSourcing;
   const currentOrganization = await getCurrentOrganization();
 
   if (!currentOrganization) {
@@ -22,10 +27,10 @@ export default async function ProductSuppliersPage({
       <DashboardLayout>
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
-            Product Suppliers
+            {copy.noOrganizationTitle}
           </h1>
           <p className="mt-2 text-muted-foreground">
-            Organization aktif tidak ditemukan.
+            {copy.noOrganization}
           </p>
         </div>
       </DashboardLayout>
@@ -126,15 +131,15 @@ export default async function ProductSuppliersPage({
             href="/products"
             className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
           >
-            Back to Products
+            {copy.backToProducts}
           </Link>
 
           <h1 className="mt-3 text-2xl font-semibold tracking-tight">
-            Product Supplier Sourcing
+            {copy.title}
           </h1>
 
           <p className="mt-2 text-muted-foreground">
-            Kelola supplier untuk{" "}
+            {copy.descriptionPrefix}{" "}
             <span className="font-medium text-foreground">
               {product.name}
             </span>

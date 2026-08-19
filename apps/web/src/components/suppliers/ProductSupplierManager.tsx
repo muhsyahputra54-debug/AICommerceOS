@@ -1,11 +1,13 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
+import { useLanguage } from "@/components/i18n/LanguageProvider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 import { createClient } from "@/lib/supabase/client";
 
 type Product = {
@@ -49,7 +51,7 @@ type ProductSupplierManagerProps = {
   supplierItems: SupplierItem[];
 };
 
-function formatCurrency(value: number | string | null) {
+function formatCurrency(value: number | string | null, locale: "id" | "en") {
   if (value === null || value === "") {
     return "—";
   }
@@ -60,7 +62,7 @@ function formatCurrency(value: number | string | null) {
     return "—";
   }
 
-  return new Intl.NumberFormat("id-ID", {
+  return new Intl.NumberFormat(locale === "id" ? "id-ID" : "en-US", {
     style: "currency",
     currency: "IDR",
     maximumFractionDigits: 0,
@@ -86,6 +88,9 @@ export default function ProductSupplierManager({
   supplierItems,
 }: ProductSupplierManagerProps) {
   const router = useRouter();
+  const { locale } = useLanguage();
+  const copy =
+    getDictionary(locale).products.supplierSourcing.manager;
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -118,10 +123,10 @@ export default function ProductSupplierManager({
     }
 
     if (item.variant_id) {
-      return variantNames.get(item.variant_id) ?? "Unknown variant";
+      return variantNames.get(item.variant_id) ?? copy.unknownVariant;
     }
 
-    return "Unknown target";
+    return copy.unknownTarget;
   }
 
   async function handleAdd(event: FormEvent<HTMLFormElement>) {
@@ -137,7 +142,7 @@ export default function ProductSupplierManager({
     const [targetType, targetId] = target.split(":");
 
     if (!supplierId) {
-      setErrorMessage("Supplier wajib dipilih.");
+      setErrorMessage(copy.supplierRequired);
       setIsSubmitting(false);
       return;
     }
@@ -146,7 +151,7 @@ export default function ProductSupplierManager({
       !targetId ||
       (targetType !== "product" && targetType !== "variant")
     ) {
-      setErrorMessage("Target sourcing tidak valid.");
+      setErrorMessage(copy.targetInvalid);
       setIsSubmitting(false);
       return;
     }
@@ -159,7 +164,7 @@ export default function ProductSupplierManager({
       !Number.isInteger(minimumOrderQuantity) ||
       minimumOrderQuantity < 1
     ) {
-      setErrorMessage("MOQ minimal 1.");
+      setErrorMessage(copy.moqInvalid);
       setIsSubmitting(false);
       return;
     }
@@ -188,9 +193,7 @@ export default function ProductSupplierManager({
 
     if (error) {
       setErrorMessage(
-        error.code === "23505"
-          ? "Relasi supplier sudah ada atau target sudah memiliki preferred supplier."
-          : error.message,
+        error.code === "23505" ? copy.duplicateAdd : copy.addFailed,
       );
       setIsSubmitting(false);
       return;
@@ -220,7 +223,7 @@ export default function ProductSupplierManager({
       !Number.isInteger(minimumOrderQuantity) ||
       minimumOrderQuantity < 1
     ) {
-      setErrorMessage("MOQ minimal 1.");
+      setErrorMessage(copy.moqInvalid);
       setIsSubmitting(false);
       return;
     }
@@ -251,9 +254,7 @@ export default function ProductSupplierManager({
 
     if (error) {
       setErrorMessage(
-        error.code === "23505"
-          ? "Target sudah memiliki preferred supplier lain."
-          : error.message,
+        error.code === "23505" ? copy.duplicateEdit : copy.editFailed,
       );
       setIsSubmitting(false);
       return;
@@ -261,7 +262,7 @@ export default function ProductSupplierManager({
 
     if (!data) {
       setErrorMessage(
-        "Relasi supplier tidak ditemukan atau tidak dapat diubah.",
+        copy.relationNotEditable,
       );
       setIsSubmitting(false);
       return;
@@ -274,10 +275,10 @@ export default function ProductSupplierManager({
 
   async function handleDelete(item: SupplierItem) {
     const supplierName =
-      supplierNames.get(item.supplier_id) ?? "supplier";
+      supplierNames.get(item.supplier_id) ?? copy.genericSupplier;
 
     const confirmed = window.confirm(
-      `Hapus relasi ${supplierName} dari ${targetName(item)}?`,
+      copy.deleteConfirm.replace("{supplier}", supplierName).replace("{target}", targetName(item)),
     );
 
     if (!confirmed) {
@@ -298,14 +299,14 @@ export default function ProductSupplierManager({
       .maybeSingle();
 
     if (error) {
-      setErrorMessage(error.message);
+      setErrorMessage(copy.deleteFailed);
       setIsSubmitting(false);
       return;
     }
 
     if (!data) {
       setErrorMessage(
-        "Relasi supplier tidak ditemukan atau tidak dapat dihapus.",
+        copy.relationNotDeletable,
       );
       setIsSubmitting(false);
       return;
@@ -323,24 +324,22 @@ export default function ProductSupplierManager({
     <div className="space-y-6">
       <div className="rounded-2xl border bg-card p-6 shadow-sm">
         <div className="mb-5">
-          <h2 className="text-lg font-semibold">Add Supplier Source</h2>
+          <h2 className="text-lg font-semibold">{copy.addTitle}</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Hubungkan supplier ke base product atau product variant.
+            {copy.addDescription}
           </p>
         </div>
 
         {activeSuppliers.length === 0 ? (
           <div className="rounded-xl border border-dashed p-6 text-center">
-            <p className="font-medium">Belum ada supplier aktif</p>
+            <p className="font-medium">{copy.noActiveTitle}</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              Tambahkan supplier terlebih dahulu sebelum membuat sourcing relation.
+              {copy.noActiveDescription}
             </p>
             <Link
               href="/suppliers/new"
               className="mt-4 inline-flex h-9 items-center justify-center rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground"
-            >
-              Add Supplier
-            </Link>
+            >{copy.addSupplier}</Link>
           </div>
         ) : (
           <form onSubmit={handleAdd} className="space-y-5">
@@ -356,7 +355,7 @@ export default function ProductSupplierManager({
                   defaultValue=""
                   className="h-10 w-full rounded-lg border bg-background px-3 text-sm"
                 >
-                  <option value="" disabled>Select supplier</option>
+                  <option value="" disabled>{copy.selectSupplier}</option>
                   {activeSuppliers.map((supplier) => (
                     <option key={supplier.id} value={supplier.id}>
                       {supplier.name}
@@ -377,14 +376,14 @@ export default function ProductSupplierManager({
                   className="h-10 w-full rounded-lg border bg-background px-3 text-sm"
                 >
                   <option value={`product:${product.id}`}>
-                    Base Product — {product.name}
+                    {copy.baseProduct} — {product.name}
                   </option>
                   {variants.map((variant) => (
                     <option
                       key={variant.id}
                       value={`variant:${variant.id}`}
                     >
-                      Variant — {variant.name}
+                      {copy.variant} — {variant.name}
                       {variant.sku ? ` (${variant.sku})` : ""}
                     </option>
                   ))}
@@ -398,14 +397,12 @@ export default function ProductSupplierManager({
                 <Input
                   id="supplier_sku"
                   name="supplier_sku"
-                  placeholder="Optional"
+                  placeholder={copy.optional}
                 />
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="unit_cost" className="text-sm font-medium">
-                  Unit Cost
-                </label>
+                <label htmlFor="unit_cost" className="text-sm font-medium">{copy.unitCost}</label>
                 <Input
                   id="unit_cost"
                   name="unit_cost"
@@ -420,9 +417,7 @@ export default function ProductSupplierManager({
                 <label
                   htmlFor="minimum_order_quantity"
                   className="text-sm font-medium"
-                >
-                  Minimum Order Quantity
-                </label>
+                >{copy.minimumOrderQuantity}</label>
                 <Input
                   id="minimum_order_quantity"
                   name="minimum_order_quantity"
@@ -435,29 +430,25 @@ export default function ProductSupplierManager({
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="lead_time_days" className="text-sm font-medium">
-                  Lead Time (days)
-                </label>
+                <label htmlFor="lead_time_days" className="text-sm font-medium">{copy.leadTimeDays}</label>
                 <Input
                   id="lead_time_days"
                   name="lead_time_days"
                   type="number"
                   min="0"
                   step="1"
-                  placeholder="Optional"
+                  placeholder={copy.optional}
                 />
               </div>
 
               <div className="space-y-2 md:col-span-2 xl:col-span-3">
-                <label htmlFor="notes" className="text-sm font-medium">
-                  Notes
-                </label>
+                <label htmlFor="notes" className="text-sm font-medium">{copy.notes}</label>
                 <textarea
                   id="notes"
                   name="notes"
                   rows={3}
                   className="w-full rounded-lg border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  placeholder="Optional sourcing notes"
+                  placeholder={copy.notesPlaceholder}
                 />
               </div>
             </div>
@@ -468,11 +459,11 @@ export default function ProductSupplierManager({
                 name="is_preferred"
                 className="h-4 w-4 rounded border"
               />
-              Preferred supplier for this target
+              {copy.preferredForTarget}
             </label>
 
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Saving..." : "Add supplier source"}
+              {isSubmitting ? copy.saving : copy.addSource}
             </Button>
           </form>
         )}
@@ -486,17 +477,17 @@ export default function ProductSupplierManager({
 
       <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
         <div className="border-b px-6 py-5">
-          <h2 className="text-lg font-semibold">Sourcing Relations</h2>
+          <h2 className="text-lg font-semibold">{copy.relationsTitle}</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            {supplierItems.length} supplier relation ditemukan.
+            {copy.relationsCount.replace("{count}", String(supplierItems.length))}
           </p>
         </div>
 
         {supplierItems.length === 0 ? (
           <div className="px-6 py-12 text-center">
-            <p className="font-medium">Belum ada supplier relation</p>
+            <p className="font-medium">{copy.noRelationsTitle}</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              Tambahkan supplier source untuk product atau variant.
+              {copy.noRelationsDescription}
             </p>
           </div>
         ) : (
@@ -507,11 +498,11 @@ export default function ProductSupplierManager({
                   <th className="px-6 py-3 font-medium">Target</th>
                   <th className="px-6 py-3 font-medium">Supplier</th>
                   <th className="px-6 py-3 font-medium">Supplier SKU</th>
-                  <th className="px-6 py-3 font-medium">Unit Cost</th>
+                  <th className="px-6 py-3 font-medium">{copy.unitCost}</th>
                   <th className="px-6 py-3 font-medium">MOQ</th>
                   <th className="px-6 py-3 font-medium">Lead Time</th>
-                  <th className="px-6 py-3 font-medium">Preferred</th>
-                  <th className="px-6 py-3 font-medium">Actions</th>
+                  <th className="px-6 py-3 font-medium">{copy.preferred}</th>
+                  <th className="px-6 py-3 font-medium">{copy.actions}</th>
                 </tr>
               </thead>
 
@@ -522,13 +513,13 @@ export default function ProductSupplierManager({
                       {targetName(item)}
                     </td>
                     <td className="px-6 py-4">
-                      {supplierNames.get(item.supplier_id) ?? "Unknown"}
+                      {supplierNames.get(item.supplier_id) ?? copy.unknownSupplier}
                     </td>
                     <td className="px-6 py-4">
                       {item.supplier_sku ?? "—"}
                     </td>
                     <td className="whitespace-nowrap px-6 py-4">
-                      {formatCurrency(item.unit_cost)}
+                      {formatCurrency(item.unit_cost, locale)}
                     </td>
                     <td className="px-6 py-4">
                       {item.minimum_order_quantity}
@@ -536,13 +527,11 @@ export default function ProductSupplierManager({
                     <td className="px-6 py-4">
                       {item.lead_time_days === null
                         ? "—"
-                        : `${item.lead_time_days} days`}
+                        : copy.days.replace("{count}", String(item.lead_time_days))}
                     </td>
                     <td className="px-6 py-4">
                       {item.is_preferred ? (
-                        <span className="inline-flex rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
-                          Preferred
-                        </span>
+                        <span className="inline-flex rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">{copy.preferred}</span>
                       ) : (
                         "—"
                       )}
@@ -558,18 +547,14 @@ export default function ProductSupplierManager({
                             setEditingId(item.id);
                           }}
                           disabled={isSubmitting}
-                        >
-                          Edit
-                        </Button>
+                        >{copy.edit}</Button>
                         <Button
                           type="button"
                           variant="destructive"
                           size="sm"
                           onClick={() => handleDelete(item)}
                           disabled={isSubmitting}
-                        >
-                          Delete
-                        </Button>
+                        >{copy.delete}</Button>
                       </div>
                     </td>
                   </tr>
@@ -583,9 +568,9 @@ export default function ProductSupplierManager({
       {editingItem ? (
         <div className="rounded-2xl border bg-card p-6 shadow-sm">
           <div className="mb-5">
-            <h2 className="text-lg font-semibold">Edit Sourcing Terms</h2>
+            <h2 className="text-lg font-semibold">{copy.editTitle}</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              {supplierNames.get(editingItem.supplier_id) ?? "Supplier"}
+              {supplierNames.get(editingItem.supplier_id) ?? copy.unknownSupplier}
               {" — "}
               {targetName(editingItem)}
             </p>
@@ -605,9 +590,7 @@ export default function ProductSupplierManager({
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium" htmlFor="edit_unit_cost">
-                  Unit Cost
-                </label>
+                <label className="text-sm font-medium" htmlFor="edit_unit_cost">{copy.unitCost}</label>
                 <Input
                   id="edit_unit_cost"
                   name="unit_cost"
@@ -634,9 +617,7 @@ export default function ProductSupplierManager({
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium" htmlFor="edit_lead_time">
-                  Lead Time
-                </label>
+                <label className="text-sm font-medium" htmlFor="edit_lead_time">{copy.leadTime}</label>
                 <Input
                   id="edit_lead_time"
                   name="lead_time_days"
@@ -649,9 +630,7 @@ export default function ProductSupplierManager({
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium" htmlFor="edit_notes">
-                Notes
-              </label>
+              <label className="text-sm font-medium" htmlFor="edit_notes">{copy.notes}</label>
               <textarea
                 id="edit_notes"
                 name="notes"
@@ -668,21 +647,19 @@ export default function ProductSupplierManager({
                 defaultChecked={editingItem.is_preferred}
                 className="h-4 w-4 rounded border"
               />
-              Preferred supplier for this target
+              {copy.preferredForTarget}
             </label>
 
             <div className="flex gap-3">
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Saving..." : "Save changes"}
+                {isSubmitting ? copy.saving : copy.saveChanges}
               </Button>
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setEditingId(null)}
                 disabled={isSubmitting}
-              >
-                Cancel
-              </Button>
+              >{copy.cancel}</Button>
             </div>
           </form>
         </div>
