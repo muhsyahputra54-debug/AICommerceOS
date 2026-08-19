@@ -24,6 +24,7 @@ type AssistantMessage = {
 
 type ChatRequestBody = {
   messages?: unknown;
+  conversationId?: unknown;
 };
 
 function parseMessages(
@@ -183,6 +184,35 @@ export async function POST(
     );
   }
 
+  const conversationId =
+    typeof body.conversationId === "string"
+      ? body.conversationId.trim()
+      : null;
+
+  const hasConversationId =
+    body.conversationId !== undefined;
+
+  const conversationIdIsValid =
+    conversationId !== null &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      conversationId,
+    );
+
+  if (
+    hasConversationId &&
+    !conversationIdIsValid
+  ) {
+    return NextResponse.json(
+      {
+        error:
+          "Conversation ID tidak valid.",
+      },
+      {
+        status: 400,
+      },
+    );
+  }
+
   try {
     const allowance =
       await checkAiAllowance(
@@ -215,6 +245,173 @@ export async function POST(
         status: 503,
       },
     );
+  }
+
+  if (conversationId) {
+    const {
+      data: conversation,
+      error: conversationError,
+    } = await supabase
+      .from("ai_conversations")
+      .select("id")
+      .eq(
+        "id",
+        conversationId,
+      )
+      .eq(
+        "organization_id",
+        organizationId,
+      )
+      .eq(
+        "user_id",
+        user.id,
+      )
+      .is(
+        "archived_at",
+        null,
+      )
+      .maybeSingle();
+
+    if (conversationError) {
+      console.error(
+        "Failed to validate AI conversation.",
+        {
+          conversationId,
+          organizationId,
+          userId: user.id,
+          error: conversationError,
+        },
+      );
+
+      return NextResponse.json(
+        {
+          error:
+            "Percakapan AI tidak dapat divalidasi.",
+        },
+        {
+          status: 500,
+        },
+      );
+    }
+
+    if (!conversation) {
+      return NextResponse.json(
+        {
+          error:
+            "Percakapan AI aktif tidak ditemukan.",
+        },
+        {
+          status: 404,
+        },
+      );
+    }
+
+    const latestUserMessage =
+      messages[messages.length - 1];
+
+    if (
+      !latestUserMessage ||
+      latestUserMessage.role !== "user"
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Pesan terakhir harus berasal dari pengguna.",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
+    const userMessageAt =
+      new Date().toISOString();
+
+    const {
+      error: userMessageError,
+    } = await supabase
+      .from("ai_conversation_messages")
+      .insert({
+        conversation_id:
+          conversationId,
+
+        organization_id:
+          organizationId,
+
+        user_id:
+          user.id,
+
+        role:
+          "user",
+
+        content:
+          latestUserMessage.content,
+
+        created_at:
+          userMessageAt,
+      });
+
+    if (userMessageError) {
+      console.error(
+        "Failed to persist AI user message.",
+        {
+          conversationId,
+          organizationId,
+          userId: user.id,
+          error: userMessageError,
+        },
+      );
+
+      return NextResponse.json(
+        {
+          error:
+            "Pesan pengguna tidak dapat disimpan.",
+        },
+        {
+          status: 500,
+        },
+      );
+    }
+
+    const {
+      error: touchError,
+    } = await supabase
+      .from("ai_conversations")
+      .update({
+        updated_at:
+          userMessageAt,
+
+        last_message_at:
+          userMessageAt,
+      })
+      .eq(
+        "id",
+        conversationId,
+      )
+      .eq(
+        "organization_id",
+        organizationId,
+      )
+      .eq(
+        "user_id",
+        user.id,
+      )
+      .is(
+        "archived_at",
+        null,
+      );
+
+    if (touchError) {
+      console.error(
+        "Failed to update AI conversation timestamp.",
+        {
+          conversationId,
+          organizationId,
+          userId: user.id,
+          error: touchError,
+        },
+      );
+    }
   }
 
   const [
@@ -691,8 +888,99 @@ export async function POST(
       );
     }
 
+    if (conversationId) {
+      const assistantMessageAt =
+        new Date().toISOString();
+
+      const {
+        error: assistantMessageError,
+      } = await supabase
+        .from("ai_conversation_messages")
+        .insert({
+          conversation_id:
+            conversationId,
+
+          organization_id:
+            organizationId,
+
+          user_id:
+            user.id,
+
+          role:
+            "assistant",
+
+          content,
+
+          created_at:
+            assistantMessageAt,
+        });
+
+      if (assistantMessageError) {
+        console.error(
+          "Failed to persist AI assistant message.",
+          {
+            conversationId,
+            organizationId,
+            userId: user.id,
+            error: assistantMessageError,
+          },
+        );
+
+        return NextResponse.json(
+          {
+            error:
+              "Jawaban AI tidak dapat disimpan.",
+          },
+          {
+            status: 500,
+          },
+        );
+      }
+
+      const {
+        error: touchError,
+      } = await supabase
+        .from("ai_conversations")
+        .update({
+          updated_at:
+            assistantMessageAt,
+
+          last_message_at:
+            assistantMessageAt,
+        })
+        .eq(
+          "id",
+          conversationId,
+        )
+        .eq(
+          "organization_id",
+          organizationId,
+        )
+        .eq(
+          "user_id",
+          user.id,
+        )
+        .is(
+          "archived_at",
+          null,
+        );
+
+      if (touchError) {
+        console.error(
+          "Failed to update AI conversation timestamp.",
+          {
+            conversationId,
+            organizationId,
+            userId: user.id,
+            error: touchError,
+          },
+        );
+      }
+    }
+
     return NextResponse.json({
       message: content,
+      conversationId,
     });
   } catch {
     return NextResponse.json(
