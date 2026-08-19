@@ -31,6 +31,10 @@ type NavigationItem = {
   key: NavigationItemKey;
   icon: LucideIcon;
   href: string;
+  children?: Array<{
+    key: NavigationItemKey;
+    href: string;
+  }>;
 };
 
 const mainMenus = [
@@ -78,6 +82,16 @@ const mainMenus = [
     key: "analytics",
     icon: BarChart3,
     href: "/analytics",
+    children: [
+      {
+        key: "analyticsOverview",
+        href: "/analytics",
+      },
+      {
+        key: "analyticsIntelligence",
+        href: "/analytics/intelligence",
+      },
+    ],
   },
 ] satisfies NavigationItem[];
 
@@ -104,6 +118,60 @@ export default function Sidebar() {
       item.href === "/"
         ? pathname === "/"
         : pathname.startsWith(item.href);
+
+    if (item.children?.length) {
+      return (
+        <div
+          key={item.key}
+          className="space-y-1"
+        >
+          <Link
+            href={item.href}
+            className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
+              isActive
+                ? "text-sidebar-foreground"
+                : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+            }`}
+          >
+            <Icon className="h-5 w-5 shrink-0" />
+
+            <span>
+              {dictionary.navigation.items[item.key]}
+            </span>
+          </Link>
+
+          <div className="ml-5 space-y-1 border-l border-sidebar-border pl-3">
+            {item.children.map((child) => {
+              const childActive =
+                child.href === "/analytics"
+                  ? pathname === "/analytics"
+                  : pathname === child.href ||
+                    pathname.startsWith(
+                      `${child.href}/`,
+                    );
+
+              return (
+                <Link
+                  key={child.key}
+                  href={child.href}
+                  className={`block rounded-lg px-3 py-2 text-sm transition-colors ${
+                    childActive
+                      ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                      : "text-sidebar-foreground/65 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                  }`}
+                >
+                  {
+                    dictionary.navigation.items[
+                      child.key
+                    ]
+                  }
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      );
+    }
 
     return (
       <Link

@@ -39,6 +39,8 @@ const dictionaries = {
         customers: "Pelanggan",
         suppliers: "Pemasok",
         analytics: "Analitik",
+        analyticsOverview: "Ringkasan",
+        analyticsIntelligence: "Wawasan",
         settings: "Pengaturan",
       },
 
@@ -1395,6 +1397,8 @@ const dictionaries = {
         customers: "Customers",
         suppliers: "Suppliers",
         analytics: "Analytics",
+        analyticsOverview: "Overview",
+        analyticsIntelligence: "Intelligence",
         settings: "Settings",
       },
 

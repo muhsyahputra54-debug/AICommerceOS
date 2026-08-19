@@ -38,6 +38,10 @@ type NavigationItem = {
   key: NavigationItemKey;
   icon: LucideIcon;
   href: string;
+  children?: Array<{
+    key: NavigationItemKey;
+    href: string;
+  }>;
 };
 
 const menus = [
@@ -85,6 +89,16 @@ const menus = [
     key: "analytics",
     icon: BarChart3,
     href: "/analytics",
+    children: [
+      {
+        key: "analyticsOverview",
+        href: "/analytics",
+      },
+      {
+        key: "analyticsIntelligence",
+        href: "/analytics/intelligence",
+      },
+    ],
   },
   {
     key: "settings",
@@ -158,7 +172,75 @@ export default function MobileSidebar({
             const isActive =
               item.href === "/"
                 ? pathname === "/"
-                : pathname.startsWith(item.href);
+                : pathname.startsWith(
+                    item.href,
+                  );
+
+            if (item.children?.length) {
+              return (
+                <div
+                  key={item.key}
+                  className="space-y-1"
+                >
+                  <Link
+                    href={item.href}
+                    onClick={onClose}
+                    className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium ${
+                      isActive
+                        ? "text-sidebar-foreground"
+                        : "text-sidebar-foreground/70"
+                    }`}
+                  >
+                    <Icon className="h-5 w-5 shrink-0" />
+
+                    <span>
+                      {
+                        dictionary.navigation.items[
+                          item.key
+                        ]
+                      }
+                    </span>
+                  </Link>
+
+                  <div className="ml-5 space-y-1 border-l border-sidebar-border pl-3">
+                    {item.children.map(
+                      (child) => {
+                        const childActive =
+                          child.href ===
+                          "/analytics"
+                            ? pathname ===
+                              "/analytics"
+                            : pathname ===
+                                child.href ||
+                              pathname.startsWith(
+                                `${child.href}/`,
+                              );
+
+                        return (
+                          <Link
+                            key={child.key}
+                            href={child.href}
+                            onClick={onClose}
+                            className={`block rounded-lg px-3 py-2.5 text-sm transition-colors ${
+                              childActive
+                                ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                                : "text-sidebar-foreground/65 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                            }`}
+                          >
+                            {
+                              dictionary.navigation
+                                .items[
+                                child.key
+                              ]
+                            }
+                          </Link>
+                        );
+                      },
+                    )}
+                  </div>
+                </div>
+              );
+            }
 
             return (
               <Link
@@ -174,7 +256,11 @@ export default function MobileSidebar({
                 <Icon className="h-5 w-5 shrink-0" />
 
                 <span>
-                  {dictionary.navigation.items[item.key]}
+                  {
+                    dictionary.navigation.items[
+                      item.key
+                    ]
+                  }
                 </span>
               </Link>
             );
