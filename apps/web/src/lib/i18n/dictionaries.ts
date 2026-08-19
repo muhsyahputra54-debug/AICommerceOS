@@ -53,7 +53,7 @@ const dictionaries = {
     aiAssistant: {
       title: "Asisten AI",
       description:
-        "Asisten AI untuk membantu mengelola dan menganalisis bisnis Anda.",
+        "Asisten bisnis yang membantu Anda memahami kondisi usaha dengan bahasa sederhana.",
 
       assistant: {
         title: "Asisten AI Commerce",
@@ -63,13 +63,32 @@ const dictionaries = {
 
       workspace: {
         title:
-          "Asisten Bisnis AI Anda",
+          "Ada yang ingin Anda ketahui tentang bisnis?",
         description:
-          "Asisten AI akan membantu Anda menganalisis penjualan, memahami pelanggan, mengelola produk, dan menjalankan automasi bisnis.",
+          "Tanyakan tentang penjualan, produk, stok, pelanggan, atau hal penting lain dari data bisnis yang tersedia. Saya akan membantu menjelaskannya dengan bahasa yang sederhana dan mudah dipahami.",
       },
 
-      inputPlaceholder:
-        "Antarmuka chat AI akan tersedia pada tahap berikutnya...",
+      chat: {
+        inputPlaceholder:
+          "Tulis pertanyaan tentang bisnis Anda...",
+        send: "Kirim",
+        clear:
+          "Hapus percakapan",
+        thinking:
+          "Saya sedang melihat data bisnis Anda...",
+        userLabel: "Anda",
+        assistantLabel:
+          "Asisten LAKUVO",
+        errorFallback:
+          "Maaf, saya belum bisa menjawab sekarang. Coba lagi sebentar lagi.",
+
+        suggestions: [
+          "Bagaimana kondisi bisnis saya saat ini?",
+          "Produk mana yang perlu saya perhatikan?",
+          "Apa yang bisa saya lakukan untuk meningkatkan penjualan?",
+          "Apakah ada stok yang perlu saya perhatikan?",
+        ],
+      },
     },
 
     agents: {
@@ -2068,7 +2087,7 @@ const dictionaries = {
     aiAssistant: {
       title: "AI Assistant",
       description:
-        "AI assistant to help manage and analyze your business.",
+        "A business assistant that helps you understand your business in simple language.",
 
       assistant: {
         title: "AI Commerce Assistant",
@@ -2078,13 +2097,32 @@ const dictionaries = {
 
       workspace: {
         title:
-          "Your AI Business Assistant",
+          "What would you like to know about your business?",
         description:
-          "AI Assistant will help you analyze sales, understand customers, manage products, and run business automation.",
+          "Ask about sales, products, inventory, customers, or other important information available in your business data. I will help explain it in a simple and easy-to-understand way.",
       },
 
-      inputPlaceholder:
-        "The AI chat interface will be available in the next phase...",
+      chat: {
+        inputPlaceholder:
+          "Ask something about your business...",
+        send: "Send",
+        clear:
+          "Clear conversation",
+        thinking:
+          "I'm looking at your business data...",
+        userLabel: "You",
+        assistantLabel:
+          "LAKUVO Assistant",
+        errorFallback:
+          "Sorry, I can't answer that right now. Please try again in a moment.",
+
+        suggestions: [
+          "How is my business doing right now?",
+          "Which products need my attention?",
+          "What can I do to improve sales?",
+          "Is there any inventory I should pay attention to?",
+        ],
+      },
     },
 
     agents: {
