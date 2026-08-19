@@ -1,9 +1,14 @@
-﻿import DashboardLayout from "@/components/layout/DashboardLayout";
+import DashboardLayout from "@/components/layout/DashboardLayout";
 import AIAgentsManager from "@/components/agents/AIAgentsManager";
 import { getCurrentOrganization } from "@/lib/supabase/current-organization";
+import { getDictionary } from "@/lib/i18n/dictionaries";
+import { getLocale } from "@/lib/i18n/server";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function AgentsPage() {
+  const locale = await getLocale();
+  const copy = getDictionary(locale).agents.page;
+
   const currentOrganization =
     await getCurrentOrganization();
 
@@ -12,11 +17,11 @@ export default async function AgentsPage() {
       <DashboardLayout>
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
-            AI Agents
+            {copy.title}
           </h1>
 
           <p className="mt-2 text-muted-foreground">
-            Organization aktif tidak ditemukan.
+            {copy.noOrganization}
           </p>
         </div>
       </DashboardLayout>
@@ -63,19 +68,19 @@ export default async function AgentsPage() {
 
   if (agentsResult.error) {
     throw new Error(
-      agentsResult.error.message,
+      copy.errors.loadFailed,
     );
   }
 
   if (runsResult.error) {
     throw new Error(
-      runsResult.error.message,
+      copy.errors.loadFailed,
     );
   }
 
   if (stepsResult.error) {
     throw new Error(
-      stepsResult.error.message,
+      copy.errors.loadFailed,
     );
   }
 
@@ -84,12 +89,11 @@ export default async function AgentsPage() {
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
-            AI Agents
+            {copy.title}
           </h1>
 
           <p className="mt-2 text-muted-foreground">
-            Read-only commerce intelligence agents with
-            controlled context and auditable recommendations.
+            {copy.description}
           </p>
         </div>
 

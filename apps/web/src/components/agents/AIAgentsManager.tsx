@@ -8,8 +8,10 @@ import {
 
 import { useRouter } from "next/navigation";
 
+import { useLanguage } from "@/components/i18n/LanguageProvider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 import { createClient } from "@/lib/supabase/client";
 
 type Agent = {
@@ -90,9 +92,9 @@ function stringArray(value: unknown) {
   );
 }
 
-function formatDate(value: string) {
+function formatDate(value: string, locale: string) {
   return new Intl.DateTimeFormat(
-    "id-ID",
+    locale,
     {
       dateStyle: "medium",
       timeStyle: "short",
@@ -107,6 +109,10 @@ export default function AIAgentsManager({
   steps,
 }: Props) {
   const router = useRouter();
+  const { locale } = useLanguage();
+  const copy = getDictionary(locale).agents.manager;
+  const localeTag =
+    locale === "id" ? "id-ID" : "en-US";
 
   const [
     message,
@@ -156,6 +162,38 @@ export default function AIAgentsManager({
 
       return map;
     }, [steps]);
+
+  function runStatusLabel(status: string) {
+    switch (status) {
+      case "pending":
+        return copy.statuses.pending;
+      case "running":
+        return copy.statuses.running;
+      case "completed":
+        return copy.statuses.completed;
+      case "failed":
+        return copy.statuses.failed;
+      case "cancelled":
+        return copy.statuses.cancelled;
+      default:
+        return status;
+    }
+  }
+
+  function contextLabel(context: string) {
+    switch (context) {
+      case "products":
+        return copy.contexts.products;
+      case "product_research":
+        return copy.contexts.productResearch;
+      case "price_monitoring":
+        return copy.contexts.priceMonitoring;
+      case "automation":
+        return copy.contexts.automation;
+      default:
+        return context;
+    }
+  }
 
   async function createAgent(
     event: FormEvent<HTMLFormElement>,
@@ -222,7 +260,7 @@ export default function AIAgentsManager({
         });
 
     if (error) {
-      setMessage(error.message);
+      setMessage(copy.messages.createFailed);
       setCreating(false);
       return;
     }
@@ -230,7 +268,7 @@ export default function AIAgentsManager({
     form.reset();
 
     setMessage(
-      "AI agent berhasil dibuat.",
+      copy.messages.createSuccess,
     );
 
     setCreating(false);
@@ -276,30 +314,22 @@ export default function AIAgentsManager({
           },
         );
 
-      const data =
-        (await response.json()) as {
-          error?: string;
-        };
-
       if (!response.ok) {
         throw new Error(
-          data.error ??
-            "AI agent run gagal.",
+          copy.messages.runFailed,
         );
       }
 
       setMessage(
-        "AI agent run selesai.",
+        copy.messages.runSuccess,
       );
 
       form.reset();
 
       router.refresh();
-    } catch (error) {
+    } catch {
       setMessage(
-        error instanceof Error
-          ? error.message
-          : "AI agent run gagal.",
+        copy.messages.runFailed,
       );
     } finally {
       setRunningId(null);
@@ -331,7 +361,7 @@ export default function AIAgentsManager({
         );
 
     if (error) {
-      setMessage(error.message);
+      setMessage(copy.messages.toggleFailed);
       return;
     }
 
@@ -343,7 +373,10 @@ export default function AIAgentsManager({
   ) {
     if (
       !window.confirm(
-        `Delete AI agent "${agent.name}" dan seluruh run history-nya?`,
+        copy.deleteConfirm.replace(
+          "{name}",
+          agent.name,
+        ),
       )
     ) {
       return;
@@ -365,7 +398,7 @@ export default function AIAgentsManager({
         );
 
     if (error) {
-      setMessage(error.message);
+      setMessage(copy.messages.deleteFailed);
       return;
     }
 
@@ -377,7 +410,7 @@ export default function AIAgentsManager({
       <div className="grid gap-4 md:grid-cols-3">
         <div className="rounded-2xl border bg-card p-5 shadow-sm">
           <div className="text-sm text-muted-foreground">
-            AI Agents
+            {copy.stats.agents}
           </div>
 
           <div className="mt-2 text-3xl font-semibold">
@@ -387,7 +420,7 @@ export default function AIAgentsManager({
 
         <div className="rounded-2xl border bg-card p-5 shadow-sm">
           <div className="text-sm text-muted-foreground">
-            Active
+            {copy.stats.active}
           </div>
 
           <div className="mt-2 text-3xl font-semibold">
@@ -402,7 +435,7 @@ export default function AIAgentsManager({
 
         <div className="rounded-2xl border bg-card p-5 shadow-sm">
           <div className="text-sm text-muted-foreground">
-            Agent Runs
+            {copy.stats.runs}
           </div>
 
           <div className="mt-2 text-3xl font-semibold">
@@ -413,13 +446,11 @@ export default function AIAgentsManager({
 
       <div className="rounded-2xl border bg-card p-6 shadow-sm">
         <h2 className="text-lg font-semibold">
-          Create AI Agent
+          {copy.create.title}
         </h2>
 
         <p className="mt-1 text-sm text-muted-foreground">
-          Agents receive read-only commerce context and
-          generate recommendations. They cannot execute
-          commerce mutations.
+          {copy.create.description}
         </p>
 
         <form
@@ -429,18 +460,18 @@ export default function AIAgentsManager({
           <Input
             name="name"
             required
-            placeholder="Agent name"
+            placeholder={copy.create.namePlaceholder}
           />
 
           <Input
             name="purpose"
             required
-            placeholder="Purpose"
+            placeholder={copy.create.purposePlaceholder}
           />
 
           <Input
             name="model"
-            placeholder="Model override (optional)"
+            placeholder={copy.create.modelPlaceholder}
           />
 
           <div />
@@ -449,7 +480,7 @@ export default function AIAgentsManager({
             name="system_instructions"
             rows={4}
             className="w-full rounded-lg border bg-background px-3 py-2 text-sm md:col-span-2"
-            placeholder="Additional agent instructions (optional)"
+            placeholder={copy.create.instructionsPlaceholder}
           />
 
           <div className="md:col-span-2">
@@ -458,8 +489,8 @@ export default function AIAgentsManager({
               disabled={creating}
             >
               {creating
-                ? "Creating..."
-                : "Create Agent"}
+                ? copy.create.creating
+                : copy.create.create}
             </Button>
           </div>
         </form>
@@ -474,7 +505,7 @@ export default function AIAgentsManager({
       <div className="space-y-4">
         {agents.length === 0 ? (
           <div className="rounded-2xl border bg-card px-6 py-12 text-center shadow-sm">
-            Belum ada AI Agent.
+            {copy.empty}
           </div>
         ) : (
           agents.map((agent) => {
@@ -497,8 +528,8 @@ export default function AIAgentsManager({
 
                       <span className="rounded-full border px-2 py-0.5 text-xs">
                         {agent.is_active
-                          ? "Active"
-                          : "Inactive"}
+                          ? copy.statuses.active
+                          : copy.statuses.inactive}
                       </span>
                     </div>
 
@@ -507,10 +538,12 @@ export default function AIAgentsManager({
                     </p>
 
                     <p className="mt-2 text-xs text-muted-foreground">
-                      Context:{" "}
+                      {copy.contextsLabel}:{" "}
                       {stringArray(
                         agent.approved_contexts,
-                      ).join(", ")}
+                      )
+                        .map(contextLabel)
+                        .join(", ")}
                     </p>
                   </div>
 
@@ -523,8 +556,8 @@ export default function AIAgentsManager({
                       }
                     >
                       {agent.is_active
-                        ? "Pause"
-                        : "Activate"}
+                        ? copy.actions.pause
+                        : copy.actions.activate}
                     </Button>
 
                     <Button
@@ -534,7 +567,7 @@ export default function AIAgentsManager({
                         deleteAgent(agent)
                       }
                     >
-                      Delete
+                      {copy.actions.delete}
                     </Button>
                   </div>
                 </div>
@@ -551,7 +584,7 @@ export default function AIAgentsManager({
                   <Input
                     name="objective"
                     required
-                    placeholder="What should this agent analyze?"
+                    placeholder={copy.run.objectivePlaceholder}
                   />
 
                   <Button
@@ -562,8 +595,8 @@ export default function AIAgentsManager({
                     }
                   >
                     {runningId === agent.id
-                      ? "Running..."
-                      : "Run Agent"}
+                      ? copy.run.running
+                      : copy.run.run}
                   </Button>
                 </form>
 
@@ -571,24 +604,26 @@ export default function AIAgentsManager({
                   <div className="mt-5 space-y-4 rounded-xl border p-4">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="text-sm font-medium">
-                        Latest Run
+                        {copy.latest.title}
                       </span>
 
                       <span className="rounded-full border px-2 py-0.5 text-xs capitalize">
-                        {latest.status}
+                        {runStatusLabel(
+                          latest.status,
+                        )}
                       </span>
 
                       <span className="text-xs text-muted-foreground">
                         {stepCountMap.get(
                           latest.id,
                         ) ?? 0}{" "}
-                        audit steps
+                        {copy.latest.auditSteps}
                       </span>
                     </div>
 
                     <p className="text-sm">
                       <span className="font-medium">
-                        Objective:
+                        {copy.latest.objective}:
                       </span>{" "}
                       {latest.objective}
                     </p>
@@ -596,7 +631,7 @@ export default function AIAgentsManager({
                     {latest.summary ? (
                       <div>
                         <div className="text-sm font-medium">
-                          Summary
+                          {copy.latest.summary}
                         </div>
 
                         <p className="mt-1 text-sm text-muted-foreground">
@@ -608,7 +643,7 @@ export default function AIAgentsManager({
                     {latest.recommendation ? (
                       <div>
                         <div className="text-sm font-medium">
-                          Recommendation
+                          {copy.latest.recommendation}
                         </div>
 
                         <p className="mt-1 text-sm text-muted-foreground">
@@ -622,7 +657,7 @@ export default function AIAgentsManager({
                     ).length > 0 ? (
                       <div>
                         <div className="text-sm font-medium">
-                          Risks
+                          {copy.latest.risks}
                         </div>
 
                         <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-muted-foreground">
@@ -644,7 +679,7 @@ export default function AIAgentsManager({
                     ).length > 0 ? (
                       <div>
                         <div className="text-sm font-medium">
-                          Next Actions
+                          {copy.latest.nextActions}
                         </div>
 
                         <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-muted-foreground">
@@ -663,7 +698,7 @@ export default function AIAgentsManager({
 
                     {latest.error_message ? (
                       <p className="text-sm text-muted-foreground">
-                        Error:{" "}
+                        {copy.latest.error}:{" "}
                         {
                           latest.error_message
                         }
@@ -680,13 +715,13 @@ export default function AIAgentsManager({
       <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
         <div className="border-b px-6 py-5">
           <h2 className="text-lg font-semibold">
-            Agent Run History
+            {copy.history.title}
           </h2>
         </div>
 
         {runs.length === 0 ? (
           <div className="px-6 py-10 text-center text-sm text-muted-foreground">
-            No agent runs.
+            {copy.history.empty}
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -694,23 +729,23 @@ export default function AIAgentsManager({
               <thead className="border-b bg-muted/40 text-left">
                 <tr>
                   <th className="px-6 py-3">
-                    Time
+                    {copy.history.columns.time}
                   </th>
 
                   <th className="px-6 py-3">
-                    Agent
+                    {copy.history.columns.agent}
                   </th>
 
                   <th className="px-6 py-3">
-                    Status
+                    {copy.history.columns.status}
                   </th>
 
                   <th className="px-6 py-3">
-                    Model
+                    {copy.history.columns.model}
                   </th>
 
                   <th className="px-6 py-3">
-                    Steps
+                    {copy.history.columns.steps}
                   </th>
                 </tr>
               </thead>
@@ -729,16 +764,19 @@ export default function AIAgentsManager({
                       <td className="whitespace-nowrap px-6 py-4">
                         {formatDate(
                           run.created_at,
+                          localeTag,
                         )}
                       </td>
 
                       <td className="px-6 py-4">
                         {agent?.name ??
-                          "Unknown"}
+                          copy.history.unknownAgent}
                       </td>
 
                       <td className="px-6 py-4 capitalize">
-                        {run.status}
+                        {runStatusLabel(
+                          run.status,
+                        )}
                       </td>
 
                       <td className="px-6 py-4">

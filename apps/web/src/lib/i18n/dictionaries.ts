@@ -48,6 +48,142 @@ const dictionaries = {
       closeSidebar: "Tutup sidebar",
     },
 
+    agents: {
+      page: {
+        title: "Agen AI",
+        noOrganization:
+          "Organisasi aktif tidak ditemukan.",
+        description:
+          "Agen intelijen bisnis hanya-baca dengan konteks terkontrol dan rekomendasi yang dapat diaudit.",
+
+        errors: {
+          loadFailed:
+            "Gagal memuat data Agen AI. Silakan coba lagi.",
+        },
+      },
+
+      manager: {
+        stats: {
+          agents: "Agen AI",
+          active: "Aktif",
+          runs: "Eksekusi Agen",
+        },
+
+        create: {
+          title: "Buat Agen AI",
+          description:
+            "Agen menerima konteks bisnis hanya-baca dan menghasilkan rekomendasi. Agen tidak dapat menjalankan perubahan pada data bisnis.",
+          namePlaceholder:
+            "Nama agen",
+          purposePlaceholder:
+            "Tujuan",
+          modelPlaceholder:
+            "Model khusus (opsional)",
+          instructionsPlaceholder:
+            "Instruksi tambahan untuk agen (opsional)",
+          creating:
+            "Membuat...",
+          create:
+            "Buat Agen",
+        },
+
+        empty:
+          "Belum ada Agen AI.",
+
+        statuses: {
+          active: "Aktif",
+          inactive: "Tidak aktif",
+          pending: "Menunggu",
+          running: "Berjalan",
+          completed: "Selesai",
+          failed: "Gagal",
+          cancelled: "Dibatalkan",
+        },
+
+        contextsLabel:
+          "Konteks",
+
+        contexts: {
+          products: "Produk",
+          productResearch:
+            "Riset Produk",
+          priceMonitoring:
+            "Pemantauan Harga",
+          automation:
+            "Otomasi",
+        },
+
+        actions: {
+          pause: "Jeda",
+          activate: "Aktifkan",
+          delete: "Hapus",
+        },
+
+        run: {
+          objectivePlaceholder:
+            "Apa yang perlu dianalisis agen ini?",
+          running:
+            "Menjalankan...",
+          run:
+            "Jalankan Agen",
+        },
+
+        latest: {
+          title:
+            "Eksekusi Terbaru",
+          auditSteps:
+            "langkah audit",
+          objective:
+            "Tujuan",
+          summary:
+            "Ringkasan",
+          recommendation:
+            "Rekomendasi",
+          risks:
+            "Risiko",
+          nextActions:
+            "Tindakan Berikutnya",
+          error:
+            "Error",
+        },
+
+        history: {
+          title:
+            "Riwayat Eksekusi Agen",
+          empty:
+            "Belum ada riwayat eksekusi agen.",
+          unknownAgent:
+            "Tidak diketahui",
+
+          columns: {
+            time: "Waktu",
+            agent: "Agen",
+            status: "Status",
+            model: "Model",
+            steps: "Langkah",
+          },
+        },
+
+        messages: {
+          createSuccess:
+            "Agen AI berhasil dibuat.",
+          createFailed:
+            "Gagal membuat Agen AI. Silakan coba lagi.",
+          runSuccess:
+            "Eksekusi Agen AI selesai.",
+          runFailed:
+            "Gagal menjalankan Agen AI. Periksa konfigurasi atau batas penggunaan lalu coba lagi.",
+          toggleFailed:
+            "Gagal mengubah status Agen AI. Silakan coba lagi.",
+          deleteFailed:
+            "Gagal menghapus Agen AI. Silakan coba lagi.",
+        },
+
+        deleteConfirm:
+          "Hapus Agen AI \"{name}\" beserta seluruh riwayat eksekusinya?",
+      },
+    },
+
     orders: {
       list: {
         title: "Pesanan",
@@ -1901,6 +2037,142 @@ const dictionaries = {
 
       closeNavigation: "Close navigation",
       closeSidebar: "Close sidebar",
+    },
+
+    agents: {
+      page: {
+        title: "AI Agents",
+        noOrganization:
+          "No active organization found.",
+        description:
+          "Read-only commerce intelligence agents with controlled context and auditable recommendations.",
+
+        errors: {
+          loadFailed:
+            "Failed to load AI Agent data. Please try again.",
+        },
+      },
+
+      manager: {
+        stats: {
+          agents: "AI Agents",
+          active: "Active",
+          runs: "Agent Runs",
+        },
+
+        create: {
+          title: "Create AI Agent",
+          description:
+            "Agents receive read-only commerce context and generate recommendations. They cannot execute commerce mutations.",
+          namePlaceholder:
+            "Agent name",
+          purposePlaceholder:
+            "Purpose",
+          modelPlaceholder:
+            "Model override (optional)",
+          instructionsPlaceholder:
+            "Additional agent instructions (optional)",
+          creating:
+            "Creating...",
+          create:
+            "Create Agent",
+        },
+
+        empty:
+          "No AI Agents yet.",
+
+        statuses: {
+          active: "Active",
+          inactive: "Inactive",
+          pending: "Pending",
+          running: "Running",
+          completed: "Completed",
+          failed: "Failed",
+          cancelled: "Cancelled",
+        },
+
+        contextsLabel:
+          "Context",
+
+        contexts: {
+          products: "Products",
+          productResearch:
+            "Product Research",
+          priceMonitoring:
+            "Price Monitoring",
+          automation:
+            "Automation",
+        },
+
+        actions: {
+          pause: "Pause",
+          activate: "Activate",
+          delete: "Delete",
+        },
+
+        run: {
+          objectivePlaceholder:
+            "What should this agent analyze?",
+          running:
+            "Running...",
+          run:
+            "Run Agent",
+        },
+
+        latest: {
+          title:
+            "Latest Run",
+          auditSteps:
+            "audit steps",
+          objective:
+            "Objective",
+          summary:
+            "Summary",
+          recommendation:
+            "Recommendation",
+          risks:
+            "Risks",
+          nextActions:
+            "Next Actions",
+          error:
+            "Error",
+        },
+
+        history: {
+          title:
+            "Agent Run History",
+          empty:
+            "No agent runs.",
+          unknownAgent:
+            "Unknown",
+
+          columns: {
+            time: "Time",
+            agent: "Agent",
+            status: "Status",
+            model: "Model",
+            steps: "Steps",
+          },
+        },
+
+        messages: {
+          createSuccess:
+            "AI agent created successfully.",
+          createFailed:
+            "Failed to create the AI agent. Please try again.",
+          runSuccess:
+            "AI agent run completed.",
+          runFailed:
+            "Failed to run the AI agent. Check configuration or usage limits and try again.",
+          toggleFailed:
+            "Failed to change the AI agent status. Please try again.",
+          deleteFailed:
+            "Failed to delete the AI agent. Please try again.",
+        },
+
+        deleteConfirm:
+          "Delete AI agent \"{name}\" and its entire run history?",
+      },
     },
 
     orders: {
