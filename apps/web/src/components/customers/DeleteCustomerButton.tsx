@@ -3,7 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { useLanguage } from "@/components/i18n/LanguageProvider";
 import { Button } from "@/components/ui/button";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 import { createClient } from "@/lib/supabase/client";
 
 type DeleteCustomerButtonProps = {
@@ -18,12 +20,14 @@ export default function DeleteCustomerButton({
   customerName,
 }: DeleteCustomerButtonProps) {
   const router = useRouter();
+  const { locale } = useLanguage();
+  const copy = getDictionary(locale).customers.delete;
   const [isDeleting, setIsDeleting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   async function handleDelete() {
     const confirmed = window.confirm(
-      `Hapus pelanggan "${customerName}"? Tindakan ini tidak dapat dibatalkan.`,
+      `${copy.confirmPrefix} "${customerName}"? ${copy.confirmSuffix}`,
     );
 
     if (!confirmed) {
@@ -46,8 +50,8 @@ export default function DeleteCustomerButton({
     if (error) {
       setErrorMessage(
         error.code === "23503"
-          ? "Pelanggan tidak dapat dihapus karena sudah digunakan pada order."
-          : error.message,
+          ? copy.errors.inUse
+          : copy.errors.deleteFailed,
       );
       setIsDeleting(false);
       return;
@@ -55,7 +59,7 @@ export default function DeleteCustomerButton({
 
     if (!data) {
       setErrorMessage(
-        "Pelanggan tidak ditemukan atau tidak dapat dihapus.",
+        copy.errors.notFoundOrCannotDelete,
       );
       setIsDeleting(false);
       return;
@@ -73,7 +77,7 @@ export default function DeleteCustomerButton({
         onClick={handleDelete}
         disabled={isDeleting}
       >
-        {isDeleting ? "Deleting..." : "Delete"}
+        {isDeleting ? copy.deleting : copy.delete}
       </Button>
 
       {errorMessage ? (

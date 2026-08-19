@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import EditCustomerForm from "@/components/customers/EditCustomerForm";
 import { getCurrentOrganization } from "@/lib/supabase/current-organization";
+import { getDictionary } from "@/lib/i18n/dictionaries";
+import { getLocale } from "@/lib/i18n/server";
 import { createClient } from "@/lib/supabase/server";
 
 type EditCustomerPageProps = {
@@ -14,17 +16,22 @@ type EditCustomerPageProps = {
 export default async function EditCustomerPage({
   params,
 }: EditCustomerPageProps) {
-  const currentOrganization = await getCurrentOrganization();
+  const locale = await getLocale();
+  const copy =
+    getDictionary(locale).customers.editCustomer;
+
+  const currentOrganization =
+    await getCurrentOrganization();
 
   if (!currentOrganization) {
     return (
       <DashboardLayout>
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
-            Edit Customer
+            {copy.title}
           </h1>
           <p className="mt-2 text-muted-foreground">
-            Organization aktif tidak ditemukan.
+            {copy.noOrganization}
           </p>
         </div>
       </DashboardLayout>
@@ -42,7 +49,7 @@ export default async function EditCustomerPage({
     .maybeSingle();
 
   if (error) {
-    throw new Error(error.message);
+    throw new Error(copy.errors.loadFailed);
   }
 
   if (!customer) {
@@ -54,10 +61,10 @@ export default async function EditCustomerPage({
       <div className="mx-auto max-w-3xl space-y-6">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
-            Edit Customer
+            {copy.title}
           </h1>
           <p className="mt-2 text-muted-foreground">
-            Perbarui informasi pelanggan pada organization aktif.
+            {copy.description}
           </p>
         </div>
 

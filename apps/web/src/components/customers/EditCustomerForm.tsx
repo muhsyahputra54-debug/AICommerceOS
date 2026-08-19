@@ -3,8 +3,10 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
+import { useLanguage } from "@/components/i18n/LanguageProvider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 import { createClient } from "@/lib/supabase/client";
 
 type EditableCustomer = {
@@ -24,6 +26,8 @@ export default function EditCustomerForm({
   customer,
 }: EditCustomerFormProps) {
   const router = useRouter();
+  const { locale } = useLanguage();
+  const copy = getDictionary(locale).customers.form;
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -39,7 +43,7 @@ export default function EditCustomerForm({
     const phone = String(formData.get("phone") ?? "").trim();
 
     if (!name) {
-      setErrorMessage("Nama pelanggan wajib diisi.");
+      setErrorMessage(copy.validation.nameRequired);
       setIsSubmitting(false);
       return;
     }
@@ -59,14 +63,14 @@ export default function EditCustomerForm({
       .maybeSingle();
 
     if (error) {
-      setErrorMessage(error.message);
+      setErrorMessage(copy.errors.updateFailed);
       setIsSubmitting(false);
       return;
     }
 
     if (!data) {
       setErrorMessage(
-        "Pelanggan tidak ditemukan atau tidak dapat diubah.",
+        copy.errors.notFoundOrCannotUpdate,
       );
       setIsSubmitting(false);
       return;
@@ -81,7 +85,7 @@ export default function EditCustomerForm({
       <div className="grid gap-5 md:grid-cols-2">
         <div className="space-y-2 md:col-span-2">
           <label htmlFor="name" className="text-sm font-medium">
-            Customer name
+            {copy.nameLabel}
           </label>
           <Input
             id="name"
@@ -94,7 +98,7 @@ export default function EditCustomerForm({
 
         <div className="space-y-2">
           <label htmlFor="email" className="text-sm font-medium">
-            Email
+            {copy.emailLabel}
           </label>
           <Input
             id="email"
@@ -106,7 +110,7 @@ export default function EditCustomerForm({
 
         <div className="space-y-2">
           <label htmlFor="phone" className="text-sm font-medium">
-            Phone
+            {copy.phoneLabel}
           </label>
           <Input
             id="phone"
@@ -130,11 +134,11 @@ export default function EditCustomerForm({
           onClick={() => router.push("/customers")}
           disabled={isSubmitting}
         >
-          Cancel
+          {copy.cancel}
         </Button>
 
         <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Saving..." : "Save changes"}
+          {isSubmitting ? copy.saving : copy.saveChanges}
         </Button>
       </div>
     </form>

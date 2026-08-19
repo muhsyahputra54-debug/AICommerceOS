@@ -2,10 +2,12 @@ import Link from "next/link";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import DeleteCustomerButton from "@/components/customers/DeleteCustomerButton";
 import { getCurrentOrganization } from "@/lib/supabase/current-organization";
+import { getDictionary } from "@/lib/i18n/dictionaries";
+import { getLocale } from "@/lib/i18n/server";
 import { createClient } from "@/lib/supabase/server";
 
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat("id-ID", {
+function formatDate(value: string, locale: string) {
+  return new Intl.DateTimeFormat(locale, {
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -13,17 +15,23 @@ function formatDate(value: string) {
 }
 
 export default async function CustomersPage() {
-  const currentOrganization = await getCurrentOrganization();
+  const locale = await getLocale();
+  const copy = getDictionary(locale).customers.list;
+  const localeTag =
+    locale === "id" ? "id-ID" : "en-US";
+
+  const currentOrganization =
+    await getCurrentOrganization();
 
   if (!currentOrganization) {
     return (
       <DashboardLayout>
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
-            Customers
+            {copy.title}
           </h1>
           <p className="mt-2 text-muted-foreground">
-            Organization aktif tidak ditemukan.
+            {copy.noOrganization}
           </p>
         </div>
       </DashboardLayout>
@@ -39,7 +47,7 @@ export default async function CustomersPage() {
     .order("created_at", { ascending: false });
 
   if (error) {
-    throw new Error(error.message);
+    throw new Error(copy.errors.loadFailed);
   }
 
   return (
@@ -47,10 +55,10 @@ export default async function CustomersPage() {
       <div className="space-y-8">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
-            Customers
+            {copy.title}
           </h1>
           <p className="mt-2 text-muted-foreground">
-            Kelola dan pantau pelanggan bisnis Anda.
+            {copy.description}
           </p>
         </div>
 
@@ -59,10 +67,10 @@ export default async function CustomersPage() {
             <div className="flex items-center justify-between gap-4">
               <div>
                 <h2 className="text-lg font-semibold">
-                  Customer Management
+                  {copy.managementTitle}
                 </h2>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  {customers.length} pelanggan pada organization aktif.
+                  {customers.length} {copy.managementCountSuffix}
                 </p>
               </div>
 
@@ -70,7 +78,7 @@ export default async function CustomersPage() {
                 href="/customers/new"
                 className="inline-flex h-9 items-center justify-center rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/80"
               >
-                Add Customer
+                {copy.addCustomer}
               </Link>
             </div>
           </div>
@@ -78,10 +86,10 @@ export default async function CustomersPage() {
           {customers.length === 0 ? (
             <div className="px-6 py-16 text-center">
               <h3 className="font-medium">
-                Belum ada pelanggan
+                {copy.emptyTitle}
               </h3>
               <p className="mt-2 text-sm text-muted-foreground">
-                Pelanggan yang ditambahkan nanti akan tampil di sini.
+                {copy.emptyDescription}
               </p>
             </div>
           ) : (
@@ -90,19 +98,19 @@ export default async function CustomersPage() {
                 <thead className="border-b bg-muted/30">
                   <tr>
                     <th className="px-6 py-4 text-left font-medium">
-                      Customer
+                      {copy.columns.customer}
                     </th>
                     <th className="px-6 py-4 text-left font-medium">
-                      Email
+                      {copy.columns.email}
                     </th>
                     <th className="px-6 py-4 text-left font-medium">
-                      Phone
+                      {copy.columns.phone}
                     </th>
                     <th className="px-6 py-4 text-left font-medium">
-                      Added
+                      {copy.columns.added}
                     </th>
                     <th className="px-6 py-4 text-left font-medium">
-                      Actions
+                      {copy.columns.actions}
                     </th>
                   </tr>
                 </thead>
@@ -118,15 +126,15 @@ export default async function CustomersPage() {
                       </td>
 
                       <td className="px-6 py-4 text-muted-foreground">
-                        {customer.email ?? "—"}
+                        {customer.email ?? "\u2014"}
                       </td>
 
                       <td className="px-6 py-4 text-muted-foreground">
-                        {customer.phone ?? "—"}
+                        {customer.phone ?? "\u2014"}
                       </td>
 
                       <td className="px-6 py-4 text-muted-foreground">
-                        {formatDate(customer.created_at)}
+                        {formatDate(customer.created_at, localeTag)}
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-start gap-2">
@@ -134,7 +142,7 @@ export default async function CustomersPage() {
                             href={`/customers/${customer.id}/edit`}
                             className="inline-flex h-7 items-center justify-center rounded-lg border px-2.5 text-[0.8rem] font-medium transition-colors hover:bg-muted"
                           >
-                            Edit
+                            {copy.edit}
                           </Link>
 
                           <DeleteCustomerButton

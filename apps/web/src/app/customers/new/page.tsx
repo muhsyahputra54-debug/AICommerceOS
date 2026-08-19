@@ -1,19 +1,26 @@
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import AddCustomerForm from "@/components/customers/AddCustomerForm";
+import { getDictionary } from "@/lib/i18n/dictionaries";
+import { getLocale } from "@/lib/i18n/server";
 import { getCurrentOrganization } from "@/lib/supabase/current-organization";
 
 export default async function NewCustomerPage() {
-  const currentOrganization = await getCurrentOrganization();
+  const locale = await getLocale();
+  const copy =
+    getDictionary(locale).customers.newCustomer;
+
+  const currentOrganization =
+    await getCurrentOrganization();
 
   if (!currentOrganization) {
     return (
       <DashboardLayout>
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
-            Add Customer
+            {copy.title}
           </h1>
           <p className="mt-2 text-muted-foreground">
-            Organization aktif tidak ditemukan.
+            {copy.noOrganization}
           </p>
         </div>
       </DashboardLayout>
@@ -25,10 +32,10 @@ export default async function NewCustomerPage() {
       <div className="mx-auto max-w-3xl space-y-6">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
-            Add Customer
+            {copy.title}
           </h1>
           <p className="mt-2 text-muted-foreground">
-            Tambahkan pelanggan baru ke organization aktif.
+            {copy.description}
           </p>
         </div>
 

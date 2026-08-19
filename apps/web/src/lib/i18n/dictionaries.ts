@@ -177,6 +177,120 @@ const dictionaries = {
       },
     },
 
+    customers: {
+      list: {
+        title: "Pelanggan",
+        noOrganization:
+          "Organisasi aktif tidak ditemukan.",
+        description:
+          "Kelola dan pantau pelanggan bisnis Anda.",
+        managementTitle:
+          "Manajemen Pelanggan",
+        managementCountSuffix:
+          "pelanggan pada organisasi aktif.",
+        addCustomer:
+          "Tambah Pelanggan",
+        emptyTitle:
+          "Belum ada pelanggan",
+        emptyDescription:
+          "Pelanggan yang ditambahkan nanti akan tampil di sini.",
+
+        columns: {
+          customer: "Pelanggan",
+          email: "Email",
+          phone: "Telepon",
+          added: "Ditambahkan",
+          actions: "Aksi",
+        },
+
+        edit: "Edit",
+
+        errors: {
+          loadFailed:
+            "Gagal memuat data pelanggan. Silakan coba lagi.",
+        },
+      },
+
+      newCustomer: {
+        title: "Tambah Pelanggan",
+        noOrganization:
+          "Organisasi aktif tidak ditemukan.",
+        description:
+          "Tambahkan pelanggan baru ke organisasi aktif.",
+      },
+
+      editCustomer: {
+        title: "Edit Pelanggan",
+        noOrganization:
+          "Organisasi aktif tidak ditemukan.",
+        description:
+          "Perbarui informasi pelanggan pada organisasi aktif.",
+
+        errors: {
+          loadFailed:
+            "Gagal memuat data pelanggan. Silakan coba lagi.",
+        },
+      },
+
+      form: {
+        nameLabel:
+          "Nama pelanggan",
+        namePlaceholder:
+          "Contoh: Budi Santoso",
+
+        emailLabel:
+          "Email",
+        emailPlaceholder:
+          "customer@example.com",
+
+        phoneLabel:
+          "Telepon",
+        phonePlaceholder:
+          "+62 812 3456 7890",
+
+        cancel: "Batal",
+        saving: "Menyimpan...",
+        saveCustomer:
+          "Simpan pelanggan",
+        saveChanges:
+          "Simpan perubahan",
+
+        validation: {
+          nameRequired:
+            "Nama pelanggan wajib diisi.",
+        },
+
+        errors: {
+          createFailed:
+            "Gagal menambahkan pelanggan. Silakan coba lagi.",
+          updateFailed:
+            "Gagal memperbarui pelanggan. Silakan coba lagi.",
+          notFoundOrCannotUpdate:
+            "Pelanggan tidak ditemukan atau tidak dapat diperbarui.",
+        },
+      },
+
+      delete: {
+        confirmPrefix:
+          "Hapus pelanggan",
+        confirmSuffix:
+          "Tindakan ini tidak dapat dibatalkan.",
+        deleting:
+          "Menghapus...",
+        delete:
+          "Hapus",
+
+        errors: {
+          inUse:
+            "Pelanggan tidak dapat dihapus karena sudah digunakan pada pesanan.",
+          deleteFailed:
+            "Gagal menghapus pelanggan. Silakan coba lagi.",
+          notFoundOrCannotDelete:
+            "Pelanggan tidak ditemukan atau tidak dapat dihapus.",
+        },
+      },
+    },
+
     login: {
       subtitle: "Masuk ke dasbor LAKUVO",
       continueWithGitHub: "Lanjutkan dengan GitHub",
@@ -1767,6 +1881,120 @@ const dictionaries = {
         errors: {
           updateFailed:
             "Failed to update the order status. Please try again.",
+        },
+      },
+    },
+
+    customers: {
+      list: {
+        title: "Customers",
+        noOrganization:
+          "No active organization found.",
+        description:
+          "Manage and monitor your business customers.",
+        managementTitle:
+          "Customer Management",
+        managementCountSuffix:
+          "customers in the active organization.",
+        addCustomer:
+          "Add Customer",
+        emptyTitle:
+          "No customers yet",
+        emptyDescription:
+          "Customers you add will appear here.",
+
+        columns: {
+          customer: "Customer",
+          email: "Email",
+          phone: "Phone",
+          added: "Added",
+          actions: "Actions",
+        },
+
+        edit: "Edit",
+
+        errors: {
+          loadFailed:
+            "Failed to load customers. Please try again.",
+        },
+      },
+
+      newCustomer: {
+        title: "Add Customer",
+        noOrganization:
+          "No active organization found.",
+        description:
+          "Add a new customer to the active organization.",
+      },
+
+      editCustomer: {
+        title: "Edit Customer",
+        noOrganization:
+          "No active organization found.",
+        description:
+          "Update customer information in the active organization.",
+
+        errors: {
+          loadFailed:
+            "Failed to load the customer. Please try again.",
+        },
+      },
+
+      form: {
+        nameLabel:
+          "Customer name",
+        namePlaceholder:
+          "Example: Jane Doe",
+
+        emailLabel:
+          "Email",
+        emailPlaceholder:
+          "customer@example.com",
+
+        phoneLabel:
+          "Phone",
+        phonePlaceholder:
+          "+62 812 3456 7890",
+
+        cancel: "Cancel",
+        saving: "Saving...",
+        saveCustomer:
+          "Save customer",
+        saveChanges:
+          "Save changes",
+
+        validation: {
+          nameRequired:
+            "Customer name is required.",
+        },
+
+        errors: {
+          createFailed:
+            "Failed to add the customer. Please try again.",
+          updateFailed:
+            "Failed to update the customer. Please try again.",
+          notFoundOrCannotUpdate:
+            "The customer was not found or could not be updated.",
+        },
+      },
+
+      delete: {
+        confirmPrefix:
+          "Delete customer",
+        confirmSuffix:
+          "This action cannot be undone.",
+        deleting:
+          "Deleting...",
+        delete:
+          "Delete",
+
+        errors: {
+          inUse:
+            "The customer cannot be deleted because it is already used by an order.",
+          deleteFailed:
+            "Failed to delete the customer. Please try again.",
+          notFoundOrCannotDelete:
+            "The customer was not found or could not be deleted.",
         },
       },
     },
