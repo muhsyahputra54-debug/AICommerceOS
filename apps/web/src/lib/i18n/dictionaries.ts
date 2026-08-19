@@ -434,6 +434,145 @@ const dictionaries = {
       },
     },
 
+    suppliers: {
+      list: {
+        title: "Pemasok",
+        noOrganization:
+          "Organisasi aktif tidak ditemukan.",
+        description:
+          "Kelola pemasok untuk organisasi aktif.",
+        addSupplier:
+          "Tambah Pemasok",
+        managementTitle:
+          "Manajemen Pemasok",
+        managementCountSuffix:
+          "pemasok pada organisasi aktif.",
+        emptyTitle:
+          "Belum ada pemasok",
+        emptyDescription:
+          "Pemasok yang ditambahkan nanti akan tampil di sini.",
+
+        columns: {
+          supplier: "Pemasok",
+          contact: "Kontak",
+          emailPhone: "Email / Telepon",
+          status: "Status",
+          added: "Ditambahkan",
+          actions: "Aksi",
+        },
+
+        statuses: {
+          active: "Aktif",
+          inactive: "Tidak aktif",
+        },
+
+        edit: "Edit",
+
+        errors: {
+          loadFailed:
+            "Gagal memuat data pemasok. Silakan coba lagi.",
+        },
+      },
+
+      newSupplier: {
+        title: "Tambah Pemasok",
+        noOrganization:
+          "Organisasi aktif tidak ditemukan.",
+        description:
+          "Tambahkan pemasok baru ke organisasi aktif.",
+      },
+
+      editSupplier: {
+        title: "Edit Pemasok",
+        noOrganization:
+          "Organisasi aktif tidak ditemukan.",
+        description:
+          "Perbarui informasi pemasok pada organisasi aktif.",
+
+        errors: {
+          loadFailed:
+            "Gagal memuat data pemasok. Silakan coba lagi.",
+        },
+      },
+
+      form: {
+        nameLabel: "Nama pemasok",
+        namePlaceholder:
+          "Contoh: PT Pemasok Nusantara",
+
+        contactLabel:
+          "Kontak utama",
+        contactPlaceholder:
+          "Nama PIC pemasok",
+
+        statusLabel: "Status",
+
+        statuses: {
+          active: "Aktif",
+          inactive: "Tidak aktif",
+        },
+
+        emailLabel: "Email",
+        emailPlaceholder:
+          "supplier@example.com",
+
+        phoneLabel: "Telepon",
+        phonePlaceholder:
+          "+62 812 3456 7890",
+
+        addressLabel: "Alamat",
+        addressPlaceholder:
+          "Alamat pemasok",
+
+        notesLabel: "Catatan",
+        notesPlaceholder:
+          "Catatan tambahan mengenai pemasok",
+
+        cancel: "Batal",
+        saving: "Menyimpan...",
+        saveSupplier:
+          "Simpan pemasok",
+        saveChanges:
+          "Simpan perubahan",
+
+        validation: {
+          nameRequired:
+            "Nama pemasok wajib diisi.",
+        },
+
+        errors: {
+          duplicateName:
+            "Nama pemasok sudah digunakan pada organisasi ini.",
+          createFailed:
+            "Gagal menambahkan pemasok. Silakan coba lagi.",
+          updateFailed:
+            "Gagal memperbarui pemasok. Silakan coba lagi.",
+          notFoundOrCannotUpdate:
+            "Pemasok tidak ditemukan atau tidak dapat diperbarui.",
+        },
+      },
+
+      delete: {
+        confirmPrefix:
+          "Hapus pemasok",
+        confirmSuffix:
+          "Tindakan ini tidak dapat dibatalkan.",
+        deleting:
+          "Menghapus...",
+        delete:
+          "Hapus",
+
+        errors: {
+          inUse:
+            "Pemasok tidak dapat dihapus karena masih digunakan.",
+          deleteFailed:
+            "Gagal menghapus pemasok. Silakan coba lagi.",
+          notFoundOrCannotDelete:
+            "Pemasok tidak ditemukan atau tidak dapat dihapus.",
+        },
+      },
+    },
+
     inventory: {
       title: "Wawasan Inventaris",
       noOrganization:
@@ -1037,6 +1176,14 @@ const dictionaries = {
 
           selectSupplier:
             "Pilih supplier",
+          supplier:
+            "Supplier",
+          target:
+            "Target",
+          supplierSku:
+            "Supplier SKU",
+          moq:
+            "MOQ",
           baseProduct:
             "Produk Utama",
           variant:
@@ -2142,6 +2289,145 @@ const dictionaries = {
       },
     },
 
+    suppliers: {
+      list: {
+        title: "Suppliers",
+        noOrganization:
+          "No active organization found.",
+        description:
+          "Manage suppliers for the active organization.",
+        addSupplier:
+          "Add Supplier",
+        managementTitle:
+          "Supplier Management",
+        managementCountSuffix:
+          "suppliers in the active organization.",
+        emptyTitle:
+          "No suppliers yet",
+        emptyDescription:
+          "Suppliers you add will appear here.",
+
+        columns: {
+          supplier: "Supplier",
+          contact: "Contact",
+          emailPhone: "Email / Phone",
+          status: "Status",
+          added: "Added",
+          actions: "Actions",
+        },
+
+        statuses: {
+          active: "Active",
+          inactive: "Inactive",
+        },
+
+        edit: "Edit",
+
+        errors: {
+          loadFailed:
+            "Failed to load suppliers. Please try again.",
+        },
+      },
+
+      newSupplier: {
+        title: "Add Supplier",
+        noOrganization:
+          "No active organization found.",
+        description:
+          "Add a new supplier to the active organization.",
+      },
+
+      editSupplier: {
+        title: "Edit Supplier",
+        noOrganization:
+          "No active organization found.",
+        description:
+          "Update supplier information in the active organization.",
+
+        errors: {
+          loadFailed:
+            "Failed to load the supplier. Please try again.",
+        },
+      },
+
+      form: {
+        nameLabel: "Supplier name",
+        namePlaceholder:
+          "Example: Nusantara Supply Co.",
+
+        contactLabel:
+          "Contact person",
+        contactPlaceholder:
+          "Supplier contact name",
+
+        statusLabel: "Status",
+
+        statuses: {
+          active: "Active",
+          inactive: "Inactive",
+        },
+
+        emailLabel: "Email",
+        emailPlaceholder:
+          "supplier@example.com",
+
+        phoneLabel: "Phone",
+        phonePlaceholder:
+          "+62 812 3456 7890",
+
+        addressLabel: "Address",
+        addressPlaceholder:
+          "Supplier address",
+
+        notesLabel: "Notes",
+        notesPlaceholder:
+          "Additional notes about the supplier",
+
+        cancel: "Cancel",
+        saving: "Saving...",
+        saveSupplier:
+          "Save supplier",
+        saveChanges:
+          "Save changes",
+
+        validation: {
+          nameRequired:
+            "Supplier name is required.",
+        },
+
+        errors: {
+          duplicateName:
+            "That supplier name is already used in this organization.",
+          createFailed:
+            "Failed to add the supplier. Please try again.",
+          updateFailed:
+            "Failed to update the supplier. Please try again.",
+          notFoundOrCannotUpdate:
+            "The supplier was not found or could not be updated.",
+        },
+      },
+
+      delete: {
+        confirmPrefix:
+          "Delete supplier",
+        confirmSuffix:
+          "This action cannot be undone.",
+        deleting:
+          "Deleting...",
+        delete:
+          "Delete",
+
+        errors: {
+          inUse:
+            "The supplier cannot be deleted because it is still in use.",
+          deleteFailed:
+            "Failed to delete the supplier. Please try again.",
+          notFoundOrCannotDelete:
+            "The supplier was not found or could not be deleted.",
+        },
+      },
+    },
+
     inventory: {
       title: "Inventory Intelligence",
       noOrganization:
@@ -2745,6 +3031,14 @@ const dictionaries = {
 
           selectSupplier:
             "Select supplier",
+          supplier:
+            "Supplier",
+          target:
+            "Target",
+          supplierSku:
+            "Supplier SKU",
+          moq:
+            "MOQ",
           baseProduct:
             "Base Product",
           variant:

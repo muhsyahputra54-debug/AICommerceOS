@@ -1,19 +1,26 @@
-﻿import DashboardLayout from "@/components/layout/DashboardLayout";
+import DashboardLayout from "@/components/layout/DashboardLayout";
 import AddSupplierForm from "@/components/suppliers/AddSupplierForm";
+import { getDictionary } from "@/lib/i18n/dictionaries";
+import { getLocale } from "@/lib/i18n/server";
 import { getCurrentOrganization } from "@/lib/supabase/current-organization";
 
 export default async function NewSupplierPage() {
-  const currentOrganization = await getCurrentOrganization();
+  const locale = await getLocale();
+  const copy =
+    getDictionary(locale).suppliers.newSupplier;
+
+  const currentOrganization =
+    await getCurrentOrganization();
 
   if (!currentOrganization) {
     return (
       <DashboardLayout>
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
-            Add Supplier
+            {copy.title}
           </h1>
           <p className="mt-2 text-muted-foreground">
-            Organization aktif tidak ditemukan.
+            {copy.noOrganization}
           </p>
         </div>
       </DashboardLayout>
@@ -25,10 +32,10 @@ export default async function NewSupplierPage() {
       <div className="mx-auto max-w-3xl space-y-6">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
-            Add Supplier
+            {copy.title}
           </h1>
           <p className="mt-2 text-muted-foreground">
-            Tambahkan supplier baru ke organization aktif.
+            {copy.description}
           </p>
         </div>
 

@@ -1,10 +1,12 @@
-﻿"use client";
+"use client";
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
+import { useLanguage } from "@/components/i18n/LanguageProvider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 import { createClient } from "@/lib/supabase/client";
 
 type AddSupplierFormProps = {
@@ -15,6 +17,8 @@ export default function AddSupplierForm({
   organizationId,
 }: AddSupplierFormProps) {
   const router = useRouter();
+  const { locale } = useLanguage();
+  const copy = getDictionary(locale).suppliers.form;
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] =
     useState<string | null>(null);
@@ -39,7 +43,7 @@ export default function AddSupplierForm({
     const status = String(formData.get("status") ?? "active");
 
     if (!name) {
-      setErrorMessage("Nama supplier wajib diisi.");
+      setErrorMessage(copy.validation.nameRequired);
       setIsSubmitting(false);
       return;
     }
@@ -60,8 +64,8 @@ export default function AddSupplierForm({
     if (error) {
       setErrorMessage(
         error.code === "23505"
-          ? "Nama supplier sudah digunakan pada organization ini."
-          : error.message,
+          ? copy.errors.duplicateName
+          : copy.errors.createFailed,
       );
       setIsSubmitting(false);
       return;
@@ -76,32 +80,32 @@ export default function AddSupplierForm({
       <div className="grid gap-5 md:grid-cols-2">
         <div className="space-y-2 md:col-span-2">
           <label htmlFor="name" className="text-sm font-medium">
-            Supplier name
+            {copy.nameLabel}
           </label>
           <Input
             id="name"
             name="name"
             type="text"
-            placeholder="Contoh: PT Supplier Nusantara"
+            placeholder={copy.namePlaceholder}
             required
           />
         </div>
 
         <div className="space-y-2">
           <label htmlFor="contact_name" className="text-sm font-medium">
-            Contact person
+            {copy.contactLabel}
           </label>
           <Input
             id="contact_name"
             name="contact_name"
             type="text"
-            placeholder="Nama PIC supplier"
+            placeholder={copy.contactPlaceholder}
           />
         </div>
 
         <div className="space-y-2">
           <label htmlFor="status" className="text-sm font-medium">
-            Status
+            {copy.statusLabel}
           </label>
           <select
             id="status"
@@ -109,57 +113,57 @@ export default function AddSupplierForm({
             defaultValue="active"
             className="flex h-10 w-full rounded-lg border bg-background px-3 py-2 text-sm"
           >
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
+            <option value="active">{copy.statuses.active}</option>
+            <option value="inactive">{copy.statuses.inactive}</option>
           </select>
         </div>
 
         <div className="space-y-2">
           <label htmlFor="email" className="text-sm font-medium">
-            Email
+            {copy.emailLabel}
           </label>
           <Input
             id="email"
             name="email"
             type="email"
-            placeholder="supplier@example.com"
+            placeholder={copy.emailPlaceholder}
           />
         </div>
 
         <div className="space-y-2">
           <label htmlFor="phone" className="text-sm font-medium">
-            Phone
+            {copy.phoneLabel}
           </label>
           <Input
             id="phone"
             name="phone"
             type="tel"
-            placeholder="+62 812 3456 7890"
+            placeholder={copy.phonePlaceholder}
           />
         </div>
 
         <div className="space-y-2 md:col-span-2">
           <label htmlFor="address" className="text-sm font-medium">
-            Address
+            {copy.addressLabel}
           </label>
           <textarea
             id="address"
             name="address"
             rows={3}
-            placeholder="Alamat supplier"
+            placeholder={copy.addressPlaceholder}
             className="flex w-full rounded-lg border bg-background px-3 py-2 text-sm outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
           />
         </div>
 
         <div className="space-y-2 md:col-span-2">
           <label htmlFor="notes" className="text-sm font-medium">
-            Notes
+            {copy.notesLabel}
           </label>
           <textarea
             id="notes"
             name="notes"
             rows={4}
-            placeholder="Catatan tambahan mengenai supplier"
+            placeholder={copy.notesPlaceholder}
             className="flex w-full rounded-lg border bg-background px-3 py-2 text-sm outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
           />
         </div>
@@ -178,11 +182,11 @@ export default function AddSupplierForm({
           onClick={() => router.push("/suppliers")}
           disabled={isSubmitting}
         >
-          Cancel
+          {copy.cancel}
         </Button>
 
         <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Saving..." : "Save supplier"}
+          {isSubmitting ? copy.saving : copy.saveSupplier}
         </Button>
       </div>
     </form>

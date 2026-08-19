@@ -1,9 +1,11 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { useLanguage } from "@/components/i18n/LanguageProvider";
 import { Button } from "@/components/ui/button";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 import { createClient } from "@/lib/supabase/client";
 
 type DeleteSupplierButtonProps = {
@@ -18,13 +20,15 @@ export default function DeleteSupplierButton({
   supplierName,
 }: DeleteSupplierButtonProps) {
   const router = useRouter();
+  const { locale } = useLanguage();
+  const copy = getDictionary(locale).suppliers.delete;
   const [isDeleting, setIsDeleting] = useState(false);
   const [errorMessage, setErrorMessage] =
     useState<string | null>(null);
 
   async function handleDelete() {
     const confirmed = window.confirm(
-      `Hapus supplier "${supplierName}"? Tindakan ini tidak dapat dibatalkan.`,
+      `${copy.confirmPrefix} "${supplierName}"? ${copy.confirmSuffix}`,
     );
 
     if (!confirmed) {
@@ -47,8 +51,8 @@ export default function DeleteSupplierButton({
     if (error) {
       setErrorMessage(
         error.code === "23503"
-          ? "Supplier tidak dapat dihapus karena masih digunakan."
-          : error.message,
+          ? copy.errors.inUse
+          : copy.errors.deleteFailed,
       );
       setIsDeleting(false);
       return;
@@ -56,7 +60,7 @@ export default function DeleteSupplierButton({
 
     if (!data) {
       setErrorMessage(
-        "Supplier tidak ditemukan atau tidak dapat dihapus.",
+        copy.errors.notFoundOrCannotDelete,
       );
       setIsDeleting(false);
       return;
@@ -74,7 +78,7 @@ export default function DeleteSupplierButton({
         onClick={handleDelete}
         disabled={isDeleting}
       >
-        {isDeleting ? "Deleting..." : "Delete"}
+        {isDeleting ? copy.deleting : copy.delete}
       </Button>
 
       {errorMessage ? (

@@ -346,7 +346,7 @@ export default function ProductSupplierManager({
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               <div className="space-y-2">
                 <label htmlFor="supplier_id" className="text-sm font-medium">
-                  Supplier
+                  {copy.supplier}
                 </label>
                 <select
                   id="supplier_id"
@@ -366,7 +366,7 @@ export default function ProductSupplierManager({
 
               <div className="space-y-2">
                 <label htmlFor="target" className="text-sm font-medium">
-                  Target
+                  {copy.target}
                 </label>
                 <select
                   id="target"
@@ -392,7 +392,7 @@ export default function ProductSupplierManager({
 
               <div className="space-y-2">
                 <label htmlFor="supplier_sku" className="text-sm font-medium">
-                  Supplier SKU
+                  {copy.supplierSku}
                 </label>
                 <Input
                   id="supplier_sku"
@@ -495,12 +495,12 @@ export default function ProductSupplierManager({
             <table className="w-full text-sm">
               <thead className="border-b bg-muted/40 text-left">
                 <tr>
-                  <th className="px-6 py-3 font-medium">Target</th>
-                  <th className="px-6 py-3 font-medium">Supplier</th>
-                  <th className="px-6 py-3 font-medium">Supplier SKU</th>
+                  <th className="px-6 py-3 font-medium">{copy.target}</th>
+                  <th className="px-6 py-3 font-medium">{copy.supplier}</th>
+                  <th className="px-6 py-3 font-medium">{copy.supplierSku}</th>
                   <th className="px-6 py-3 font-medium">{copy.unitCost}</th>
-                  <th className="px-6 py-3 font-medium">MOQ</th>
-                  <th className="px-6 py-3 font-medium">Lead Time</th>
+                  <th className="px-6 py-3 font-medium">{copy.moq}</th>
+                  <th className="px-6 py-3 font-medium">{copy.leadTime}</th>
                   <th className="px-6 py-3 font-medium">{copy.preferred}</th>
                   <th className="px-6 py-3 font-medium">{copy.actions}</th>
                 </tr>
@@ -580,7 +580,7 @@ export default function ProductSupplierManager({
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium" htmlFor="edit_supplier_sku">
-                  Supplier SKU
+                  {copy.supplierSku}
                 </label>
                 <Input
                   id="edit_supplier_sku"
@@ -603,7 +603,7 @@ export default function ProductSupplierManager({
 
               <div className="space-y-2">
                 <label className="text-sm font-medium" htmlFor="edit_moq">
-                  MOQ
+                  {copy.moq}
                 </label>
                 <Input
                   id="edit_moq"
