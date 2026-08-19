@@ -36,6 +36,41 @@ export default async function AIAssistantPage() {
               copy.chat.send,
             clear:
               copy.chat.clear,
+
+            memoryButton:
+              copy.chat.memoryButton,
+            memoryTitle:
+              copy.chat.memoryTitle,
+            memoryDescription:
+              copy.chat.memoryDescription,
+            memoryEmpty:
+              copy.chat.memoryEmpty,
+            memoryLoading:
+              copy.chat.memoryLoading,
+            memoryActive:
+              copy.chat.memoryActive,
+            memoryArchived:
+              copy.chat.memoryArchived,
+            memoryDisable:
+              copy.chat.memoryDisable,
+            memoryRestore:
+              copy.chat.memoryRestore,
+            memoryDelete:
+              copy.chat.memoryDelete,
+            memoryDeleteConfirm:
+              copy.chat.memoryDeleteConfirm,
+            memoryError:
+              copy.chat.memoryError,
+
+            memoryTypePreference:
+              copy.chat.memoryTypePreference,
+            memoryTypeGoal:
+              copy.chat.memoryTypeGoal,
+            memoryTypeConstraint:
+              copy.chat.memoryTypeConstraint,
+            memoryTypeBusinessContext:
+              copy.chat.memoryTypeBusinessContext,
+
             thinking:
               copy.chat.thinking,
             userLabel:

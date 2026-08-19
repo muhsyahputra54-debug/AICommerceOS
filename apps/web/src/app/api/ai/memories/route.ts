@@ -210,7 +210,9 @@ async function getRequestContext() {
   } as const;
 }
 
-export async function GET() {
+export async function GET(
+  request: Request,
+) {
   const context =
     await getRequestContext();
 
@@ -224,37 +226,54 @@ export async function GET() {
     organizationId,
   } = context;
 
+  const includeArchived =
+    new URL(
+      request.url,
+    ).searchParams.get(
+      "includeArchived",
+    ) === "true";
+
+  const memorySelect =
+    [
+      "id",
+      "memory_type",
+      "memory_key",
+      "content",
+      "source_kind",
+      "source_conversation_id",
+      "created_at",
+      "updated_at",
+      "last_used_at",
+      "archived_at",
+    ].join(", ");
+
+  const baseQuery =
+    supabase
+      .from("ai_memories")
+      .select(
+        memorySelect,
+      )
+      .eq(
+        "organization_id",
+        organizationId,
+      )
+      .eq(
+        "user_id",
+        user.id,
+      );
+
+  const memoryQuery =
+    includeArchived
+      ? baseQuery
+      : baseQuery.is(
+          "archived_at",
+          null,
+        );
+
   const {
     data: memories,
     error,
-  } = await supabase
-    .from("ai_memories")
-    .select(
-      [
-        "id",
-        "memory_type",
-        "memory_key",
-        "content",
-        "source_kind",
-        "source_conversation_id",
-        "created_at",
-        "updated_at",
-        "last_used_at",
-        "archived_at",
-      ].join(", "),
-    )
-    .eq(
-      "organization_id",
-      organizationId,
-    )
-    .eq(
-      "user_id",
-      user.id,
-    )
-    .is(
-      "archived_at",
-      null,
-    )
+  } = await memoryQuery
     .order(
       "updated_at",
       {

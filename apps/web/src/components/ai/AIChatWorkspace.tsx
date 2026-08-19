@@ -1,8 +1,11 @@
 "use client";
 
 import {
+  Archive,
   Bot,
+  Brain,
   LoaderCircle,
+  RotateCcw,
   Send,
   Sparkles,
   Trash2,
@@ -32,6 +35,25 @@ type AIChatWorkspaceCopy = {
 
   send: string;
   clear: string;
+
+  memoryButton: string;
+  memoryTitle: string;
+  memoryDescription: string;
+  memoryEmpty: string;
+  memoryLoading: string;
+  memoryActive: string;
+  memoryArchived: string;
+  memoryDisable: string;
+  memoryRestore: string;
+  memoryDelete: string;
+  memoryDeleteConfirm: string;
+  memoryError: string;
+
+  memoryTypePreference: string;
+  memoryTypeGoal: string;
+  memoryTypeConstraint: string;
+  memoryTypeBusinessContext: string;
+
   thinking: string;
 
   userLabel: string;
@@ -70,6 +92,48 @@ type ConversationDetailResponse =
     messages?: ChatMessage[];
   };
 
+type AIMemory = {
+  id: string;
+  memory_type:
+    | "preference"
+    | "goal"
+    | "constraint"
+    | "business_context"
+    | string;
+
+  memory_key: string;
+  content: string;
+
+  source_kind: string;
+
+  source_conversation_id:
+    | string
+    | null;
+
+  created_at: string;
+  updated_at: string;
+
+  last_used_at:
+    | string
+    | null;
+
+  archived_at:
+    | string
+    | null;
+};
+
+type MemoryListResponse = {
+  memories?: AIMemory[];
+  error?: string;
+};
+
+type MemoryMutationResponse = {
+  memory?: AIMemory;
+  deleted?: boolean;
+  id?: string;
+  error?: string;
+};
+
 const MAX_MESSAGE_LENGTH = 4000;
 const MAX_CONTEXT_MESSAGES = 20;
 
@@ -94,6 +158,34 @@ export default function AIChatWorkspace({
   ] = useState(true);
 
   const [errorMessage, setErrorMessage] =
+    useState<string | null>(null);
+
+  const [
+    isMemoryPanelOpen,
+    setIsMemoryPanelOpen,
+  ] = useState(false);
+
+  const [
+    memories,
+    setMemories,
+  ] =
+    useState<AIMemory[]>([]);
+
+  const [
+    isMemoryLoading,
+    setIsMemoryLoading,
+  ] = useState(false);
+
+  const [
+    memoryError,
+    setMemoryError,
+  ] =
+    useState<string | null>(null);
+
+  const [
+    memoryActionId,
+    setMemoryActionId,
+  ] =
     useState<string | null>(null);
 
   const conversationEndRef =
@@ -503,6 +595,220 @@ export default function AIChatWorkspace({
     }
   }
 
+  function getMemoryTypeLabel(
+    memoryType: string,
+  ) {
+    switch (memoryType) {
+      case "preference":
+        return copy.memoryTypePreference;
+
+      case "goal":
+        return copy.memoryTypeGoal;
+
+      case "constraint":
+        return copy.memoryTypeConstraint;
+
+      case "business_context":
+        return copy.memoryTypeBusinessContext;
+
+      default:
+        return memoryType;
+    }
+  }
+
+  async function loadMemories() {
+    setIsMemoryLoading(true);
+    setMemoryError(null);
+
+    try {
+      const response =
+        await fetch(
+          "/api/ai/memories?includeArchived=true",
+          {
+            cache: "no-store",
+          },
+        );
+
+      const data =
+        (await response
+          .json()
+          .catch(
+            () => ({}),
+          )) as MemoryListResponse;
+
+      if (!response.ok) {
+        setMemoryError(
+          data.error?.trim() ||
+            copy.memoryError,
+        );
+
+        return;
+      }
+
+      setMemories(
+        Array.isArray(
+          data.memories,
+        )
+          ? data.memories
+          : [],
+      );
+    } catch {
+      setMemoryError(
+        copy.memoryError,
+      );
+    } finally {
+      setIsMemoryLoading(false);
+    }
+  }
+
+  async function toggleMemoryPanel() {
+    if (isMemoryPanelOpen) {
+      setIsMemoryPanelOpen(false);
+      return;
+    }
+
+    setIsMemoryPanelOpen(true);
+
+    await loadMemories();
+  }
+
+  async function setMemoryArchived(
+    memory: AIMemory,
+    archived: boolean,
+  ) {
+    if (memoryActionId) {
+      return;
+    }
+
+    setMemoryActionId(
+      memory.id,
+    );
+
+    setMemoryError(null);
+
+    try {
+      const response =
+        await fetch(
+          `/api/ai/memories/${memory.id}`,
+          {
+            method: "PATCH",
+
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
+
+            body: JSON.stringify({
+              archived,
+            }),
+          },
+        );
+
+      const data =
+        (await response
+          .json()
+          .catch(
+            () => ({}),
+          )) as MemoryMutationResponse;
+
+      if (
+        !response.ok ||
+        !data.memory
+      ) {
+        setMemoryError(
+          data.error?.trim() ||
+            copy.memoryError,
+        );
+
+        return;
+      }
+
+      setMemories(
+        (current) =>
+          current.map(
+            (item) =>
+              item.id ===
+              memory.id
+                ? data.memory!
+                : item,
+          ),
+      );
+    } catch {
+      setMemoryError(
+        copy.memoryError,
+      );
+    } finally {
+      setMemoryActionId(
+        null,
+      );
+    }
+  }
+
+  async function permanentlyForgetMemory(
+    memory: AIMemory,
+  ) {
+    if (
+      memoryActionId ||
+      !window.confirm(
+        copy.memoryDeleteConfirm,
+      )
+    ) {
+      return;
+    }
+
+    setMemoryActionId(
+      memory.id,
+    );
+
+    setMemoryError(null);
+
+    try {
+      const response =
+        await fetch(
+          `/api/ai/memories/${memory.id}`,
+          {
+            method: "DELETE",
+          },
+        );
+
+      const data =
+        (await response
+          .json()
+          .catch(
+            () => ({}),
+          )) as MemoryMutationResponse;
+
+      if (
+        !response.ok ||
+        data.deleted !== true
+      ) {
+        setMemoryError(
+          data.error?.trim() ||
+            copy.memoryError,
+        );
+
+        return;
+      }
+
+      setMemories(
+        (current) =>
+          current.filter(
+            (item) =>
+              item.id !==
+              memory.id,
+          ),
+      );
+    } catch {
+      setMemoryError(
+        copy.memoryError,
+      );
+    } finally {
+      setMemoryActionId(
+        null,
+      );
+    }
+  }
+
   const hasConversation =
     messages.length > 0;
 
@@ -537,21 +843,178 @@ export default function AIChatWorkspace({
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={clearConversation}
-          disabled={
-            !canClearConversation ||
-            isLoading ||
-            isConversationLoading
-          }
-          className="inline-flex h-9 items-center gap-2 rounded-lg border px-3 text-sm font-medium transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          <Trash2 className="h-4 w-4" />
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              void toggleMemoryPanel();
+            }}
+            disabled={
+              isMemoryLoading
+            }
+            aria-expanded={
+              isMemoryPanelOpen
+            }
+            className="inline-flex h-9 items-center gap-2 rounded-lg border px-3 text-sm font-medium transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {isMemoryLoading ? (
+              <LoaderCircle className="h-4 w-4 animate-spin" />
+            ) : (
+              <Brain className="h-4 w-4" />
+            )}
 
-          {copy.clear}
-        </button>
+            {copy.memoryButton}
+          </button>
+
+          <button
+            type="button"
+            onClick={clearConversation}
+            disabled={
+              !canClearConversation ||
+              isLoading ||
+              isConversationLoading
+            }
+            className="inline-flex h-9 items-center gap-2 rounded-lg border px-3 text-sm font-medium transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Trash2 className="h-4 w-4" />
+
+            {copy.clear}
+          </button>
+        </div>
       </div>
+
+      {isMemoryPanelOpen ? (
+        <div className="border-b bg-muted/20 p-4 sm:p-6">
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+              <Brain className="h-5 w-5 text-primary" />
+            </div>
+
+            <div>
+              <h3 className="font-semibold">
+                {copy.memoryTitle}
+              </h3>
+
+              <p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">
+                {copy.memoryDescription}
+              </p>
+            </div>
+          </div>
+
+          {memoryError ? (
+            <div className="mt-4 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+              {memoryError}
+            </div>
+          ) : null}
+
+          {isMemoryLoading ? (
+            <div className="mt-5 flex items-center gap-2 text-sm text-muted-foreground">
+              <LoaderCircle className="h-4 w-4 animate-spin" />
+
+              {copy.memoryLoading}
+            </div>
+          ) : memories.length === 0 ? (
+            <div className="mt-5 rounded-xl border border-dashed p-5 text-sm text-muted-foreground">
+              {copy.memoryEmpty}
+            </div>
+          ) : (
+            <div className="mt-5 space-y-3">
+              {memories.map(
+                (memory) => {
+                  const isArchived =
+                    Boolean(
+                      memory.archived_at,
+                    );
+
+                  const isActing =
+                    memoryActionId ===
+                    memory.id;
+
+                  return (
+                    <div
+                      key={memory.id}
+                      className="rounded-xl border bg-background p-4"
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
+                              {getMemoryTypeLabel(
+                                memory.memory_type,
+                              )}
+                            </span>
+
+                            <span
+                              className={
+                                isArchived
+                                  ? "rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground"
+                                  : "rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-700"
+                              }
+                            >
+                              {isArchived
+                                ? copy.memoryArchived
+                                : copy.memoryActive}
+                            </span>
+                          </div>
+
+                          <p className="mt-3 whitespace-pre-wrap text-sm leading-6">
+                            {memory.content}
+                          </p>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-2">
+                          <button
+                            type="button"
+                            disabled={
+                              isActing
+                            }
+                            onClick={() => {
+                              void setMemoryArchived(
+                                memory,
+                                !isArchived,
+                              );
+                            }}
+                            className="inline-flex h-9 items-center gap-2 rounded-lg border px-3 text-sm font-medium transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            {isActing ? (
+                              <LoaderCircle className="h-4 w-4 animate-spin" />
+                            ) : isArchived ? (
+                              <RotateCcw className="h-4 w-4" />
+                            ) : (
+                              <Archive className="h-4 w-4" />
+                            )}
+
+                            {isArchived
+                              ? copy.memoryRestore
+                              : copy.memoryDisable}
+                          </button>
+
+                          <button
+                            type="button"
+                            disabled={
+                              isActing
+                            }
+                            onClick={() => {
+                              void permanentlyForgetMemory(
+                                memory,
+                              );
+                            }}
+                            className="inline-flex h-9 items-center gap-2 rounded-lg border border-destructive/30 px-3 text-sm font-medium text-destructive transition-colors hover:bg-destructive/5 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            <Trash2 className="h-4 w-4" />
+
+                            {copy.memoryDelete}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                },
+              )}
+            </div>
+          )}
+        </div>
+      ) : null}
 
       {/* Conversation */}
       <div className="min-h-[430px] max-h-[620px] overflow-y-auto p-4 sm:p-6">

@@ -74,6 +74,41 @@ const dictionaries = {
         send: "Kirim",
         clear:
           "Hapus percakapan",
+
+        memoryButton:
+          "Yang diingat AI",
+        memoryTitle:
+          "Yang diingat AI",
+        memoryDescription:
+          "Lihat dan atur informasi yang Anda minta LAKUVO ingat untuk percakapan berikutnya.",
+        memoryEmpty:
+          "Belum ada memory yang disimpan.",
+        memoryLoading:
+          "Memuat memory...",
+        memoryActive:
+          "Aktif",
+        memoryArchived:
+          "Nonaktif",
+        memoryDisable:
+          "Nonaktifkan",
+        memoryRestore:
+          "Aktifkan kembali",
+        memoryDelete:
+          "Lupakan permanen",
+        memoryDeleteConfirm:
+          "Lupakan memory ini secara permanen? Tindakan ini tidak dapat dibatalkan.",
+        memoryError:
+          "Memory AI belum dapat dimuat. Coba lagi sebentar lagi.",
+
+        memoryTypePreference:
+          "Preferensi",
+        memoryTypeGoal:
+          "Tujuan",
+        memoryTypeConstraint:
+          "Batasan",
+        memoryTypeBusinessContext:
+          "Konteks bisnis",
+
         thinking:
           "Saya sedang melihat data bisnis Anda...",
         userLabel: "Anda",
@@ -2108,6 +2143,41 @@ const dictionaries = {
         send: "Send",
         clear:
           "Clear conversation",
+
+        memoryButton:
+          "AI memory",
+        memoryTitle:
+          "What AI remembers",
+        memoryDescription:
+          "Review and manage information you asked LAKUVO to remember for future conversations.",
+        memoryEmpty:
+          "No saved memories yet.",
+        memoryLoading:
+          "Loading memories...",
+        memoryActive:
+          "Active",
+        memoryArchived:
+          "Inactive",
+        memoryDisable:
+          "Disable",
+        memoryRestore:
+          "Restore",
+        memoryDelete:
+          "Forget permanently",
+        memoryDeleteConfirm:
+          "Forget this memory permanently? This action cannot be undone.",
+        memoryError:
+          "AI memory could not be loaded. Please try again in a moment.",
+
+        memoryTypePreference:
+          "Preference",
+        memoryTypeGoal:
+          "Goal",
+        memoryTypeConstraint:
+          "Constraint",
+        memoryTypeBusinessContext:
+          "Business context",
+
         thinking:
           "I'm looking at your business data...",
         userLabel: "You",
