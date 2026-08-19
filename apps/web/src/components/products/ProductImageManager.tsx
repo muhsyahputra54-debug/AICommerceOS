@@ -1,11 +1,16 @@
 /* eslint-disable @next/next/no-img-element -- Product images use temporary signed Supabase Storage URLs. */
 "use client";
 
-import { useState, type FormEvent } from "react";
+import {
+  useState,
+  type FormEvent,
+} from "react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import type { Locale } from "@/lib/i18n/config";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
 import { createClient } from "@/lib/supabase/client";
 
 type ProductImage = {
@@ -20,14 +25,20 @@ type ProductImage = {
   signed_url: string | null;
 };
 
+type ProductImagesCopy =
+  Dictionary["products"]["images"];
+
 type ProductImageManagerProps = {
   organizationId: string;
   productId: string;
   productName: string;
   images: ProductImage[];
+  locale: Locale;
+  copy: ProductImagesCopy;
 };
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024;
+const MAX_FILE_SIZE =
+  5 * 1024 * 1024;
 
 const allowedMimeTypes = new Set([
   "image/jpeg",
@@ -36,31 +47,71 @@ const allowedMimeTypes = new Set([
   "image/gif",
 ]);
 
-function extensionForMimeType(mimeType: string) {
+function extensionForMimeType(
+  mimeType: string,
+) {
   switch (mimeType) {
     case "image/jpeg":
       return "jpg";
+
     case "image/png":
       return "png";
+
     case "image/webp":
       return "webp";
+
     case "image/gif":
       return "gif";
+
     default:
       return null;
   }
 }
 
-function formatFileSize(sizeBytes: number) {
+function getIntlLocale(
+  locale: Locale,
+) {
+  return locale === "id"
+    ? "id-ID"
+    : "en-US";
+}
+
+function formatFileSize(
+  sizeBytes: number,
+  locale: Locale,
+) {
+  const intlLocale =
+    getIntlLocale(locale);
+
   if (sizeBytes < 1024) {
-    return `${sizeBytes} B`;
+    return `${new Intl.NumberFormat(
+      intlLocale,
+    ).format(sizeBytes)} B`;
   }
 
-  if (sizeBytes < 1024 * 1024) {
-    return `${(sizeBytes / 1024).toFixed(1)} KB`;
+  if (
+    sizeBytes <
+    1024 * 1024
+  ) {
+    return `${new Intl.NumberFormat(
+      intlLocale,
+      {
+        maximumFractionDigits: 1,
+      },
+    ).format(
+      sizeBytes / 1024,
+    )} KB`;
   }
 
-  return `${(sizeBytes / (1024 * 1024)).toFixed(1)} MB`;
+  return `${new Intl.NumberFormat(
+    intlLocale,
+    {
+      maximumFractionDigits: 1,
+    },
+  ).format(
+    sizeBytes /
+      (1024 * 1024),
+  )} MB`;
 }
 
 export default function ProductImageManager({
@@ -68,46 +119,91 @@ export default function ProductImageManager({
   productId,
   productName,
   images,
+  locale,
+  copy,
 }: ProductImageManagerProps) {
   const router = useRouter();
 
-  const [isUploading, setIsUploading] = useState(false);
-  const [busyImageId, setBusyImageId] = useState<string | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [
+    isUploading,
+    setIsUploading,
+  ] = useState(false);
 
-  async function handleUpload(event: FormEvent<HTMLFormElement>) {
+  const [
+    busyImageId,
+    setBusyImageId,
+  ] = useState<string | null>(null);
+
+  const [
+    errorMessage,
+    setErrorMessage,
+  ] = useState<string | null>(null);
+
+  const [
+    successMessage,
+    setSuccessMessage,
+  ] = useState<string | null>(null);
+
+  async function handleUpload(
+    event: FormEvent<HTMLFormElement>,
+  ) {
     event.preventDefault();
 
     setErrorMessage(null);
     setSuccessMessage(null);
 
     const form = event.currentTarget;
-    const formData = new FormData(form);
-    const fileValue = formData.get("image");
-    const altText = String(formData.get("alt_text") ?? "").trim();
+    const formData =
+      new FormData(form);
 
-    if (!(fileValue instanceof File) || fileValue.size === 0) {
-      setErrorMessage("Pilih file gambar terlebih dahulu.");
-      return;
-    }
+    const fileValue =
+      formData.get("image");
 
-    if (!allowedMimeTypes.has(fileValue.type)) {
+    const altText = String(
+      formData.get("alt_text") ?? "",
+    ).trim();
+
+    if (
+      !(fileValue instanceof File) ||
+      fileValue.size === 0
+    ) {
       setErrorMessage(
-        "Format gambar harus JPEG, PNG, WebP, atau GIF.",
+        copy.validation.chooseImage,
       );
       return;
     }
 
-    if (fileValue.size > MAX_FILE_SIZE) {
-      setErrorMessage("Ukuran gambar maksimal 5 MB.");
+    if (
+      !allowedMimeTypes.has(
+        fileValue.type,
+      )
+    ) {
+      setErrorMessage(
+        copy.validation.invalidFormat,
+      );
       return;
     }
 
-    const extension = extensionForMimeType(fileValue.type);
+    if (
+      fileValue.size >
+      MAX_FILE_SIZE
+    ) {
+      setErrorMessage(
+        copy.validation.maxSize,
+      );
+      return;
+    }
+
+    const extension =
+      extensionForMimeType(
+        fileValue.type,
+      );
 
     if (!extension) {
-      setErrorMessage("Format gambar tidak didukung.");
+      setErrorMessage(
+        copy.validation
+          .unsupportedFormat,
+      );
       return;
     }
 
@@ -118,30 +214,47 @@ export default function ProductImageManager({
     const storagePath =
       `${organizationId}/${productId}/${crypto.randomUUID()}.${extension}`;
 
-    const { error: uploadError } = await supabase.storage
+    const {
+      error: uploadError,
+    } = await supabase.storage
       .from("product-images")
-      .upload(storagePath, fileValue, {
-        cacheControl: "3600",
-        contentType: fileValue.type,
-        upsert: false,
-      });
+      .upload(
+        storagePath,
+        fileValue,
+        {
+          cacheControl: "3600",
+          contentType:
+            fileValue.type,
+          upsert: false,
+        },
+      );
 
     if (uploadError) {
-      setErrorMessage(uploadError.message);
+      setErrorMessage(
+        uploadError.message,
+      );
       setIsUploading(false);
       return;
     }
 
-    const { error: metadataError } = await supabase
+    const {
+      error: metadataError,
+    } = await supabase
       .from("product_images")
       .insert({
-        organization_id: organizationId,
+        organization_id:
+          organizationId,
         product_id: productId,
-        storage_path: storagePath,
-        original_filename: fileValue.name,
-        mime_type: fileValue.type,
-        size_bytes: fileValue.size,
-        alt_text: altText || null,
+        storage_path:
+          storagePath,
+        original_filename:
+          fileValue.name,
+        mime_type:
+          fileValue.type,
+        size_bytes:
+          fileValue.size,
+        alt_text:
+          altText || null,
       });
 
     if (metadataError) {
@@ -149,42 +262,55 @@ export default function ProductImageManager({
         .from("product-images")
         .remove([storagePath]);
 
-      setErrorMessage(metadataError.message);
+      setErrorMessage(
+        metadataError.message,
+      );
       setIsUploading(false);
       return;
     }
 
     form.reset();
 
-    setSuccessMessage("Product image berhasil di-upload.");
+    setSuccessMessage(
+      copy.messages.uploaded,
+    );
     setIsUploading(false);
 
     router.refresh();
   }
 
-  async function handleSetPrimary(imageId: string) {
+  async function handleSetPrimary(
+    imageId: string,
+  ) {
     setErrorMessage(null);
     setSuccessMessage(null);
     setBusyImageId(imageId);
 
     const supabase = createClient();
 
-    const { error } = await supabase.rpc(
-      "set_primary_product_image",
-      {
-        p_organization_id: organizationId,
-        p_product_id: productId,
-        p_image_id: imageId,
-      },
-    );
+    const { error } =
+      await supabase.rpc(
+        "set_primary_product_image",
+        {
+          p_organization_id:
+            organizationId,
+          p_product_id:
+            productId,
+          p_image_id: imageId,
+        },
+      );
 
     if (error) {
-      setErrorMessage(error.message);
+      setErrorMessage(
+        error.message,
+      );
       setBusyImageId(null);
       return;
     }
 
-    setSuccessMessage("Primary image berhasil diperbarui.");
+    setSuccessMessage(
+      copy.messages.primaryUpdated,
+    );
     setBusyImageId(null);
 
     router.refresh();
@@ -198,12 +324,16 @@ export default function ProductImageManager({
     setSuccessMessage(null);
     setBusyImageId(imageId);
 
-    const currentIndex = images.findIndex(
-      (image) => image.id === imageId,
-    );
+    const currentIndex =
+      images.findIndex(
+        (image) =>
+          image.id === imageId,
+      );
 
     if (currentIndex === -1) {
-      setErrorMessage("Image tidak ditemukan.");
+      setErrorMessage(
+        copy.messages.imageNotFound,
+      );
       setBusyImageId(null);
       return;
     }
@@ -221,7 +351,10 @@ export default function ProductImageManager({
       return;
     }
 
-    const reorderedIds = images.map((image) => image.id);
+    const reorderedIds =
+      images.map(
+        (image) => image.id,
+      );
 
     [
       reorderedIds[currentIndex],
@@ -233,31 +366,42 @@ export default function ProductImageManager({
 
     const supabase = createClient();
 
-    const { error } = await supabase.rpc(
-      "reorder_product_images",
-      {
-        p_organization_id: organizationId,
-        p_product_id: productId,
-        p_image_ids: reorderedIds,
-      },
-    );
+    const { error } =
+      await supabase.rpc(
+        "reorder_product_images",
+        {
+          p_organization_id:
+            organizationId,
+          p_product_id:
+            productId,
+          p_image_ids:
+            reorderedIds,
+        },
+      );
 
     if (error) {
-      setErrorMessage(error.message);
+      setErrorMessage(
+        error.message,
+      );
       setBusyImageId(null);
       return;
     }
 
-    setSuccessMessage("Urutan image berhasil diperbarui.");
+    setSuccessMessage(
+      copy.messages.orderUpdated,
+    );
     setBusyImageId(null);
 
     router.refresh();
   }
 
-  async function handleDelete(image: ProductImage) {
-    const confirmed = window.confirm(
-      `Hapus image "${image.original_filename}"?`,
-    );
+  async function handleDelete(
+    image: ProductImage,
+  ) {
+    const confirmed =
+      window.confirm(
+        `${copy.delete.confirmPrefix}"${image.original_filename}"${copy.delete.confirmSuffix}`,
+      );
 
     if (!confirmed) {
       return;
@@ -269,33 +413,50 @@ export default function ProductImageManager({
 
     const supabase = createClient();
 
-    const { error: storageError } = await supabase.storage
+    const {
+      error: storageError,
+    } = await supabase.storage
       .from("product-images")
-      .remove([image.storage_path]);
+      .remove([
+        image.storage_path,
+      ]);
 
     if (storageError) {
-      setErrorMessage(storageError.message);
+      setErrorMessage(
+        storageError.message,
+      );
       setBusyImageId(null);
       return;
     }
 
-    const { error: metadataError } = await supabase
+    const {
+      error: metadataError,
+    } = await supabase
       .from("product_images")
       .delete()
       .eq("id", image.id)
-      .eq("organization_id", organizationId)
-      .eq("product_id", productId);
+      .eq(
+        "organization_id",
+        organizationId,
+      )
+      .eq(
+        "product_id",
+        productId,
+      );
 
     if (metadataError) {
       setErrorMessage(
-        `Storage file terhapus, tetapi metadata gagal dihapus: ${metadataError.message}`,
+        `${copy.messages.metadataDeleteFailedPrefix} ${metadataError.message}`,
       );
+
       setBusyImageId(null);
       router.refresh();
       return;
     }
 
-    setSuccessMessage("Product image berhasil dihapus.");
+    setSuccessMessage(
+      copy.messages.deleted,
+    );
     setBusyImageId(null);
 
     router.refresh();
@@ -310,11 +471,19 @@ export default function ProductImageManager({
         >
           <div>
             <h2 className="text-lg font-semibold">
-              Upload Product Image
+              {copy.upload.title}
             </h2>
 
             <p className="mt-1 text-sm text-muted-foreground">
-              Upload image untuk {productName}. Maksimal 5 MB.
+              {copy.upload.descriptionPrefix}{" "}
+              <span className="font-medium text-foreground">
+                {productName}
+              </span>
+              .{" "}
+              {
+                copy.upload
+                  .descriptionSuffix
+              }
             </p>
           </div>
 
@@ -323,7 +492,7 @@ export default function ProductImageManager({
               htmlFor="image"
               className="text-sm font-medium"
             >
-              Image file
+              {copy.upload.imageFile}
             </label>
 
             <Input
@@ -340,13 +509,16 @@ export default function ProductImageManager({
               htmlFor="alt_text"
               className="text-sm font-medium"
             >
-              Alt text
+              {copy.upload.altText}
             </label>
 
             <Input
               id="alt_text"
               name="alt_text"
-              placeholder="Deskripsi singkat gambar"
+              placeholder={
+                copy.upload
+                  .altPlaceholder
+              }
             />
           </div>
 
@@ -366,7 +538,9 @@ export default function ProductImageManager({
             type="submit"
             disabled={isUploading}
           >
-            {isUploading ? "Uploading..." : "Upload image"}
+            {isUploading
+              ? copy.upload.uploading
+              : copy.upload.uploadImage}
           </Button>
         </form>
       </section>
@@ -374,135 +548,188 @@ export default function ProductImageManager({
       <section className="space-y-4">
         <div>
           <h2 className="text-lg font-semibold">
-            Product Images
+            {copy.gallery.title}
           </h2>
 
           <p className="mt-1 text-sm text-muted-foreground">
-            Kelola primary image dan urutan tampilan product.
+            {copy.gallery.description}
           </p>
         </div>
 
         {images.length === 0 ? (
           <div className="rounded-2xl border bg-card px-6 py-12 text-center shadow-sm">
             <p className="font-medium">
-              Belum ada product image
+              {copy.gallery.emptyTitle}
             </p>
 
             <p className="mt-1 text-sm text-muted-foreground">
-              Upload image pertama untuk membuat primary image.
+              {
+                copy.gallery
+                  .emptyDescription
+              }
             </p>
           </div>
         ) : (
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {images.map((image, index) => (
-              <article
-                key={image.id}
-                className="overflow-hidden rounded-2xl border bg-card shadow-sm"
-              >
-                <div className="aspect-square bg-muted">
-                  {image.signed_url ? (
-                    <img
-                      src={image.signed_url}
-                      alt={
-                        image.alt_text ??
-                        image.original_filename
-                      }
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-full items-center justify-center px-4 text-center text-sm text-muted-foreground">
-                      Preview tidak tersedia
-                    </div>
-                  )}
-                </div>
+            {images.map(
+              (image, index) => (
+                <article
+                  key={image.id}
+                  className="overflow-hidden rounded-2xl border bg-card shadow-sm"
+                >
+                  <div className="aspect-square bg-muted">
+                    {image.signed_url ? (
+                      <img
+                        src={
+                          image.signed_url
+                        }
+                        alt={
+                          image.alt_text ??
+                          image.original_filename
+                        }
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full items-center justify-center px-4 text-center text-sm text-muted-foreground">
+                        {
+                          copy.gallery
+                            .previewUnavailable
+                        }
+                      </div>
+                    )}
+                  </div>
 
-                <div className="space-y-4 p-4">
-                  <div>
-                    <div className="flex items-start justify-between gap-3">
-                      <p className="min-w-0 truncate font-medium">
-                        {image.original_filename}
-                      </p>
+                  <div className="space-y-4 p-4">
+                    <div>
+                      <div className="flex items-start justify-between gap-3">
+                        <p className="min-w-0 truncate font-medium">
+                          {
+                            image.original_filename
+                          }
+                        </p>
 
-                      {image.is_primary ? (
-                        <span className="shrink-0 rounded-full border px-2 py-1 text-xs font-medium">
-                          Primary
-                        </span>
+                        {image.is_primary ? (
+                          <span className="shrink-0 rounded-full border px-2 py-1 text-xs font-medium">
+                            {
+                              copy.gallery
+                                .primary
+                            }
+                          </span>
+                        ) : null}
+                      </div>
+
+                      <div className="mt-2 space-y-1 text-xs text-muted-foreground">
+                        <p>
+                          {image.mime_type}
+                        </p>
+
+                        <p>
+                          {formatFileSize(
+                            image.size_bytes,
+                            locale,
+                          )}
+                        </p>
+
+                        <p>
+                          {
+                            copy.gallery
+                              .position
+                          }{" "}
+                          {index + 1}
+                        </p>
+                      </div>
+
+                      {image.alt_text ? (
+                        <p className="mt-3 text-sm text-muted-foreground">
+                          {image.alt_text}
+                        </p>
                       ) : null}
                     </div>
 
-                    <div className="mt-2 space-y-1 text-xs text-muted-foreground">
-                      <p>{image.mime_type}</p>
-                      <p>{formatFileSize(image.size_bytes)}</p>
-                      <p>Position {index + 1}</p>
-                    </div>
+                    <div className="flex flex-wrap gap-2 border-t pt-4">
+                      {!image.is_primary ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          disabled={
+                            busyImageId !==
+                            null
+                          }
+                          onClick={() =>
+                            handleSetPrimary(
+                              image.id,
+                            )
+                          }
+                        >
+                          {
+                            copy.actions
+                              .setPrimary
+                          }
+                        </Button>
+                      ) : null}
 
-                    {image.alt_text ? (
-                      <p className="mt-3 text-sm text-muted-foreground">
-                        {image.alt_text}
-                      </p>
-                    ) : null}
-                  </div>
-
-                  <div className="flex flex-wrap gap-2 border-t pt-4">
-                    {!image.is_primary ? (
                       <Button
                         type="button"
                         variant="outline"
                         size="sm"
-                        disabled={busyImageId !== null}
+                        disabled={
+                          busyImageId !==
+                            null ||
+                          index === 0
+                        }
                         onClick={() =>
-                          handleSetPrimary(image.id)
+                          handleMove(
+                            image.id,
+                            "up",
+                          )
                         }
                       >
-                        Set primary
+                        {copy.actions.up}
                       </Button>
-                    ) : null}
 
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      disabled={
-                        busyImageId !== null ||
-                        index === 0
-                      }
-                      onClick={() =>
-                        handleMove(image.id, "up")
-                      }
-                    >
-                      Up
-                    </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={
+                          busyImageId !==
+                            null ||
+                          index ===
+                            images.length -
+                              1
+                        }
+                        onClick={() =>
+                          handleMove(
+                            image.id,
+                            "down",
+                          )
+                        }
+                      >
+                        {copy.actions.down}
+                      </Button>
 
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      disabled={
-                        busyImageId !== null ||
-                        index === images.length - 1
-                      }
-                      onClick={() =>
-                        handleMove(image.id, "down")
-                      }
-                    >
-                      Down
-                    </Button>
-
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="sm"
-                      disabled={busyImageId !== null}
-                      onClick={() =>
-                        handleDelete(image)
-                      }
-                    >
-                      Delete
-                    </Button>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        disabled={
+                          busyImageId !==
+                          null
+                        }
+                        onClick={() =>
+                          handleDelete(
+                            image,
+                          )
+                        }
+                      >
+                        {copy.actions.delete}
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              </article>
-            ))}
+                </article>
+              ),
+            )}
           </div>
         )}
       </section>

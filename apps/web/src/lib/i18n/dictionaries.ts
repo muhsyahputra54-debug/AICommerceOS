@@ -426,6 +426,79 @@ const dictionaries = {
           delete: "Hapus",
         },
       },
+
+      images: {
+        title: "Gambar Produk",
+        description:
+          "Kelola gambar produk privat, gambar utama, dan urutan tampilan.",
+        backToProducts: "Kembali ke Produk",
+
+        upload: {
+          title: "Unggah Gambar Produk",
+          descriptionPrefix:
+            "Unggah gambar untuk",
+          descriptionSuffix:
+            "Maksimal 5 MB.",
+          imageFile: "File gambar",
+          altText: "Teks alternatif",
+          altPlaceholder:
+            "Deskripsi singkat gambar",
+          uploading: "Mengunggah...",
+          uploadImage: "Unggah gambar",
+        },
+
+        validation: {
+          chooseImage:
+            "Pilih file gambar terlebih dahulu.",
+          invalidFormat:
+            "Format gambar harus JPEG, PNG, WebP, atau GIF.",
+          maxSize:
+            "Ukuran gambar maksimal 5 MB.",
+          unsupportedFormat:
+            "Format gambar tidak didukung.",
+        },
+
+        messages: {
+          uploaded:
+            "Gambar produk berhasil diunggah.",
+          primaryUpdated:
+            "Gambar utama berhasil diperbarui.",
+          imageNotFound:
+            "Gambar tidak ditemukan.",
+          orderUpdated:
+            "Urutan gambar berhasil diperbarui.",
+          deleted:
+            "Gambar produk berhasil dihapus.",
+          metadataDeleteFailedPrefix:
+            "File storage terhapus, tetapi metadata gagal dihapus:",
+        },
+
+        gallery: {
+          title: "Gambar Produk",
+          description:
+            "Kelola gambar utama dan urutan tampilan produk.",
+          emptyTitle:
+            "Belum ada gambar produk",
+          emptyDescription:
+            "Unggah gambar pertama untuk membuat gambar utama.",
+          previewUnavailable:
+            "Pratinjau tidak tersedia",
+          primary: "Utama",
+          position: "Posisi",
+        },
+
+        actions: {
+          setPrimary: "Jadikan utama",
+          up: "Naik",
+          down: "Turun",
+          delete: "Hapus",
+        },
+
+        delete: {
+          confirmPrefix: "Hapus gambar ",
+          confirmSuffix: "?",
+        },
+      },
     },
     marketplaces: {
       title: "Integrasi Marketplace",
@@ -1001,6 +1074,79 @@ const dictionaries = {
             "The variant was not found or cannot be deleted.",
           deleting: "Deleting...",
           delete: "Delete",
+        },
+      },
+
+      images: {
+        title: "Product Images",
+        description:
+          "Manage private product images, the primary image, and display order.",
+        backToProducts: "Back to Products",
+
+        upload: {
+          title: "Upload Product Image",
+          descriptionPrefix:
+            "Upload an image for",
+          descriptionSuffix:
+            "Maximum 5 MB.",
+          imageFile: "Image file",
+          altText: "Alt text",
+          altPlaceholder:
+            "Short image description",
+          uploading: "Uploading...",
+          uploadImage: "Upload image",
+        },
+
+        validation: {
+          chooseImage:
+            "Choose an image file first.",
+          invalidFormat:
+            "Image format must be JPEG, PNG, WebP, or GIF.",
+          maxSize:
+            "Maximum image size is 5 MB.",
+          unsupportedFormat:
+            "Image format is not supported.",
+        },
+
+        messages: {
+          uploaded:
+            "Product image uploaded successfully.",
+          primaryUpdated:
+            "Primary image updated successfully.",
+          imageNotFound:
+            "Image was not found.",
+          orderUpdated:
+            "Image order updated successfully.",
+          deleted:
+            "Product image deleted successfully.",
+          metadataDeleteFailedPrefix:
+            "The storage file was deleted, but metadata deletion failed:",
+        },
+
+        gallery: {
+          title: "Product Images",
+          description:
+            "Manage the primary image and product display order.",
+          emptyTitle:
+            "No product images yet",
+          emptyDescription:
+            "Upload the first image to create a primary image.",
+          previewUnavailable:
+            "Preview unavailable",
+          primary: "Primary",
+          position: "Position",
+        },
+
+        actions: {
+          setPrimary: "Set primary",
+          up: "Up",
+          down: "Down",
+          delete: "Delete",
+        },
+
+        delete: {
+          confirmPrefix: "Delete image ",
+          confirmSuffix: "?",
         },
       },
     },
