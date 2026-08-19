@@ -101,6 +101,574 @@ function parseMessages(
   return messages;
 }
 
+type MemoryType =
+  | "preference"
+  | "goal"
+  | "constraint"
+  | "business_context";
+
+type ExplicitMemoryCommand = {
+  action:
+    | "remember"
+    | "forget";
+
+  language:
+    | "id"
+    | "en";
+
+  value: string;
+};
+
+type MemoryCandidate = {
+  id: string;
+  memory_type: string;
+  memory_key: string;
+  content: string;
+};
+
+const MAX_MEMORY_CONTENT_LENGTH =
+  2000;
+
+const MEMORY_COMMAND_STOP_WORDS =
+  new Set([
+    "aku",
+    "anda",
+    "bahwa",
+    "dan",
+    "dari",
+    "dengan",
+    "ini",
+    "itu",
+    "memori",
+    "memory",
+    "milik",
+    "saya",
+    "tentang",
+    "tolong",
+    "untuk",
+    "yang",
+    "a",
+    "about",
+    "an",
+    "and",
+    "i",
+    "me",
+    "my",
+    "of",
+    "please",
+    "that",
+    "the",
+    "this",
+    "to",
+  ]);
+
+function cleanMemoryCommandValue(
+  value: string,
+) {
+  return value
+    .replace(
+      /^[\s:,-]+/,
+      "",
+    )
+    .replace(
+      /[.!?]+$/,
+      "",
+    )
+    .replace(
+      /\s+/g,
+      " ",
+    )
+    .trim();
+}
+
+function getExplicitMemoryCommand(
+  content: string,
+): ExplicitMemoryCommand | null {
+  const normalized =
+    content.trim();
+
+  const indonesianRememberPatterns = [
+    /^tolong\s+ingat(?:lah)?(?:\s+bahwa)?\s+(.+)$/i,
+    /^ingat(?:lah)?\s+bahwa\s+(.+)$/i,
+    /^ingat(?:lah)?\s+(ini)[.!?]*$/i,
+  ];
+
+  for (
+    const pattern of
+      indonesianRememberPatterns
+  ) {
+    const match =
+      normalized.match(pattern);
+
+    if (match?.[1]) {
+      const value =
+        cleanMemoryCommandValue(
+          match[1],
+        );
+
+      if (value) {
+        return {
+          action:
+            "remember",
+          language:
+            "id",
+          value,
+        };
+      }
+    }
+  }
+
+  const englishRememberPatterns = [
+    /^please\s+remember(?:\s+that)?\s+(.+)$/i,
+    /^remember\s+that\s+(.+)$/i,
+    /^remember\s+(this)[.!?]*$/i,
+  ];
+
+  for (
+    const pattern of
+      englishRememberPatterns
+  ) {
+    const match =
+      normalized.match(pattern);
+
+    if (match?.[1]) {
+      const value =
+        cleanMemoryCommandValue(
+          match[1],
+        );
+
+      if (value) {
+        return {
+          action:
+            "remember",
+          language:
+            "en",
+          value,
+        };
+      }
+    }
+  }
+
+  const indonesianForget =
+    normalized.match(
+      /^(?:tolong\s+)?lupakan(?:lah)?\s+(.+)$/i,
+    );
+
+  if (
+    indonesianForget?.[1]
+  ) {
+    const value =
+      cleanMemoryCommandValue(
+        indonesianForget[1],
+      );
+
+    if (value) {
+      return {
+        action:
+          "forget",
+        language:
+          "id",
+        value,
+      };
+    }
+  }
+
+  const englishForget =
+    normalized.match(
+      /^(?:please\s+)?forget\s+(.+)$/i,
+    );
+
+  if (
+    englishForget?.[1]
+  ) {
+    const value =
+      cleanMemoryCommandValue(
+        englishForget[1],
+      );
+
+    if (value) {
+      return {
+        action:
+          "forget",
+        language:
+          "en",
+        value,
+      };
+    }
+  }
+
+  return null;
+}
+
+function normalizeMemorySearchText(
+  value: string,
+) {
+  return value
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(
+      /[\u0300-\u036f]/g,
+      "",
+    )
+    .replace(
+      /[^a-z0-9]+/g,
+      " ",
+    )
+    .replace(
+      /\s+/g,
+      " ",
+    )
+    .trim();
+}
+
+function canonicalMemoryToken(
+  token: string,
+) {
+  const aliases:
+    Record<string, string> = {
+      batas:
+        "constraint",
+      batasan:
+        "constraint",
+      constraint:
+        "constraint",
+      goal:
+        "goal",
+      kendala:
+        "constraint",
+      preference:
+        "preference",
+      preferensi:
+        "preference",
+      target:
+        "goal",
+      tujuan:
+        "goal",
+    };
+
+  return (
+    aliases[token] ??
+    token
+  );
+}
+
+function getMemorySearchTokens(
+  value: string,
+) {
+  const tokens =
+    normalizeMemorySearchText(
+      value,
+    )
+      .split(" ")
+      .map(
+        canonicalMemoryToken,
+      )
+      .filter(
+        (token) =>
+          token.length >= 2 &&
+          !MEMORY_COMMAND_STOP_WORDS.has(
+            token,
+          ),
+      );
+
+  return [
+    ...new Set(tokens),
+  ];
+}
+
+function inferMemoryType(
+  content: string,
+): MemoryType {
+  const normalized =
+    normalizeMemorySearchText(
+      content,
+    );
+
+  if (
+    /\b(preference|preferensi|lebih suka|saya suka|i prefer|i like|gaya jawaban|bahasa jawaban)\b/.test(
+      normalized,
+    )
+  ) {
+    return "preference";
+  }
+
+  if (
+    /\b(goal|tujuan|target|ingin mencapai|mau mencapai|want to achieve)\b/.test(
+      normalized,
+    )
+  ) {
+    return "goal";
+  }
+
+  if (
+    /\b(constraint|batas|batasan|jangan|harus|maksimal|minimal|tidak boleh|must|never|maximum|minimum)\b/.test(
+      normalized,
+    )
+  ) {
+    return "constraint";
+  }
+
+  return "business_context";
+}
+
+function memoryHash(
+  value: string,
+) {
+  let hash =
+    2166136261;
+
+  for (
+    let index = 0;
+    index < value.length;
+    index++
+  ) {
+    hash =
+      Math.imul(
+        hash ^
+          value.charCodeAt(
+            index,
+          ),
+        16777619,
+      );
+  }
+
+  return (
+    hash >>> 0
+  )
+    .toString(16)
+    .padStart(
+      8,
+      "0",
+    );
+}
+
+function buildMemoryKey(
+  memoryType: MemoryType,
+  content: string,
+) {
+  const normalized =
+    normalizeMemorySearchText(
+      content,
+    );
+
+  const slug =
+    normalized
+      .replace(
+        /\s+/g,
+        "-",
+      )
+      .slice(
+        0,
+        72,
+      ) ||
+    "memory";
+
+  const hash =
+    memoryHash(
+      `${memoryType}:${normalized}`,
+    );
+
+  return (
+    `${memoryType}.${slug}.${hash}`
+  ).slice(
+    0,
+    120,
+  );
+}
+
+function findPreviousUserMessage(
+  messages: AssistantMessage[],
+) {
+  for (
+    let index =
+      messages.length - 2;
+    index >= 0;
+    index--
+  ) {
+    if (
+      messages[index].role ===
+        "user" &&
+      messages[index].content
+        .trim()
+    ) {
+      return messages[
+        index
+      ].content.trim();
+    }
+  }
+
+  return null;
+}
+
+function isReferenceMemoryValue(
+  value: string,
+) {
+  const normalized =
+    normalizeMemorySearchText(
+      value,
+    );
+
+  return (
+    normalized === "ini" ||
+    normalized === "this"
+  );
+}
+
+function findMatchingMemories(
+  memories:
+    MemoryCandidate[],
+  query: string,
+) {
+  const queryTokens =
+    getMemorySearchTokens(
+      query,
+    );
+
+  if (
+    queryTokens.length === 0
+  ) {
+    return [];
+  }
+
+  return memories.filter(
+    (memory) => {
+      const searchable =
+        normalizeMemorySearchText(
+          [
+            memory.memory_type,
+            memory.memory_key,
+            memory.content,
+          ].join(" "),
+        );
+
+      const searchableTokens =
+        new Set(
+          searchable
+            .split(" ")
+            .map(
+              canonicalMemoryToken,
+            ),
+        );
+
+      return queryTokens.every(
+        (token) =>
+          searchableTokens.has(
+            token,
+          ),
+      );
+    },
+  );
+}
+
+async function persistMemoryCommandAssistantMessage({
+  supabase,
+  conversationId,
+  organizationId,
+  userId,
+  content,
+}: {
+  supabase:
+    Awaited<
+      ReturnType<
+        typeof createClient
+      >
+    >;
+
+  conversationId:
+    string | null;
+
+  organizationId:
+    string;
+
+  userId:
+    string;
+
+  content:
+    string;
+}) {
+  if (!conversationId) {
+    return null;
+  }
+
+  const createdAt =
+    new Date().toISOString();
+
+  const {
+    error:
+      messageError,
+  } = await supabase
+    .from(
+      "ai_conversation_messages",
+    )
+    .insert({
+      conversation_id:
+        conversationId,
+
+      organization_id:
+        organizationId,
+
+      user_id:
+        userId,
+
+      role:
+        "assistant",
+
+      content,
+
+      created_at:
+        createdAt,
+    });
+
+  if (messageError) {
+    return messageError;
+  }
+
+  const {
+    error:
+      touchError,
+  } = await supabase
+    .from(
+      "ai_conversations",
+    )
+    .update({
+      updated_at:
+        createdAt,
+
+      last_message_at:
+        createdAt,
+    })
+    .eq(
+      "id",
+      conversationId,
+    )
+    .eq(
+      "organization_id",
+      organizationId,
+    )
+    .eq(
+      "user_id",
+      userId,
+    )
+    .is(
+      "archived_at",
+      null,
+    );
+
+  if (touchError) {
+    console.error(
+      "Failed to update conversation after memory command.",
+      {
+        conversationId,
+        organizationId,
+        userId,
+        error:
+          touchError,
+      },
+    );
+  }
+
+  return null;
+}
 export async function POST(
   request: Request,
 ) {
@@ -414,6 +982,504 @@ export async function POST(
     }
   }
 
+  const latestMemoryCommandMessage =
+    messages[
+      messages.length - 1
+    ];
+
+  const explicitMemoryCommand =
+    latestMemoryCommandMessage
+      ?.role === "user"
+      ? getExplicitMemoryCommand(
+          latestMemoryCommandMessage
+            .content,
+        )
+      : null;
+
+  if (
+    explicitMemoryCommand
+  ) {
+    const memoryCommandUserId =
+      user.id;
+
+    async function respondToMemoryCommand(
+      message: string,
+      memoryAction:
+        Record<
+          string,
+          unknown
+        >,
+    ) {
+      const persistError =
+        await persistMemoryCommandAssistantMessage({
+          supabase,
+          conversationId,
+          organizationId,
+          userId:
+            memoryCommandUserId,
+          content:
+            message,
+        });
+
+      if (persistError) {
+        console.error(
+          "Failed to persist memory command assistant response.",
+          {
+            conversationId,
+            organizationId,
+            userId:
+              memoryCommandUserId,
+            error:
+              persistError,
+          },
+        );
+
+        return NextResponse.json(
+          {
+            error:
+              "Respons memory AI tidak dapat disimpan.",
+          },
+          {
+            status: 500,
+          },
+        );
+      }
+
+      return NextResponse.json({
+        message,
+        conversationId,
+        memoryAction,
+      });
+    }
+
+    let commandValue =
+      explicitMemoryCommand.value;
+
+    if (
+      isReferenceMemoryValue(
+        commandValue,
+      )
+    ) {
+      const previousUserContent =
+        findPreviousUserMessage(
+          messages,
+        );
+
+      if (
+        previousUserContent
+      ) {
+        commandValue =
+          previousUserContent;
+      } else {
+        const message =
+          explicitMemoryCommand
+            .language === "id"
+            ? "Sebutkan dulu hal yang ingin Anda minta saya ingat atau lupakan."
+            : "Please specify what you want me to remember or forget.";
+
+        return respondToMemoryCommand(
+          message,
+          {
+            action:
+              explicitMemoryCommand.action,
+            status:
+              "needs_detail",
+          },
+        );
+      }
+    }
+
+    if (
+      explicitMemoryCommand
+        .action === "remember"
+    ) {
+      if (
+        commandValue.length >
+        MAX_MEMORY_CONTENT_LENGTH
+      ) {
+        const message =
+          explicitMemoryCommand
+            .language === "id"
+            ? "Hal yang ingin diingat terlalu panjang. Tolong ringkas menjadi satu informasi penting."
+            : "That is too long to save as one memory. Please shorten it to one important fact.";
+
+        return respondToMemoryCommand(
+          message,
+          {
+            action:
+              "remember",
+            status:
+              "too_long",
+          },
+        );
+      }
+
+      const memoryType =
+        inferMemoryType(
+          commandValue,
+        );
+
+      const memoryKey =
+        buildMemoryKey(
+          memoryType,
+          commandValue,
+        );
+
+      const {
+        data: memory,
+        error:
+          memoryError,
+      } = await supabase
+        .from("ai_memories")
+        .insert({
+          organization_id:
+            organizationId,
+
+          user_id:
+            user.id,
+
+          memory_type:
+            memoryType,
+
+          memory_key:
+            memoryKey,
+
+          content:
+            commandValue,
+
+          source_kind:
+            "explicit_user",
+
+          source_conversation_id:
+            conversationId,
+        })
+        .select(
+          "id, memory_type, memory_key, content",
+        )
+        .single();
+
+      if (
+        memoryError &&
+        memoryError.code !==
+          "23505"
+      ) {
+        console.error(
+          "Failed to save explicit AI memory.",
+          {
+            conversationId,
+            organizationId,
+            userId:
+              user.id,
+            memoryType,
+            memoryKey,
+            error:
+              memoryError,
+          },
+        );
+
+        return NextResponse.json(
+          {
+            error:
+              "Memory AI tidak dapat disimpan.",
+          },
+          {
+            status: 500,
+          },
+        );
+      }
+
+      if (
+        memoryError?.code ===
+        "23505"
+      ) {
+        const {
+          data:
+            existingMemory,
+        } = await supabase
+          .from("ai_memories")
+          .select(
+            "id",
+          )
+          .eq(
+            "organization_id",
+            organizationId,
+          )
+          .eq(
+            "user_id",
+            user.id,
+          )
+          .eq(
+            "memory_type",
+            memoryType,
+          )
+          .eq(
+            "memory_key",
+            memoryKey,
+          )
+          .is(
+            "archived_at",
+            null,
+          )
+          .maybeSingle();
+
+        const message =
+          explicitMemoryCommand
+            .language === "id"
+            ? `Ini sudah saya ingat: "${commandValue}".`
+            : `I already remember this: "${commandValue}".`;
+
+        return respondToMemoryCommand(
+          message,
+          {
+            action:
+              "remember",
+            status:
+              "already_exists",
+            memoryId:
+              existingMemory
+                ?.id ??
+              null,
+          },
+        );
+      }
+
+      const message =
+        explicitMemoryCommand
+          .language === "id"
+          ? `Siap, saya akan mengingat ini: "${commandValue}".`
+          : `Got it. I'll remember this: "${commandValue}".`;
+
+      return respondToMemoryCommand(
+        message,
+        {
+          action:
+            "remember",
+          status:
+            "created",
+          memoryId:
+            memory?.id ??
+            null,
+          memoryType,
+        },
+      );
+    }
+
+    const normalizedForgetQuery =
+      normalizeMemorySearchText(
+        commandValue,
+      );
+
+    if (
+      normalizedForgetQuery ===
+        "semua" ||
+      normalizedForgetQuery ===
+        "all" ||
+      normalizedForgetQuery ===
+        "everything"
+    ) {
+      const message =
+        explicitMemoryCommand
+          .language === "id"
+          ? "Untuk keamanan, saya tidak menghapus semua memory sekaligus lewat chat. Sebutkan memory yang ingin dilupakan."
+          : "For safety, I won't delete every memory at once through chat. Please specify which memory to forget.";
+
+      return respondToMemoryCommand(
+        message,
+        {
+          action:
+            "forget",
+          status:
+            "bulk_not_allowed",
+        },
+      );
+    }
+
+    const {
+      data:
+        activeMemories,
+      error:
+        memoriesError,
+    } = await supabase
+      .from("ai_memories")
+      .select(
+        "id, memory_type, memory_key, content",
+      )
+      .eq(
+        "organization_id",
+        organizationId,
+      )
+      .eq(
+        "user_id",
+        user.id,
+      )
+      .is(
+        "archived_at",
+        null,
+      )
+      .order(
+        "updated_at",
+        {
+          ascending:
+            false,
+        },
+      )
+      .limit(100);
+
+    if (memoriesError) {
+      console.error(
+        "Failed to load memories for explicit forget command.",
+        {
+          organizationId,
+          userId:
+            user.id,
+          error:
+            memoriesError,
+        },
+      );
+
+      return NextResponse.json(
+        {
+          error:
+            "Memory AI tidak dapat diperiksa.",
+        },
+        {
+          status: 500,
+        },
+      );
+    }
+
+    const matches =
+      findMatchingMemories(
+        (
+          activeMemories ??
+          []
+        ) as MemoryCandidate[],
+        commandValue,
+      );
+
+    if (
+      matches.length === 0
+    ) {
+      const message =
+        explicitMemoryCommand
+          .language === "id"
+          ? `Saya belum menemukan memory aktif yang cocok dengan "${commandValue}".`
+          : `I couldn't find an active memory matching "${commandValue}".`;
+
+      return respondToMemoryCommand(
+        message,
+        {
+          action:
+            "forget",
+          status:
+            "not_found",
+        },
+      );
+    }
+
+    if (
+      matches.length > 1
+    ) {
+      const message =
+        explicitMemoryCommand
+          .language === "id"
+          ? "Saya menemukan lebih dari satu memory yang cocok. Sebutkan lebih spesifik mana yang ingin dilupakan."
+          : "I found more than one matching memory. Please be more specific about which one to forget.";
+
+      return respondToMemoryCommand(
+        message,
+        {
+          action:
+            "forget",
+          status:
+            "ambiguous",
+          matchCount:
+            matches.length,
+        },
+      );
+    }
+
+    const memoryToForget =
+      matches[0];
+
+    const {
+      data:
+        deletedMemory,
+      error:
+        deleteError,
+    } = await supabase
+      .from("ai_memories")
+      .delete()
+      .eq(
+        "id",
+        memoryToForget.id,
+      )
+      .eq(
+        "organization_id",
+        organizationId,
+      )
+      .eq(
+        "user_id",
+        user.id,
+      )
+      .select("id")
+      .maybeSingle();
+
+    if (deleteError) {
+      console.error(
+        "Failed to forget explicit AI memory.",
+        {
+          memoryId:
+            memoryToForget.id,
+          organizationId,
+          userId:
+            user.id,
+          error:
+            deleteError,
+        },
+      );
+
+      return NextResponse.json(
+        {
+          error:
+            "Memory AI tidak dapat dilupakan.",
+        },
+        {
+          status: 500,
+        },
+      );
+    }
+
+    if (!deletedMemory) {
+      return NextResponse.json(
+        {
+          error:
+            "Memory AI tidak ditemukan.",
+        },
+        {
+          status: 404,
+        },
+      );
+    }
+
+    const message =
+      explicitMemoryCommand
+        .language === "id"
+        ? `Sudah saya lupakan: "${memoryToForget.content}".`
+        : `I've forgotten this: "${memoryToForget.content}".`;
+
+    return respondToMemoryCommand(
+      message,
+      {
+        action:
+          "forget",
+        status:
+          "deleted",
+        memoryId:
+          memoryToForget.id,
+      },
+    );
+  }
   const [
     productsResult,
     productsCountResult,
