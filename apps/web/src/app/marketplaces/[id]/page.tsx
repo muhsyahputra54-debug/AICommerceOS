@@ -4,6 +4,8 @@ import { notFound } from "next/navigation";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import MarketplaceIntegrationManager from "@/components/marketplaces/MarketplaceIntegrationManager";
 import { getCurrentOrganization } from "@/lib/supabase/current-organization";
+import { getDictionary } from "@/lib/i18n/dictionaries";
+import { getLocale } from "@/lib/i18n/server";
 import { createClient } from "@/lib/supabase/server";
 
 type MarketplaceAccountPageProps = {
@@ -15,6 +17,8 @@ type MarketplaceAccountPageProps = {
 export default async function MarketplaceAccountPage({
   params,
 }: MarketplaceAccountPageProps) {
+  const locale = await getLocale();
+  const copy = getDictionary(locale).marketplaces.detail.page;
   const currentOrganization = await getCurrentOrganization();
 
   if (!currentOrganization) {
@@ -22,10 +26,10 @@ export default async function MarketplaceAccountPage({
       <DashboardLayout>
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
-            Marketplace
+            {copy.title}
           </h1>
           <p className="mt-2 text-muted-foreground">
-            Organization aktif tidak ditemukan.
+            {copy.noOrganization}
           </p>
         </div>
       </DashboardLayout>
@@ -244,7 +248,7 @@ export default async function MarketplaceAccountPage({
             href="/marketplaces"
             className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
           >
-            Back to Marketplaces
+            {copy.backToMarketplaces}
           </Link>
 
           <h1 className="mt-3 text-2xl font-semibold tracking-tight">
@@ -252,12 +256,12 @@ export default async function MarketplaceAccountPage({
           </h1>
 
           <p className="mt-2 text-muted-foreground">
-            Provider:{" "}
+            {copy.provider}:{" "}
             <span className="font-medium text-foreground">
               {account.provider}
             </span>
             {account.external_shop_id
-              ? ` • Shop ${account.external_shop_id}`
+              ? ` • ${copy.shop} ${account.external_shop_id}`
               : ""}
           </p>
         </div>

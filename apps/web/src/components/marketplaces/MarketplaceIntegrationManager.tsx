@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useLanguage } from "@/components/i18n/LanguageProvider";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 import { createClient } from "@/lib/supabase/client";
 
 type Account = {
@@ -190,10 +192,13 @@ type MarketplaceIntegrationManagerProps = {
   statusReconciliation: OrderStatusReconciliation[];
 };
 
-function formatCurrency(value: number | string) {
+function formatCurrencyValue(
+  value: number | string,
+  locale: string,
+) {
   const parsed = Number(value);
 
-  return new Intl.NumberFormat("id-ID", {
+  return new Intl.NumberFormat(locale, {
     style: "currency",
     currency: "IDR",
     maximumFractionDigits: 0,
@@ -201,9 +206,10 @@ function formatCurrency(value: number | string) {
 }
 
 
-function formatExternalAmount(
+function formatExternalAmountValue(
   value: number | string | null,
   currency: string | null,
+  locale: string,
 ) {
   if (value === null) {
     return "—";
@@ -220,7 +226,7 @@ function formatExternalAmount(
   }
 
   try {
-    return new Intl.NumberFormat("id-ID", {
+    return new Intl.NumberFormat(locale, {
       style: "currency",
       currency,
       maximumFractionDigits: 2,
@@ -230,8 +236,11 @@ function formatExternalAmount(
   }
 }
 
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat("id-ID", {
+function formatDateValue(
+  value: string,
+  locale: string,
+) {
+  return new Intl.DateTimeFormat(locale, {
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -271,6 +280,26 @@ export default function MarketplaceIntegrationManager({
   statusReconciliation,
 }: MarketplaceIntegrationManagerProps) {
   const router = useRouter();
+  const { locale } = useLanguage();
+  const copy = getDictionary(locale).marketplaces.detail.manager;
+  const localeTag = locale === "id" ? "id-ID" : "en-US";
+
+  const formatCurrency = (
+    value: number | string,
+  ) => formatCurrencyValue(value, localeTag);
+
+  const formatExternalAmount = (
+    value: number | string | null,
+    currency: string | null,
+  ) =>
+    formatExternalAmountValue(
+      value,
+      currency,
+      localeTag,
+    );
+
+  const formatDate = (value: string) =>
+    formatDateValue(value, localeTag);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [editingListingId, setEditingListingId] =
@@ -291,7 +320,7 @@ export default function MarketplaceIntegrationManager({
   const variantNames = new Map(
     variants.map((variant) => [
       variant.id,
-      `${productNames.get(variant.product_id) ?? "Product"} — ${variant.name} (${variant.sku})`,
+      `${productNames.get(variant.product_id) ?? copy.common.product} — ${variant.name} (${variant.sku})`,
     ]),
   );
 
@@ -320,14 +349,14 @@ export default function MarketplaceIntegrationManager({
 
   function listingTargetName(item: Listing) {
     if (item.target_type === "product" && item.product_id) {
-      return productNames.get(item.product_id) ?? "Unknown product";
+      return productNames.get(item.product_id) ?? copy.common.unknownProduct;
     }
 
     if (item.target_type === "variant" && item.variant_id) {
-      return variantNames.get(item.variant_id) ?? "Unknown variant";
+      return variantNames.get(item.variant_id) ?? copy.common.unknownVariant;
     }
 
-    return "Unknown target";
+    return copy.common.unknownTarget;
   }
 
   async function handleSyncAuthorizedShops() {
@@ -355,17 +384,13 @@ export default function MarketplaceIntegrationManager({
       if (!response.ok) {
         throw new Error(
           payload.error ??
-            "Authorized Shops sync gagal.",
+            copy.errors.syncAuthorizedShops,
         );
       }
 
       router.refresh();
-    } catch (error) {
-      setErrorMessage(
-        error instanceof Error
-          ? error.message
-          : "Authorized Shops sync gagal.",
-      );
+    } catch {
+      setErrorMessage(copy.errors.generic);
     } finally {
       setIsSubmitting(false);
     }
@@ -388,7 +413,7 @@ export default function MarketplaceIntegrationManager({
     );
 
     if (error) {
-      setErrorMessage(error.message);
+      setErrorMessage(copy.errors.generic);
       setIsSubmitting(false);
       return;
     }
@@ -426,17 +451,13 @@ export default function MarketplaceIntegrationManager({
       if (!response.ok) {
         throw new Error(
           payload.error ??
-            "Product catalog sync gagal.",
+            copy.errors.syncProductCatalog,
         );
       }
 
       router.refresh();
-    } catch (error) {
-      setErrorMessage(
-        error instanceof Error
-          ? error.message
-          : "Product catalog sync gagal.",
-      );
+    } catch {
+      setErrorMessage(copy.errors.generic);
     } finally {
       setIsSubmitting(false);
     }
@@ -467,17 +488,13 @@ export default function MarketplaceIntegrationManager({
       if (!response.ok) {
         throw new Error(
           payload.error ??
-            "External order sync gagal.",
+            copy.errors.syncExternalOrders,
         );
       }
 
       router.refresh();
-    } catch (error) {
-      setErrorMessage(
-        error instanceof Error
-          ? error.message
-          : "External order sync gagal.",
-      );
+    } catch {
+      setErrorMessage(copy.errors.generic);
     } finally {
       setIsSubmitting(false);
     }
@@ -508,17 +525,13 @@ export default function MarketplaceIntegrationManager({
       if (!response.ok) {
         throw new Error(
           payload.error ??
-            "Webhook reconciliation gagal.",
+            copy.errors.processWebhook,
         );
       }
 
       router.refresh();
-    } catch (error) {
-      setErrorMessage(
-        error instanceof Error
-          ? error.message
-          : "Webhook reconciliation gagal.",
-      );
+    } catch {
+      setErrorMessage(copy.errors.generic);
     } finally {
       setIsSubmitting(false);
     }
@@ -532,14 +545,14 @@ export default function MarketplaceIntegrationManager({
 
     if (!customerId) {
       setErrorMessage(
-        "Pilih customer internal sebelum membuat order.",
+        copy.errors.customerRequired,
       );
       return;
     }
 
     if (
       !window.confirm(
-        `Buat internal pending order dari external order ${order.external_order_id}?`,
+        `${copy.confirm.createPendingOrder} ${order.external_order_id}?`,
       )
     ) {
       return;
@@ -559,7 +572,7 @@ export default function MarketplaceIntegrationManager({
     );
 
     if (error) {
-      setErrorMessage(error.message);
+      setErrorMessage(copy.errors.generic);
       setIsSubmitting(false);
       return;
     }
@@ -583,10 +596,10 @@ export default function MarketplaceIntegrationManager({
 
     if (
       !window.confirm(
-        `Approve internal order ${item.internal_order_id.slice(
+        `${copy.confirm.approveOrder} ${item.internal_order_id.slice(
           0,
           8,
-        )} status ${item.internal_status} → ${item.proposed_status} based on marketplace status ${item.external_status}?`,
+        )} ${copy.confirm.status} ${item.internal_status} → ${item.proposed_status} ${copy.confirm.basedOnMarketplaceStatus} ${item.external_status}?`,
       )
     ) {
       return;
@@ -610,7 +623,7 @@ export default function MarketplaceIntegrationManager({
     );
 
     if (error) {
-      setErrorMessage(error.message);
+      setErrorMessage(copy.errors.generic);
       setIsSubmitting(false);
       return;
     }
@@ -633,7 +646,7 @@ export default function MarketplaceIntegrationManager({
       !targetId ||
       (targetType !== "product" && targetType !== "variant")
     ) {
-      setErrorMessage("Target listing tidak valid.");
+      setErrorMessage(copy.errors.invalidListingTarget);
       setIsSubmitting(false);
       return;
     }
@@ -664,8 +677,8 @@ export default function MarketplaceIntegrationManager({
     if (error) {
       setErrorMessage(
         error.code === "23505"
-          ? "Target atau external listing tersebut sudah dipetakan."
-          : error.message,
+          ? copy.errors.listingAlreadyMapped
+          : copy.errors.generic,
       );
       setIsSubmitting(false);
       return;
@@ -718,15 +731,15 @@ export default function MarketplaceIntegrationManager({
     if (error) {
       setErrorMessage(
         error.code === "23505"
-          ? "External listing ID tersebut sudah digunakan."
-          : error.message,
+          ? copy.errors.externalListingIdUsed
+          : copy.errors.generic,
       );
       setIsSubmitting(false);
       return;
     }
 
     if (!data) {
-      setErrorMessage("Listing mapping tidak ditemukan.");
+      setErrorMessage(copy.errors.listingNotFound);
       setIsSubmitting(false);
       return;
     }
@@ -737,7 +750,11 @@ export default function MarketplaceIntegrationManager({
   }
 
   async function handleDeleteListing(item: Listing) {
-    if (!window.confirm(`Hapus mapping ${listingTargetName(item)}?`)) {
+    if (
+      !window.confirm(
+        `${copy.confirm.deleteMapping} ${listingTargetName(item)}?`,
+      )
+    ) {
       return;
     }
 
@@ -755,7 +772,7 @@ export default function MarketplaceIntegrationManager({
       .maybeSingle();
 
     if (error || !data) {
-      setErrorMessage(error?.message ?? "Listing mapping tidak ditemukan.");
+      setErrorMessage(copy.errors.listingNotFound);
       setIsSubmitting(false);
       return;
     }
@@ -782,7 +799,7 @@ export default function MarketplaceIntegrationManager({
     ).trim();
 
     if (!orderId || !externalOrderId) {
-      setErrorMessage("Internal order dan External Order ID wajib diisi.");
+      setErrorMessage(copy.errors.orderFieldsRequired);
       setIsSubmitting(false);
       return;
     }
@@ -802,8 +819,8 @@ export default function MarketplaceIntegrationManager({
     if (error) {
       setErrorMessage(
         error.code === "23505"
-          ? "External order atau internal order tersebut sudah terhubung."
-          : error.message,
+          ? copy.errors.orderAlreadyLinked
+          : copy.errors.generic,
       );
       setIsSubmitting(false);
       return;
@@ -835,7 +852,7 @@ export default function MarketplaceIntegrationManager({
     ).trim();
 
     if (!externalOrderId) {
-      setErrorMessage("External Order ID wajib diisi.");
+      setErrorMessage(copy.errors.externalOrderIdRequired);
       setIsSubmitting(false);
       return;
     }
@@ -858,8 +875,8 @@ export default function MarketplaceIntegrationManager({
     if (error || !data) {
       setErrorMessage(
         error?.code === "23505"
-          ? "External Order ID tersebut sudah digunakan."
-          : error?.message ?? "Order link tidak ditemukan.",
+          ? copy.errors.externalOrderIdUsed
+          : copy.errors.orderLinkNotFound,
       );
       setIsSubmitting(false);
       return;
@@ -871,7 +888,11 @@ export default function MarketplaceIntegrationManager({
   }
 
   async function handleDeleteOrderLink(item: OrderLink) {
-    if (!window.confirm(`Hapus link order ${item.external_order_id}?`)) {
+    if (
+      !window.confirm(
+        `${copy.confirm.deleteOrderLink} ${item.external_order_id}?`,
+      )
+    ) {
       return;
     }
 
@@ -889,7 +910,7 @@ export default function MarketplaceIntegrationManager({
       .maybeSingle();
 
     if (error || !data) {
-      setErrorMessage(error?.message ?? "Order link tidak ditemukan.");
+      setErrorMessage(copy.errors.orderLinkNotFound);
       setIsSubmitting(false);
       return;
     }
@@ -905,28 +926,27 @@ export default function MarketplaceIntegrationManager({
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
               <h2 className="text-lg font-semibold">
-                Tokopedia &amp; Shop Connector
+                {copy.connector.title}
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Seller authorization is handled server-side. Marketplace access
-                and refresh tokens are encrypted before storage.
+                {copy.connector.description}
               </p>
 
               <div className="mt-3 flex flex-wrap gap-2 text-xs">
                 <span className="rounded-full border px-2.5 py-1 font-medium capitalize">
-                  {connection?.status ?? "not connected"}
+                  {connection?.status ?? copy.connector.notConnected}
                 </span>
 
                 {connection?.access_token_expires_at ? (
                   <span className="rounded-full border px-2.5 py-1 text-muted-foreground">
-                    Access token expires{" "}
+                    {copy.connector.accessTokenExpires}{" "}
                     {formatDate(connection.access_token_expires_at)}
                   </span>
                 ) : null}
 
                 {connection?.granted_scopes?.length ? (
                   <span className="rounded-full border px-2.5 py-1 text-muted-foreground">
-                    {connection.granted_scopes.length} scope(s)
+                    {connection.granted_scopes.length} {copy.connector.scopes}
                   </span>
                 ) : null}
               </div>
@@ -934,7 +954,7 @@ export default function MarketplaceIntegrationManager({
 
             {account.status === "inactive" ? (
               <span className="text-sm text-muted-foreground">
-                Activate this marketplace account before connecting.
+                {copy.connector.activateFirst}
               </span>
             ) : (
               <Link
@@ -942,8 +962,8 @@ export default function MarketplaceIntegrationManager({
                 className="inline-flex h-10 items-center justify-center rounded-lg border bg-background px-4 text-sm font-medium transition-colors hover:bg-muted"
               >
                 {connection
-                  ? "Reconnect Tokopedia & Shop"
-                  : "Connect Tokopedia & Shop"}
+                  ? copy.connector.reconnect
+                  : copy.connector.connect}
               </Link>
             )}
           </div>
@@ -955,11 +975,10 @@ export default function MarketplaceIntegrationManager({
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
               <h2 className="text-lg font-semibold">
-                Authorized Shops
+                {copy.authorizedShops.title}
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Retrieve the shops authorized by this seller connection.
-                Shop cipher remains encrypted and server-only.
+                {copy.authorizedShops.description}
               </p>
             </div>
 
@@ -973,18 +992,18 @@ export default function MarketplaceIntegrationManager({
               onClick={handleSyncAuthorizedShops}
             >
               {isSubmitting
-                ? "Syncing..."
-                : "Sync authorized shops"}
+                ? copy.common.syncing
+                : copy.authorizedShops.syncAction}
             </Button>
           </div>
 
           {connection?.status !== "active" ? (
             <p className="mt-4 text-sm text-muted-foreground">
-              Connect the seller account before retrieving authorized shops.
+              {copy.authorizedShops.connectFirst}
             </p>
           ) : authorizedShops.length === 0 ? (
             <p className="mt-4 text-sm text-muted-foreground">
-              No authorized shop has been synchronized yet.
+              {copy.authorizedShops.empty}
             </p>
           ) : (
             <div className="mt-5 overflow-x-auto rounded-xl border">
@@ -992,19 +1011,17 @@ export default function MarketplaceIntegrationManager({
                 <thead className="border-b bg-muted/40 text-left">
                   <tr>
                     <th className="px-4 py-3 font-medium">
-                      Shop
+                      {copy.authorizedShops.shop}
                     </th>
                     <th className="px-4 py-3 font-medium">
-                      Region
+                      {copy.authorizedShops.region}
                     </th>
                     <th className="px-4 py-3 font-medium">
-                      Seller type
+                      {copy.authorizedShops.sellerType}
                     </th>
+                    <th className="px-4 py-3 font-medium">{copy.common.status}</th>
                     <th className="px-4 py-3 font-medium">
-                      Status
-                    </th>
-                    <th className="px-4 py-3 font-medium">
-                      Mapping
+                      {copy.authorizedShops.mapping}
                     </th>
                   </tr>
                 </thead>
@@ -1034,7 +1051,7 @@ export default function MarketplaceIntegrationManager({
                       <td className="px-4 py-3">
                         {shop.is_selected ? (
                           <span className="inline-flex rounded-full border px-2.5 py-1 text-xs font-medium">
-                            Selected
+                            {copy.authorizedShops.selected}
                           </span>
                         ) : shop.status === "active" ? (
                           <Button
@@ -1048,11 +1065,11 @@ export default function MarketplaceIntegrationManager({
                               )
                             }
                           >
-                            Use this shop
+                            {copy.authorizedShops.useShop}
                           </Button>
                         ) : (
                           <span className="text-xs text-muted-foreground">
-                            Unavailable
+                            {copy.authorizedShops.unavailable}
                           </span>
                         )}
                       </td>
@@ -1070,11 +1087,10 @@ export default function MarketplaceIntegrationManager({
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
               <h2 className="text-lg font-semibold">
-                External Product Catalog
+                {copy.catalog.title}
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Read-only catalog from the selected marketplace shop.
-                Internal products, variants, stock, and orders are not changed.
+                {copy.catalog.description}
               </p>
             </div>
 
@@ -1089,18 +1105,18 @@ export default function MarketplaceIntegrationManager({
               onClick={handleSyncProductCatalog}
             >
               {isSubmitting
-                ? "Syncing..."
-                : "Sync first 100 products"}
+                ? copy.common.syncing
+                : copy.catalog.syncAction}
             </Button>
           </div>
 
           {!selectedAuthorizedShop ? (
             <p className="mt-4 text-sm text-muted-foreground">
-              Select an Authorized Shop before syncing products.
+              {copy.catalog.selectShopFirst}
             </p>
           ) : catalogProducts.length === 0 ? (
             <p className="mt-4 text-sm text-muted-foreground">
-              No external product has been synchronized yet.
+              {copy.catalog.empty}
             </p>
           ) : (
             <div className="mt-5 overflow-x-auto rounded-xl border">
@@ -1108,16 +1124,14 @@ export default function MarketplaceIntegrationManager({
                 <thead className="border-b bg-muted/40 text-left">
                   <tr>
                     <th className="px-4 py-3 font-medium">
-                      Product
+                      {copy.catalog.product}
+                    </th>
+                    <th className="px-4 py-3 font-medium">{copy.common.status}</th>
+                    <th className="px-4 py-3 font-medium">
+                      {copy.catalog.skus}
                     </th>
                     <th className="px-4 py-3 font-medium">
-                      Status
-                    </th>
-                    <th className="px-4 py-3 font-medium">
-                      SKUs
-                    </th>
-                    <th className="px-4 py-3 font-medium">
-                      Last seen
+                      {copy.catalog.lastSeen}
                     </th>
                   </tr>
                 </thead>
@@ -1159,9 +1173,7 @@ export default function MarketplaceIntegrationManager({
           )}
 
           <p className="mt-4 text-xs text-muted-foreground">
-            M3 intentionally synchronizes one page (up to 100 products).
-            Pagination will be enabled after the first real Partner Center
-            runtime validation so we can measure API latency and function limits.
+            {copy.catalog.note}
           </p>
         </div>
       ) : null}
@@ -1171,11 +1183,10 @@ export default function MarketplaceIntegrationManager({
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
               <h2 className="text-lg font-semibold">
-                External Orders
+                {copy.externalOrders.title}
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Read-only operational order mirror. Buyer recipient name,
-                address, phone, and email are deliberately not persisted.
+                {copy.externalOrders.description}
               </p>
             </div>
 
@@ -1190,18 +1201,18 @@ export default function MarketplaceIntegrationManager({
               onClick={handleSyncExternalOrders}
             >
               {isSubmitting
-                ? "Syncing..."
-                : "Sync recent orders"}
+                ? copy.common.syncing
+                : copy.externalOrders.syncAction}
             </Button>
           </div>
 
           {!selectedAuthorizedShop ? (
             <p className="mt-4 text-sm text-muted-foreground">
-              Select an Authorized Shop before syncing orders.
+              {copy.externalOrders.selectShopFirst}
             </p>
           ) : externalOrders.length === 0 ? (
             <p className="mt-4 text-sm text-muted-foreground">
-              No external order has been synchronized yet.
+              {copy.externalOrders.empty}
             </p>
           ) : (
             <div className="mt-5 overflow-x-auto rounded-xl border">
@@ -1209,25 +1220,23 @@ export default function MarketplaceIntegrationManager({
                 <thead className="border-b bg-muted/40 text-left">
                   <tr>
                     <th className="px-4 py-3 font-medium">
-                      External Order
+                      {copy.externalOrders.externalOrder}
+                    </th>
+                    <th className="px-4 py-3 font-medium">{copy.common.status}</th>
+                    <th className="px-4 py-3 font-medium">
+                      {copy.externalOrders.amount}
                     </th>
                     <th className="px-4 py-3 font-medium">
-                      Status
+                      {copy.externalOrders.items}
                     </th>
                     <th className="px-4 py-3 font-medium">
-                      Amount
+                      {copy.externalOrders.internalLink}
                     </th>
                     <th className="px-4 py-3 font-medium">
-                      Items
+                      {copy.externalOrders.bridge}
                     </th>
                     <th className="px-4 py-3 font-medium">
-                      Internal Link
-                    </th>
-                    <th className="px-4 py-3 font-medium">
-                      Bridge
-                    </th>
-                    <th className="px-4 py-3 font-medium">
-                      Updated
+                      {copy.externalOrders.updated}
                     </th>
                   </tr>
                 </thead>
@@ -1260,7 +1269,7 @@ export default function MarketplaceIntegrationManager({
                           </span>
                         ) : (
                           <span className="text-xs text-muted-foreground">
-                            Not linked
+                            {copy.externalOrders.notLinked}
                           </span>
                         )}
                       </td>
@@ -1277,7 +1286,7 @@ export default function MarketplaceIntegrationManager({
                           ) {
                             return (
                               <span className="text-xs text-muted-foreground">
-                                Already linked
+                                {copy.externalOrders.alreadyLinked}
                               </span>
                             );
                           }
@@ -1286,7 +1295,7 @@ export default function MarketplaceIntegrationManager({
                             return (
                               <div className="text-xs text-muted-foreground">
                                 <div>
-                                  Mapping incomplete
+                                  {copy.externalOrders.mappingIncomplete}
                                 </div>
                                 <div className="mt-1">
                                   {Number(
@@ -1296,14 +1305,14 @@ export default function MarketplaceIntegrationManager({
                                   {Number(
                                     readiness?.total_items ?? 0,
                                   )}{" "}
-                                  mapped
+                                  {copy.externalOrders.mapped}
                                   {Number(
                                     readiness?.ambiguous_items ?? 0,
                                   ) > 0
                                     ? ` • ${Number(
                                         readiness?.ambiguous_items ??
                                           0,
-                                      )} ambiguous`
+                                      )} ${copy.externalOrders.ambiguous}`
                                     : ""}
                                 </div>
                               </div>
@@ -1313,7 +1322,7 @@ export default function MarketplaceIntegrationManager({
                           if (customers.length === 0) {
                             return (
                               <span className="text-xs text-muted-foreground">
-                                Add an internal customer first
+                                {copy.externalOrders.addCustomerFirst}
                               </span>
                             );
                           }
@@ -1339,7 +1348,7 @@ export default function MarketplaceIntegrationManager({
                                 className="h-9 w-full rounded-lg border bg-background px-2 text-xs"
                               >
                                 <option value="">
-                                  Select customer
+                                  {copy.externalOrders.selectCustomer}
                                 </option>
                                 {customers.map(
                                   (customer) => (
@@ -1369,7 +1378,7 @@ export default function MarketplaceIntegrationManager({
                                   )
                                 }
                               >
-                                Create pending order
+                                {copy.externalOrders.createPendingOrder}
                               </Button>
                             </div>
                           );
@@ -1389,12 +1398,7 @@ export default function MarketplaceIntegrationManager({
           )}
 
           <p className="mt-4 text-xs text-muted-foreground">
-            External orders remain a read-only mirror. M7 can create an
-            internal order only after every line item has one deterministic
-            Product/Variant mapping and an operator explicitly selects an
-            existing customer. Creation delegates to the protected
-            create_order RPC, so the new internal order remains pending and
-            no inventory is deducted by this bridge.
+            {copy.externalOrders.note}
           </p>
         </div>
       ) : null}
@@ -1403,22 +1407,20 @@ export default function MarketplaceIntegrationManager({
         <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
           <div className="border-b px-6 py-5">
             <h2 className="text-lg font-semibold">
-              Order Status Reconciliation
+              {copy.reconciliation.title}
             </h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Human-approved internal status transitions based on the
-              reconciled marketplace order mirror. Every transition still
-              delegates to the protected update_order_status RPC.
+              {copy.reconciliation.description}
             </p>
           </div>
 
           {statusReconciliation.length === 0 ? (
             <div className="px-6 py-10 text-center">
               <p className="font-medium">
-                No linked order is ready for status reconciliation
+                {copy.reconciliation.emptyTitle}
               </p>
               <p className="mt-1 text-sm text-muted-foreground">
-                Bridge an external order to an internal order first.
+                {copy.reconciliation.emptyDescription}
               </p>
             </div>
           ) : (
@@ -1427,22 +1429,22 @@ export default function MarketplaceIntegrationManager({
                 <thead className="border-b bg-muted/40 text-left">
                   <tr>
                     <th className="px-6 py-3 font-medium">
-                      External Order
+                      {copy.reconciliation.externalOrder}
                     </th>
                     <th className="px-6 py-3 font-medium">
-                      Marketplace
+                      {copy.reconciliation.marketplace}
                     </th>
                     <th className="px-6 py-3 font-medium">
-                      Internal
+                      {copy.reconciliation.internal}
                     </th>
                     <th className="px-6 py-3 font-medium">
-                      Proposal
+                      {copy.reconciliation.proposal}
                     </th>
                     <th className="px-6 py-3 font-medium">
-                      Reason
+                      {copy.reconciliation.reason}
                     </th>
                     <th className="px-6 py-3 font-medium">
-                      Action
+                      {copy.reconciliation.action}
                     </th>
                   </tr>
                 </thead>
@@ -1464,7 +1466,7 @@ export default function MarketplaceIntegrationManager({
                         </div>
                       </td>
                       <td className="px-6 py-4 capitalize">
-                        {item.proposed_status ?? "No action"}
+                        {item.proposed_status ?? copy.reconciliation.noAction}
                       </td>
                       <td className="max-w-md px-6 py-4 text-muted-foreground">
                         {item.reason}
@@ -1483,11 +1485,11 @@ export default function MarketplaceIntegrationManager({
                               )
                             }
                           >
-                            Approve → {item.proposed_status}
+                            {copy.reconciliation.approve} → {item.proposed_status}
                           </Button>
                         ) : (
                           <span className="text-xs text-muted-foreground">
-                            No approval needed
+                            {copy.reconciliation.noApproval}
                           </span>
                         )}
                       </td>
@@ -1499,12 +1501,7 @@ export default function MarketplaceIntegrationManager({
           )}
 
           <div className="border-t px-6 py-4 text-xs text-muted-foreground">
-            UNPAID and ON_HOLD do not advance the internal order.
-            Fulfillment states can move pending → processing.
-            DELIVERED stays processing until marketplace COMPLETED.
-            Cancellation can move pending/processing → cancelled.
-            COMPLETED uses two controlled steps when the internal order is
-            still pending.
+            {copy.reconciliation.note}
           </div>
         </div>
       ) : null}
@@ -1514,11 +1511,10 @@ export default function MarketplaceIntegrationManager({
           <div className="flex flex-col gap-4 border-b px-6 py-5 md:flex-row md:items-center md:justify-between">
             <div>
               <h2 className="text-lg font-semibold">
-                Webhook Events
+                {copy.webhooks.title}
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Authenticated, idempotent intake with controlled read-only
-                reconciliation. Raw payload and recipient PII are not persisted.
+                {copy.webhooks.description}
               </p>
             </div>
 
@@ -1533,19 +1529,18 @@ export default function MarketplaceIntegrationManager({
               onClick={handleProcessWebhookQueue}
             >
               {isSubmitting
-                ? "Processing..."
-                : "Process webhook queue"}
+                ? copy.common.processing
+                : copy.webhooks.processAction}
             </Button>
           </div>
 
           {webhookEvents.length === 0 ? (
             <div className="px-6 py-10 text-center">
               <p className="font-medium">
-                No webhook event received yet
+                {copy.webhooks.emptyTitle}
               </p>
               <p className="mt-1 text-sm text-muted-foreground">
-                Configure the staging webhook URL in Partner Center after app
-                credentials are available.
+                {copy.webhooks.emptyDescription}
               </p>
             </div>
           ) : (
@@ -1554,22 +1549,22 @@ export default function MarketplaceIntegrationManager({
                 <thead className="border-b bg-muted/40 text-left">
                   <tr>
                     <th className="px-6 py-3 font-medium">
-                      Received
+                      {copy.webhooks.received}
                     </th>
                     <th className="px-6 py-3 font-medium">
-                      Type
+                      {copy.webhooks.type}
                     </th>
                     <th className="px-6 py-3 font-medium">
-                      Entity
+                      {copy.webhooks.entity}
                     </th>
                     <th className="px-6 py-3 font-medium">
-                      External Status
+                      {copy.webhooks.externalStatus}
                     </th>
                     <th className="px-6 py-3 font-medium">
-                      Processing
+                      {copy.webhooks.processing}
                     </th>
                     <th className="px-6 py-3 font-medium">
-                      Attempts
+                      {copy.webhooks.attempts}
                     </th>
                   </tr>
                 </thead>
@@ -1618,9 +1613,9 @@ export default function MarketplaceIntegrationManager({
       ) : null}
 
       <div className="rounded-2xl border bg-card p-6 shadow-sm">
-        <h2 className="text-lg font-semibold">Product Listing Mapping</h2>
+        <h2 className="text-lg font-semibold">{copy.listingMapping.title}</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Map internal Product/Variant ke listing marketplace.
+          {copy.listingMapping.description}
         </p>
 
         <form onSubmit={handleAddListing} className="mt-5 space-y-4">
@@ -1631,7 +1626,7 @@ export default function MarketplaceIntegrationManager({
               defaultValue=""
               className="h-10 rounded-lg border bg-background px-3 text-sm"
             >
-              <option value="" disabled>Select Product / Variant</option>
+              <option value="" disabled>{copy.listingMapping.selectTarget}</option>
               {products
                 .filter((item) => item.status === "active")
                 .map((product) => (
@@ -1639,7 +1634,7 @@ export default function MarketplaceIntegrationManager({
                     key={`product-${product.id}`}
                     value={`product:${product.id}`}
                   >
-                    Product — {productNames.get(product.id)}
+                    {copy.common.product} — {productNames.get(product.id)}
                   </option>
                 ))}
               {variants
@@ -1649,19 +1644,19 @@ export default function MarketplaceIntegrationManager({
                     key={`variant-${variant.id}`}
                     value={`variant:${variant.id}`}
                   >
-                    Variant — {variantNames.get(variant.id)}
+                    {copy.common.variant} — {variantNames.get(variant.id)}
                   </option>
                 ))}
             </select>
 
             <Input
               name="external_listing_id"
-              placeholder="External Listing ID"
+              placeholder={copy.listingMapping.externalListingId}
             />
 
             <Input
               name="external_sku"
-              placeholder="External SKU"
+              placeholder={copy.listingMapping.externalSku}
             />
 
             <label className="flex h-10 items-center gap-2 rounded-lg border px-3 text-sm">
@@ -1670,21 +1665,21 @@ export default function MarketplaceIntegrationManager({
                 name="sync_enabled"
                 defaultChecked
               />
-              Sync enabled
+              {copy.listingMapping.syncEnabled}
             </label>
           </div>
 
           <Button type="submit" disabled={isSubmitting}>
-            Add listing mapping
+            {copy.listingMapping.add}
           </Button>
         </form>
       </div>
 
       <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
         <div className="border-b px-6 py-5">
-          <h2 className="text-lg font-semibold">Listings</h2>
+          <h2 className="text-lg font-semibold">{copy.listings.title}</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            {listings.length} mapping ditemukan.
+            {listings.length} {copy.listings.countSuffix}
           </p>
         </div>
 
@@ -1692,12 +1687,12 @@ export default function MarketplaceIntegrationManager({
           <table className="w-full text-sm">
             <thead className="border-b bg-muted/40 text-left">
               <tr>
-                <th className="px-6 py-3">Target</th>
-                <th className="px-6 py-3">External ID</th>
-                <th className="px-6 py-3">External SKU</th>
-                <th className="px-6 py-3">Status</th>
-                <th className="px-6 py-3">Sync</th>
-                <th className="px-6 py-3">Actions</th>
+                <th className="px-6 py-3">{copy.listings.target}</th>
+                <th className="px-6 py-3">{copy.listings.externalId}</th>
+                <th className="px-6 py-3">{copy.listings.externalSku}</th>
+                <th className="px-6 py-3">{copy.common.status}</th>
+                <th className="px-6 py-3">{copy.listings.sync}</th>
+                <th className="px-6 py-3">{copy.common.actions}</th>
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -1716,7 +1711,7 @@ export default function MarketplaceIntegrationManager({
                     {item.listing_status}
                   </td>
                   <td className="px-6 py-4">
-                    {item.sync_enabled ? "Enabled" : "Disabled"}
+                    {item.sync_enabled ? copy.common.enabled : copy.common.disabled}
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex gap-2">
@@ -1726,7 +1721,7 @@ export default function MarketplaceIntegrationManager({
                         onClick={() => setEditingListingId(item.id)}
                         disabled={isSubmitting}
                       >
-                        Edit
+                        {copy.common.edit}
                       </Button>
                       <Button
                         size="sm"
@@ -1734,7 +1729,7 @@ export default function MarketplaceIntegrationManager({
                         onClick={() => handleDeleteListing(item)}
                         disabled={isSubmitting}
                       >
-                        Delete
+                        {copy.common.delete}
                       </Button>
                     </div>
                   </td>
@@ -1747,7 +1742,7 @@ export default function MarketplaceIntegrationManager({
 
       {editingListing ? (
         <div className="rounded-2xl border bg-card p-6 shadow-sm">
-          <h2 className="text-lg font-semibold">Edit Listing Mapping</h2>
+          <h2 className="text-lg font-semibold">{copy.listings.editTitle}</h2>
           <p className="mt-1 text-sm text-muted-foreground">
             {listingTargetName(editingListing)}
           </p>
@@ -1757,21 +1752,21 @@ export default function MarketplaceIntegrationManager({
               <Input
                 name="external_listing_id"
                 defaultValue={editingListing.external_listing_id ?? ""}
-                placeholder="External Listing ID"
+                placeholder={copy.listingMapping.externalListingId}
               />
               <Input
                 name="external_sku"
                 defaultValue={editingListing.external_sku ?? ""}
-                placeholder="External SKU"
+                placeholder={copy.listingMapping.externalSku}
               />
               <select
                 name="listing_status"
                 defaultValue={editingListing.listing_status}
                 className="h-10 rounded-lg border bg-background px-3 text-sm"
               >
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-                <option value="error">Error</option>
+                <option value="active">{copy.common.active}</option>
+                <option value="inactive">{copy.common.inactive}</option>
+                <option value="error">{copy.common.error}</option>
               </select>
               <label className="flex h-10 items-center gap-2 rounded-lg border px-3 text-sm">
                 <input
@@ -1779,20 +1774,20 @@ export default function MarketplaceIntegrationManager({
                   name="sync_enabled"
                   defaultChecked={editingListing.sync_enabled}
                 />
-                Sync enabled
+                {copy.listingMapping.syncEnabled}
               </label>
             </div>
 
             <div className="flex gap-3">
               <Button type="submit" disabled={isSubmitting}>
-                Save listing
+                {copy.listings.save}
               </Button>
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setEditingListingId(null)}
               >
-                Cancel
+                {copy.common.cancel}
               </Button>
             </div>
           </form>
@@ -1800,9 +1795,9 @@ export default function MarketplaceIntegrationManager({
       ) : null}
 
       <div className="rounded-2xl border bg-card p-6 shadow-sm">
-        <h2 className="text-lg font-semibold">Marketplace Order Link</h2>
+        <h2 className="text-lg font-semibold">{copy.orderLink.title}</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Hubungkan external order ke order internal. Tidak mengubah stock.
+          {copy.orderLink.description}
         </p>
 
         <form onSubmit={handleAddOrderLink} className="mt-5 space-y-4">
@@ -1813,7 +1808,7 @@ export default function MarketplaceIntegrationManager({
               defaultValue=""
               className="h-10 rounded-lg border bg-background px-3 text-sm"
             >
-              <option value="" disabled>Select internal order</option>
+              <option value="" disabled>{copy.orderLink.selectInternalOrder}</option>
               {availableOrders.map((order) => (
                 <option key={order.id} value={order.id}>
                   {order.id.slice(0, 8)} — {order.status} —{" "}
@@ -1824,27 +1819,27 @@ export default function MarketplaceIntegrationManager({
 
             <Input
               name="external_order_id"
-              placeholder="External Order ID"
+              placeholder={copy.orderLink.externalOrderId}
               required
             />
 
             <Input
               name="external_status"
-              placeholder="External status (optional)"
+              placeholder={copy.orderLink.externalStatusOptional}
             />
           </div>
 
           <Button type="submit" disabled={isSubmitting}>
-            Link marketplace order
+            {copy.orderLink.link}
           </Button>
         </form>
       </div>
 
       <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
         <div className="border-b px-6 py-5">
-          <h2 className="text-lg font-semibold">Order Links</h2>
+          <h2 className="text-lg font-semibold">{copy.orderLinks.title}</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            {orderLinks.length} external order link ditemukan.
+            {orderLinks.length} {copy.orderLinks.countSuffix}
           </p>
         </div>
 
@@ -1852,11 +1847,11 @@ export default function MarketplaceIntegrationManager({
           <table className="w-full text-sm">
             <thead className="border-b bg-muted/40 text-left">
               <tr>
-                <th className="px-6 py-3">External Order</th>
-                <th className="px-6 py-3">Internal Order</th>
-                <th className="px-6 py-3">Internal Status</th>
-                <th className="px-6 py-3">External Status</th>
-                <th className="px-6 py-3">Actions</th>
+                <th className="px-6 py-3">{copy.orderLinks.externalOrder}</th>
+                <th className="px-6 py-3">{copy.orderLinks.internalOrder}</th>
+                <th className="px-6 py-3">{copy.orderLinks.internalStatus}</th>
+                <th className="px-6 py-3">{copy.orderLinks.externalStatus}</th>
+                <th className="px-6 py-3">{copy.common.actions}</th>
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -1872,7 +1867,7 @@ export default function MarketplaceIntegrationManager({
                       {item.order_id.slice(0, 8)}
                     </td>
                     <td className="px-6 py-4 capitalize">
-                      {order?.status ?? "Unknown"}
+                      {order?.status ?? copy.common.unknown}
                     </td>
                     <td className="px-6 py-4">
                       {item.external_status ?? "—"}
@@ -1885,7 +1880,7 @@ export default function MarketplaceIntegrationManager({
                           onClick={() => setEditingOrderLinkId(item.id)}
                           disabled={isSubmitting}
                         >
-                          Edit
+                          {copy.common.edit}
                         </Button>
                         <Button
                           size="sm"
@@ -1893,7 +1888,7 @@ export default function MarketplaceIntegrationManager({
                           onClick={() => handleDeleteOrderLink(item)}
                           disabled={isSubmitting}
                         >
-                          Delete
+                          {copy.common.delete}
                         </Button>
                       </div>
                     </td>
@@ -1907,7 +1902,7 @@ export default function MarketplaceIntegrationManager({
 
       {editingOrderLink ? (
         <div className="rounded-2xl border bg-card p-6 shadow-sm">
-          <h2 className="text-lg font-semibold">Edit Order Link</h2>
+          <h2 className="text-lg font-semibold">{copy.orderLinks.editTitle}</h2>
 
           <form onSubmit={handleEditOrderLink} className="mt-5 space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
@@ -1919,18 +1914,18 @@ export default function MarketplaceIntegrationManager({
               <Input
                 name="external_status"
                 defaultValue={editingOrderLink.external_status ?? ""}
-                placeholder="External status"
+                placeholder={copy.orderLink.externalStatus}
               />
             </div>
 
             <div className="flex gap-3">
-              <Button type="submit">Save order link</Button>
+              <Button type="submit">{copy.orderLinks.save}</Button>
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setEditingOrderLinkId(null)}
               >
-                Cancel
+                {copy.common.cancel}
               </Button>
             </div>
           </form>
@@ -1939,27 +1934,27 @@ export default function MarketplaceIntegrationManager({
 
       <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
         <div className="border-b px-6 py-5">
-          <h2 className="text-lg font-semibold">Sync History</h2>
+          <h2 className="text-lg font-semibold">{copy.syncHistory.title}</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Append-only marketplace synchronization history.
+            {copy.syncHistory.description}
           </p>
         </div>
 
         {logs.length === 0 ? (
           <div className="px-6 py-12 text-center">
-            <p className="font-medium">Belum ada sync activity</p>
+            <p className="font-medium">{copy.syncHistory.empty}</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="border-b bg-muted/40 text-left">
                 <tr>
-                  <th className="px-6 py-3">Time</th>
-                  <th className="px-6 py-3">Direction</th>
-                  <th className="px-6 py-3">Entity</th>
-                  <th className="px-6 py-3">Operation</th>
-                  <th className="px-6 py-3">Status</th>
-                  <th className="px-6 py-3">Message</th>
+                  <th className="px-6 py-3">{copy.syncHistory.time}</th>
+                  <th className="px-6 py-3">{copy.syncHistory.direction}</th>
+                  <th className="px-6 py-3">{copy.syncHistory.entity}</th>
+                  <th className="px-6 py-3">{copy.syncHistory.operation}</th>
+                  <th className="px-6 py-3">{copy.common.status}</th>
+                  <th className="px-6 py-3">{copy.syncHistory.message}</th>
                 </tr>
               </thead>
               <tbody className="divide-y">

@@ -864,6 +864,308 @@ const dictionaries = {
             "? Listing, tautan pesanan, dan log sinkronisasi akun ini juga akan dihapus.",
         },
       },
+
+      detail: {
+        page: {
+          title: "Marketplace",
+          noOrganization:
+            "Organisasi aktif tidak ditemukan.",
+          backToMarketplaces:
+            "Kembali ke Marketplace",
+          provider: "Provider",
+          shop: "Toko",
+        },
+
+        manager: {
+          common: {
+            syncing: "Menyinkronkan...",
+            processing: "Memproses...",
+            status: "Status",
+            actions: "Aksi",
+            edit: "Edit",
+            delete: "Hapus",
+            cancel: "Batal",
+            enabled: "Aktif",
+            disabled: "Nonaktif",
+            unknown: "Tidak diketahui",
+            unknownProduct:
+              "Produk tidak diketahui",
+            unknownVariant:
+              "Varian tidak diketahui",
+            unknownTarget:
+              "Target tidak diketahui",
+            product: "Produk",
+            variant: "Varian",
+            active: "Aktif",
+            inactive: "Tidak Aktif",
+            error: "Error",
+          },
+
+          errors: {
+            generic:
+              "Operasi marketplace gagal. Silakan coba lagi.",
+            syncAuthorizedShops:
+              "Sinkronisasi toko terotorisasi gagal.",
+            syncProductCatalog:
+              "Sinkronisasi katalog produk gagal.",
+            syncExternalOrders:
+              "Sinkronisasi pesanan eksternal gagal.",
+            processWebhook:
+              "Rekonsiliasi webhook gagal.",
+            customerRequired:
+              "Pilih pelanggan internal sebelum membuat pesanan.",
+            invalidListingTarget:
+              "Target listing tidak valid.",
+            listingAlreadyMapped:
+              "Target atau listing eksternal tersebut sudah dipetakan.",
+            externalListingIdUsed:
+              "ID listing eksternal tersebut sudah digunakan.",
+            listingNotFound:
+              "Pemetaan listing tidak ditemukan.",
+            orderFieldsRequired:
+              "Pesanan internal dan ID Pesanan Eksternal wajib diisi.",
+            orderAlreadyLinked:
+              "Pesanan eksternal atau internal tersebut sudah terhubung.",
+            externalOrderIdRequired:
+              "ID Pesanan Eksternal wajib diisi.",
+            externalOrderIdUsed:
+              "ID Pesanan Eksternal tersebut sudah digunakan.",
+            orderLinkNotFound:
+              "Tautan pesanan tidak ditemukan.",
+          },
+
+          confirm: {
+            createPendingOrder:
+              "Buat pesanan internal berstatus pending dari pesanan eksternal",
+            approveOrder:
+              "Setujui pesanan internal",
+            status: "status",
+            basedOnMarketplaceStatus:
+              "berdasarkan status marketplace",
+            deleteMapping:
+              "Hapus pemetaan",
+            deleteOrderLink:
+              "Hapus tautan pesanan",
+          },
+
+          connector: {
+            title:
+              "Konektor Tokopedia & Shop",
+            description:
+              "Otorisasi penjual ditangani di sisi server. Token akses dan refresh marketplace dienkripsi sebelum disimpan.",
+            notConnected:
+              "belum terhubung",
+            accessTokenExpires:
+              "Token akses kedaluwarsa",
+            scopes: "scope",
+            activateFirst:
+              "Aktifkan akun marketplace ini sebelum menghubungkannya.",
+            reconnect:
+              "Hubungkan ulang Tokopedia & Shop",
+            connect:
+              "Hubungkan Tokopedia & Shop",
+          },
+
+          authorizedShops: {
+            title: "Toko Terotorisasi",
+            description:
+              "Ambil daftar toko yang diotorisasi oleh koneksi penjual ini. Cipher toko tetap terenkripsi dan hanya tersedia di server.",
+            syncAction:
+              "Sinkronkan toko terotorisasi",
+            connectFirst:
+              "Hubungkan akun penjual sebelum mengambil toko terotorisasi.",
+            empty:
+              "Belum ada toko terotorisasi yang disinkronkan.",
+            shop: "Toko",
+            region: "Wilayah",
+            sellerType: "Tipe penjual",
+            mapping: "Pemetaan",
+            selected: "Dipilih",
+            useShop: "Gunakan toko ini",
+            unavailable: "Tidak tersedia",
+          },
+
+          catalog: {
+            title:
+              "Katalog Produk Eksternal",
+            description:
+              "Katalog hanya-baca dari toko marketplace yang dipilih. Produk, varian, stok, dan pesanan internal tidak diubah.",
+            syncAction:
+              "Sinkronkan 100 produk pertama",
+            selectShopFirst:
+              "Pilih Toko Terotorisasi sebelum menyinkronkan produk.",
+            empty:
+              "Belum ada produk eksternal yang disinkronkan.",
+            product: "Produk",
+            skus: "SKU",
+            lastSeen: "Terakhir terlihat",
+            note:
+              "M3 sengaja menyinkronkan satu halaman, maksimal 100 produk. Pagination akan diaktifkan setelah validasi runtime Partner Center pertama agar latensi API dan batas fungsi dapat diukur.",
+          },
+
+          externalOrders: {
+            title: "Pesanan Eksternal",
+            description:
+              "Mirror operasional pesanan hanya-baca. Nama penerima pembeli, alamat, telepon, dan email sengaja tidak disimpan.",
+            syncAction:
+              "Sinkronkan pesanan terbaru",
+            selectShopFirst:
+              "Pilih Toko Terotorisasi sebelum menyinkronkan pesanan.",
+            empty:
+              "Belum ada pesanan eksternal yang disinkronkan.",
+            externalOrder:
+              "Pesanan Eksternal",
+            amount: "Jumlah",
+            items: "Item",
+            internalLink:
+              "Tautan Internal",
+            bridge: "Bridge",
+            updated: "Diperbarui",
+            notLinked:
+              "Belum ditautkan",
+            alreadyLinked:
+              "Sudah ditautkan",
+            mappingIncomplete:
+              "Pemetaan belum lengkap",
+            mapped: "dipetakan",
+            ambiguous: "ambigu",
+            addCustomerFirst:
+              "Tambahkan pelanggan internal terlebih dahulu",
+            selectCustomer:
+              "Pilih pelanggan",
+            createPendingOrder:
+              "Buat pesanan pending",
+            note:
+              "Pesanan eksternal tetap menjadi mirror hanya-baca. M7 hanya dapat membuat pesanan internal setelah setiap line item memiliki satu pemetaan Produk/Varian yang deterministik dan operator memilih pelanggan yang sudah ada. Pembuatan menggunakan RPC create_order yang dilindungi, sehingga pesanan internal baru tetap pending dan bridge ini tidak mengurangi stok.",
+          },
+
+          reconciliation: {
+            title:
+              "Rekonsiliasi Status Pesanan",
+            description:
+              "Perubahan status internal membutuhkan persetujuan manusia berdasarkan mirror pesanan marketplace yang telah direkonsiliasi. Setiap perubahan tetap menggunakan RPC update_order_status yang dilindungi.",
+            emptyTitle:
+              "Belum ada pesanan tertaut yang siap direkonsiliasi",
+            emptyDescription:
+              "Bridge pesanan eksternal ke pesanan internal terlebih dahulu.",
+            externalOrder:
+              "Pesanan Eksternal",
+            marketplace: "Marketplace",
+            internal: "Internal",
+            proposal: "Usulan",
+            reason: "Alasan",
+            action: "Aksi",
+            noAction:
+              "Tidak ada aksi",
+            approve: "Setujui",
+            noApproval:
+              "Tidak perlu persetujuan",
+            note:
+              "UNPAID dan ON_HOLD tidak memajukan status pesanan internal. Status fulfillment dapat memindahkan pending ke processing. DELIVERED tetap processing sampai marketplace COMPLETED. Pembatalan dapat memindahkan pending/processing ke cancelled. COMPLETED menggunakan dua langkah terkontrol jika pesanan internal masih pending.",
+          },
+
+          webhooks: {
+            title: "Event Webhook",
+            description:
+              "Penerimaan terautentikasi dan idempoten dengan rekonsiliasi hanya-baca yang terkontrol. Payload mentah dan PII penerima tidak disimpan.",
+            processAction:
+              "Proses antrean webhook",
+            emptyTitle:
+              "Belum ada event webhook yang diterima",
+            emptyDescription:
+              "Konfigurasikan URL webhook staging di Partner Center setelah kredensial aplikasi tersedia.",
+            received: "Diterima",
+            type: "Tipe",
+            entity: "Entitas",
+            externalStatus:
+              "Status Eksternal",
+            processing: "Pemrosesan",
+            attempts: "Percobaan",
+          },
+
+          listingMapping: {
+            title:
+              "Pemetaan Listing Produk",
+            description:
+              "Petakan Produk/Varian internal ke listing marketplace.",
+            selectTarget:
+              "Pilih Produk / Varian",
+            externalListingId:
+              "ID Listing Eksternal",
+            externalSku:
+              "SKU Eksternal",
+            syncEnabled:
+              "Sinkronisasi aktif",
+            add:
+              "Tambah pemetaan listing",
+          },
+
+          listings: {
+            title: "Listing",
+            countSuffix:
+              "pemetaan ditemukan.",
+            target: "Target",
+            externalId:
+              "ID Eksternal",
+            externalSku:
+              "SKU Eksternal",
+            sync: "Sinkronisasi",
+            editTitle:
+              "Edit Pemetaan Listing",
+            save: "Simpan listing",
+          },
+
+          orderLink: {
+            title:
+              "Tautan Pesanan Marketplace",
+            description:
+              "Hubungkan pesanan eksternal ke pesanan internal tanpa mengubah stok.",
+            selectInternalOrder:
+              "Pilih pesanan internal",
+            externalOrderId:
+              "ID Pesanan Eksternal",
+            externalStatusOptional:
+              "Status eksternal (opsional)",
+            externalStatus:
+              "Status eksternal",
+            link:
+              "Tautkan pesanan marketplace",
+          },
+
+          orderLinks: {
+            title:
+              "Tautan Pesanan",
+            countSuffix:
+              "tautan pesanan eksternal ditemukan.",
+            externalOrder:
+              "Pesanan Eksternal",
+            internalOrder:
+              "Pesanan Internal",
+            internalStatus:
+              "Status Internal",
+            externalStatus:
+              "Status Eksternal",
+            editTitle:
+              "Edit Tautan Pesanan",
+            save:
+              "Simpan tautan pesanan",
+          },
+
+          syncHistory: {
+            title:
+              "Riwayat Sinkronisasi",
+            description:
+              "Riwayat sinkronisasi marketplace bersifat append-only.",
+            empty:
+              "Belum ada aktivitas sinkronisasi",
+            time: "Waktu",
+            direction: "Arah",
+            entity: "Entitas",
+            operation: "Operasi",
+            message: "Pesan",
+          },
+        },
+      },
     },
     analytics: {
       title: "Analitik",
@@ -1799,6 +2101,307 @@ const dictionaries = {
           confirmPrefix: "Delete marketplace ",
           confirmSuffix:
             "? Listings, order links, and sync logs for this account will also be deleted.",
+        },
+      },
+
+      detail: {
+        page: {
+          title: "Marketplace",
+          noOrganization:
+            "No active organization found.",
+          backToMarketplaces:
+            "Back to Marketplaces",
+          provider: "Provider",
+          shop: "Shop",
+        },
+
+        manager: {
+          common: {
+            syncing: "Syncing...",
+            processing: "Processing...",
+            status: "Status",
+            actions: "Actions",
+            edit: "Edit",
+            delete: "Delete",
+            cancel: "Cancel",
+            enabled: "Enabled",
+            disabled: "Disabled",
+            unknown: "Unknown",
+            unknownProduct:
+              "Unknown product",
+            unknownVariant:
+              "Unknown variant",
+            unknownTarget:
+              "Unknown target",
+            product: "Product",
+            variant: "Variant",
+            active: "Active",
+            inactive: "Inactive",
+            error: "Error",
+          },
+
+          errors: {
+            generic:
+              "The marketplace operation failed. Please try again.",
+            syncAuthorizedShops:
+              "Authorized shop synchronization failed.",
+            syncProductCatalog:
+              "Product catalog synchronization failed.",
+            syncExternalOrders:
+              "External order synchronization failed.",
+            processWebhook:
+              "Webhook reconciliation failed.",
+            customerRequired:
+              "Select an internal customer before creating the order.",
+            invalidListingTarget:
+              "The listing target is invalid.",
+            listingAlreadyMapped:
+              "That target or external listing is already mapped.",
+            externalListingIdUsed:
+              "That external listing ID is already in use.",
+            listingNotFound:
+              "Listing mapping was not found.",
+            orderFieldsRequired:
+              "Internal order and External Order ID are required.",
+            orderAlreadyLinked:
+              "That external or internal order is already linked.",
+            externalOrderIdRequired:
+              "External Order ID is required.",
+            externalOrderIdUsed:
+              "That External Order ID is already in use.",
+            orderLinkNotFound:
+              "Order link was not found.",
+          },
+
+          confirm: {
+            createPendingOrder:
+              "Create an internal pending order from external order",
+            approveOrder:
+              "Approve internal order",
+            status: "status",
+            basedOnMarketplaceStatus:
+              "based on marketplace status",
+            deleteMapping:
+              "Delete mapping",
+            deleteOrderLink:
+              "Delete order link",
+          },
+
+          connector: {
+            title:
+              "Tokopedia & Shop Connector",
+            description:
+              "Seller authorization is handled server-side. Marketplace access and refresh tokens are encrypted before storage.",
+            notConnected:
+              "not connected",
+            accessTokenExpires:
+              "Access token expires",
+            scopes: "scope(s)",
+            activateFirst:
+              "Activate this marketplace account before connecting.",
+            reconnect:
+              "Reconnect Tokopedia & Shop",
+            connect:
+              "Connect Tokopedia & Shop",
+          },
+
+          authorizedShops: {
+            title: "Authorized Shops",
+            description:
+              "Retrieve the shops authorized by this seller connection. Shop cipher remains encrypted and server-only.",
+            syncAction:
+              "Sync authorized shops",
+            connectFirst:
+              "Connect the seller account before retrieving authorized shops.",
+            empty:
+              "No authorized shop has been synchronized yet.",
+            shop: "Shop",
+            region: "Region",
+            sellerType: "Seller type",
+            mapping: "Mapping",
+            selected: "Selected",
+            useShop: "Use this shop",
+            unavailable: "Unavailable",
+          },
+
+          catalog: {
+            title:
+              "External Product Catalog",
+            description:
+              "Read-only catalog from the selected marketplace shop. Internal products, variants, stock, and orders are not changed.",
+            syncAction:
+              "Sync first 100 products",
+            selectShopFirst:
+              "Select an Authorized Shop before syncing products.",
+            empty:
+              "No external product has been synchronized yet.",
+            product: "Product",
+            skus: "SKUs",
+            lastSeen: "Last seen",
+            note:
+              "M3 intentionally synchronizes one page, up to 100 products. Pagination will be enabled after the first real Partner Center runtime validation so API latency and function limits can be measured.",
+          },
+
+          externalOrders: {
+            title: "External Orders",
+            description:
+              "Read-only operational order mirror. Buyer recipient name, address, phone, and email are deliberately not persisted.",
+            syncAction:
+              "Sync recent orders",
+            selectShopFirst:
+              "Select an Authorized Shop before syncing orders.",
+            empty:
+              "No external order has been synchronized yet.",
+            externalOrder:
+              "External Order",
+            amount: "Amount",
+            items: "Items",
+            internalLink:
+              "Internal Link",
+            bridge: "Bridge",
+            updated: "Updated",
+            notLinked:
+              "Not linked",
+            alreadyLinked:
+              "Already linked",
+            mappingIncomplete:
+              "Mapping incomplete",
+            mapped: "mapped",
+            ambiguous: "ambiguous",
+            addCustomerFirst:
+              "Add an internal customer first",
+            selectCustomer:
+              "Select customer",
+            createPendingOrder:
+              "Create pending order",
+            note:
+              "External orders remain a read-only mirror. M7 can create an internal order only after every line item has one deterministic Product/Variant mapping and an operator explicitly selects an existing customer. Creation delegates to the protected create_order RPC, so the new internal order remains pending and no inventory is deducted by this bridge.",
+          },
+
+          reconciliation: {
+            title:
+              "Order Status Reconciliation",
+            description:
+              "Human-approved internal status transitions based on the reconciled marketplace order mirror. Every transition still delegates to the protected update_order_status RPC.",
+            emptyTitle:
+              "No linked order is ready for status reconciliation",
+            emptyDescription:
+              "Bridge an external order to an internal order first.",
+            externalOrder:
+              "External Order",
+            marketplace: "Marketplace",
+            internal: "Internal",
+            proposal: "Proposal",
+            reason: "Reason",
+            action: "Action",
+            noAction:
+              "No action",
+            approve: "Approve",
+            noApproval:
+              "No approval needed",
+            note:
+              "UNPAID and ON_HOLD do not advance the internal order. Fulfillment states can move pending to processing. DELIVERED stays processing until marketplace COMPLETED. Cancellation can move pending/processing to cancelled. COMPLETED uses two controlled steps when the internal order is still pending.",
+          },
+
+          webhooks: {
+            title: "Webhook Events",
+            description:
+              "Authenticated, idempotent intake with controlled read-only reconciliation. Raw payload and recipient PII are not persisted.",
+            processAction:
+              "Process webhook queue",
+            emptyTitle:
+              "No webhook event received yet",
+            emptyDescription:
+              "Configure the staging webhook URL in Partner Center after app credentials are available.",
+            received: "Received",
+            type: "Type",
+            entity: "Entity",
+            externalStatus:
+              "External Status",
+            processing: "Processing",
+            attempts: "Attempts",
+          },
+
+          listingMapping: {
+            title:
+              "Product Listing Mapping",
+            description:
+              "Map internal Product/Variant to the marketplace listing.",
+            selectTarget:
+              "Select Product / Variant",
+            externalListingId:
+              "External Listing ID",
+            externalSku:
+              "External SKU",
+            syncEnabled:
+              "Sync enabled",
+            add:
+              "Add listing mapping",
+          },
+
+          listings: {
+            title: "Listings",
+            countSuffix:
+              "mappings found.",
+            target: "Target",
+            externalId:
+              "External ID",
+            externalSku:
+              "External SKU",
+            sync: "Sync",
+            editTitle:
+              "Edit Listing Mapping",
+            save: "Save listing",
+          },
+
+          orderLink: {
+            title:
+              "Marketplace Order Link",
+            description:
+              "Link an external order to an internal order without changing stock.",
+            selectInternalOrder:
+              "Select internal order",
+            externalOrderId:
+              "External Order ID",
+            externalStatusOptional:
+              "External status (optional)",
+            externalStatus:
+              "External status",
+            link:
+              "Link marketplace order",
+          },
+
+          orderLinks: {
+            title: "Order Links",
+            countSuffix:
+              "external order links found.",
+            externalOrder:
+              "External Order",
+            internalOrder:
+              "Internal Order",
+            internalStatus:
+              "Internal Status",
+            externalStatus:
+              "External Status",
+            editTitle:
+              "Edit Order Link",
+            save:
+              "Save order link",
+          },
+
+          syncHistory: {
+            title:
+              "Sync History",
+            description:
+              "Append-only marketplace synchronization history.",
+            empty:
+              "No sync activity yet",
+            time: "Time",
+            direction: "Direction",
+            entity: "Entity",
+            operation: "Operation",
+            message: "Message",
+          },
         },
       },
     },
