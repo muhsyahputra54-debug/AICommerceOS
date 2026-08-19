@@ -31,6 +31,7 @@ const dictionaries = {
 
       items: {
         dashboard: "Dasbor",
+        lakuvoAi: "LAKUVO AI",
         aiAssistant: "Asisten AI",
         aiAgents: "Agen AI",
         products: "Produk",
@@ -2023,6 +2024,7 @@ const dictionaries = {
 
       items: {
         dashboard: "Dashboard",
+        lakuvoAi: "LAKUVO AI",
         aiAssistant: "AI Assistant",
         aiAgents: "AI Agents",
         products: "Products",

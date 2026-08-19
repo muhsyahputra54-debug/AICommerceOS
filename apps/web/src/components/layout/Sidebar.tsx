@@ -44,14 +44,19 @@ const mainMenus = [
     href: "/",
   },
   {
-    key: "aiAssistant",
+    key: "lakuvoAi",
     icon: Bot,
     href: "/ai",
-  },
-  {
-    key: "aiAgents",
-    icon: Sparkles,
-    href: "/agents",
+    children: [
+      {
+        key: "aiAssistant",
+        href: "/ai",
+      },
+      {
+        key: "aiAgents",
+        href: "/agents",
+      },
+    ],
   },
   {
     key: "products",
@@ -122,7 +127,15 @@ export default function Sidebar() {
     const isActive =
       item.href === "/"
         ? pathname === "/"
-        : pathname.startsWith(item.href);
+        : item.children?.length
+          ? item.children.some(
+              (child) =>
+                pathname === child.href ||
+                pathname.startsWith(
+                  `${child.href}/`,
+                ),
+            )
+          : pathname.startsWith(item.href);
 
     if (item.children?.length) {
       return (
@@ -148,8 +161,8 @@ export default function Sidebar() {
           <div className="ml-5 space-y-1 border-l border-sidebar-border pl-3">
             {item.children.map((child) => {
               const childActive =
-                child.href === "/analytics"
-                  ? pathname === "/analytics"
+                child.href === item.href
+                  ? pathname === child.href
                   : pathname === child.href ||
                     pathname.startsWith(
                       `${child.href}/`,

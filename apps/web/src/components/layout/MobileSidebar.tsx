@@ -51,14 +51,19 @@ const menus = [
     href: "/",
   },
   {
-    key: "aiAssistant",
+    key: "lakuvoAi",
     icon: Bot,
     href: "/ai",
-  },
-  {
-    key: "aiAgents",
-    icon: Sparkles,
-    href: "/agents",
+    children: [
+      {
+        key: "aiAssistant",
+        href: "/ai",
+      },
+      {
+        key: "aiAgents",
+        href: "/agents",
+      },
+    ],
   },
   {
     key: "products",
@@ -177,9 +182,18 @@ export default function MobileSidebar({
             const isActive =
               item.href === "/"
                 ? pathname === "/"
-                : pathname.startsWith(
-                    item.href,
-                  );
+                : item.children?.length
+                  ? item.children.some(
+                      (child) =>
+                        pathname ===
+                          child.href ||
+                        pathname.startsWith(
+                          `${child.href}/`,
+                        ),
+                    )
+                  : pathname.startsWith(
+                      item.href,
+                    );
 
             if (item.children?.length) {
               return (
@@ -212,9 +226,9 @@ export default function MobileSidebar({
                       (child) => {
                         const childActive =
                           child.href ===
-                          "/analytics"
+                          item.href
                             ? pathname ===
-                              "/analytics"
+                              child.href
                             : pathname ===
                                 child.href ||
                               pathname.startsWith(
