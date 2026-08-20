@@ -30,6 +30,21 @@ function agent(
   };
 }
 
+function delegationOption() {
+  const option =
+    projectAssistantAgentDelegationOption(
+      agent(),
+    );
+
+  if (!option) {
+    throw new Error(
+      "Expected safe Agent delegation option.",
+    );
+  }
+
+  return option;
+}
+
 describe(
   "Assistant explicit Agent delegation",
   () => {
@@ -103,7 +118,7 @@ describe(
               " Review inventory risk. ",
 
             availableAgents: [
-              agent(),
+              delegationOption(),
             ],
           }),
         ).toEqual({
@@ -136,7 +151,7 @@ describe(
               "Review inventory.",
 
             availableAgents: [
-              agent(),
+              delegationOption(),
             ],
           }),
         ).toEqual({
@@ -158,7 +173,7 @@ describe(
               "Review inventory.",
 
             availableAgents: [
-              agent(),
+              delegationOption(),
             ],
           }),
         ).toEqual({
@@ -177,7 +192,7 @@ describe(
             objective: "   ",
 
             availableAgents: [
-              agent(),
+              delegationOption(),
             ],
           }),
         ).toEqual({
@@ -201,7 +216,7 @@ describe(
               ),
 
             availableAgents: [
-              agent(),
+              delegationOption(),
             ],
           }),
         ).toEqual({

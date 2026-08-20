@@ -157,7 +157,7 @@ export function buildAssistantAgentDelegationRequest({
 }: {
   agentId: unknown;
   objective: unknown;
-  availableAgents: readonly unknown[];
+  availableAgents: readonly AssistantAgentDelegationOption[];
 }): AssistantAgentDelegationRequest {
   const resolvedAgentId =
     normalizedAgentId(
@@ -172,15 +172,11 @@ export function buildAssistantAgentDelegationRequest({
   }
 
   const selected =
-    availableAgents
-      .map(
-        projectAssistantAgentDelegationOption,
-      )
-      .find(
-        (agent) =>
-          agent?.id ===
-          resolvedAgentId,
-      );
+    availableAgents.find(
+      (agent) =>
+        agent.id ===
+        resolvedAgentId,
+    );
 
   if (!selected) {
     return {
