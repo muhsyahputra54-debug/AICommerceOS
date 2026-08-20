@@ -330,6 +330,8 @@ const dictionaries = {
             "Risiko",
           nextActions:
             "Tindakan Berikutnya",
+          openInAssistant:
+            "Buka di Asisten",
           error:
             "Error",
         },
@@ -2508,6 +2510,8 @@ const dictionaries = {
             "Risks",
           nextActions:
             "Next Actions",
+          openInAssistant:
+            "Open in Assistant",
           error:
             "Error",
         },

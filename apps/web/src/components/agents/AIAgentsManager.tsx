@@ -8,6 +8,10 @@ import {
 
 import { useRouter } from "next/navigation";
 
+import {
+  buildAssistantAgentHandoffUrl,
+} from "@/lib/ai/assistant-agent-handoff";
+
 import { useLanguage } from "@/components/i18n/LanguageProvider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -109,6 +113,23 @@ export default function AIAgentsManager({
   steps,
 }: Props) {
   const router = useRouter();
+
+  function openLatestRunInAssistant(
+    agentId: string,
+    runId: string,
+  ) {
+    const href =
+      buildAssistantAgentHandoffUrl({
+        agentId,
+        runId,
+      });
+
+    if (!href) {
+      return;
+    }
+
+    router.push(href);
+  }
   const { locale } = useLanguage();
   const copy = getDictionary(locale).agents.manager;
   const localeTag =
@@ -696,6 +717,22 @@ export default function AIAgentsManager({
                       </div>
                     ) : null}
 
+                    {latest.status === "completed" ? (
+                      <div className="pt-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() =>
+                            openLatestRunInAssistant(
+                              agent.id,
+                              latest.id,
+                            )
+                          }
+                        >
+                          {copy.latest.openInAssistant}
+                        </Button>
+                      </div>
+                    ) : null}
                     {latest.error_message ? (
                       <p className="text-sm text-muted-foreground">
                         {copy.latest.error}:{" "}

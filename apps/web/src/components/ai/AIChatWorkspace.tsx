@@ -40,6 +40,11 @@ import {
   type ProactiveInsightCode,
   type ProactiveInsightsResponse,
 } from "@/lib/ai/proactive-insight-client";
+import {
+  parseAssistantAgentHandoff,
+  stripAssistantAgentHandoffFromUrl,
+  type AssistantAgentHandoff,
+} from "@/lib/ai/assistant-agent-handoff";
 type ChatMessage = {
   role: "user" | "assistant";
   content: string;
@@ -224,6 +229,18 @@ const MAX_CONTEXT_MESSAGES = 20;
 export default function AIChatWorkspace({
   copy,
 }: AIChatWorkspaceProps) {
+  const [
+    agentAdvisoryHandoff,
+    setAgentAdvisoryHandoff,
+  ] = useState<AssistantAgentHandoff | null>(
+    () =>
+      typeof window === "undefined"
+        ? null
+        : parseAssistantAgentHandoff(
+            window.location.search,
+          ),
+  );
+
   const [messages, setMessages] =
     useState<ChatMessage[]>([]);
 
@@ -745,6 +762,13 @@ export default function AIChatWorkspace({
                     proactiveInsightCode,
                   }
                 : {}),
+
+              ...(agentAdvisoryHandoff
+                ? {
+                    agentAdvisory:
+                      agentAdvisoryHandoff,
+                  }
+                : {}),
             }),
           },
         );
@@ -777,6 +801,20 @@ export default function AIChatWorkspace({
         );
 
         return;
+      }
+
+      if (agentAdvisoryHandoff) {
+        setAgentAdvisoryHandoff(
+          null,
+        );
+
+        window.history.replaceState(
+          window.history.state,
+          "",
+          stripAssistantAgentHandoffFromUrl(
+            window.location.href,
+          ),
+        );
       }
 
       setMessages((current) => [
