@@ -13,6 +13,9 @@ type LatestObservation = {
   observed_at: string;
 };
 
+const MAX_ACTIVE_PRICE_TARGETS =
+  30;
+
 async function getRequestContext() {
   const supabase =
     await createClient();
@@ -88,6 +91,7 @@ export async function GET() {
     nonpositiveStockCountResult,
     nonpositivePriceCountResult,
     ordersCountResult,
+    activeTargetsCountResult,
     activeTargetsResult,
   ] =
     await Promise.all([
@@ -161,6 +165,10 @@ export async function GET() {
         )
         .select(
           "id",
+          {
+            count: "exact",
+            head: true,
+          },
         )
         .eq(
           "organization_id",
@@ -170,6 +178,31 @@ export async function GET() {
           "is_active",
           true,
         ),
+
+      supabase
+        .from(
+          "price_monitor_targets",
+        )
+        .select(
+          "id",
+        )
+        .eq(
+          "organization_id",
+          organizationId,
+        )
+        .eq(
+          "is_active",
+          true,
+        )
+        .order(
+          "id",
+          {
+            ascending: true,
+          },
+        )
+        .limit(
+          MAX_ACTIVE_PRICE_TARGETS,
+        ),
     ]);
 
   const contextError =
@@ -177,6 +210,7 @@ export async function GET() {
     nonpositiveStockCountResult.error ??
     nonpositivePriceCountResult.error ??
     ordersCountResult.error ??
+    activeTargetsCountResult.error ??
     activeTargetsResult.error;
 
   if (contextError) {
@@ -220,6 +254,14 @@ export async function GET() {
             "string" &&
           id.length > 0,
       );
+
+  const activeTargetCount =
+    activeTargetsCountResult.count ??
+    activeTargetIds.length;
+
+  const activeTargetCoverageTruncated =
+    activeTargetCount >
+    activeTargetIds.length;
 
   let latestObservations:
     LatestObservation[] = [];
@@ -374,7 +416,7 @@ export async function GET() {
 
       priceMonitoring: {
         activeTargetCount:
-          activeTargetIds.length,
+          activeTargetCount,
 
         observationCount:
           latestObservations.length,
@@ -391,15 +433,37 @@ export async function GET() {
       },
     };
 
-  const insights =
+  const generatedInsights =
     buildProactiveInsights(
       snapshot,
     );
+
+  const insights =
+    activeTargetCoverageTruncated
+      ? generatedInsights.filter(
+          (insight) =>
+            insight.code !==
+            "price_monitoring_no_observations",
+        )
+      : generatedInsights;
 
   return NextResponse.json({
     generatedAt:
       new Date().toISOString(),
 
     insights,
+
+    coverage: {
+      priceMonitoring: {
+        activeTargetCount:
+          activeTargetCount,
+
+        evaluatedTargetCount:
+          activeTargetIds.length,
+
+        truncated:
+          activeTargetCoverageTruncated,
+      },
+    },
   });
 }
