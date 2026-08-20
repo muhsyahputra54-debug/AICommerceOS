@@ -100,6 +100,17 @@ const dictionaries = {
         memoryError:
           "Memory AI belum dapat dimuat. Coba lagi sebentar lagi.",
 
+        memorySuggestionTitle:
+          "Simpan ini untuk percakapan berikutnya?",
+        memorySuggestionRemember:
+          "Ingat ini",
+        memorySuggestionSkip:
+          "Lewati",
+        memorySuggestionSaving:
+          "Menyimpan...",
+        memorySuggestionError:
+          "Belum bisa menyimpan memory ini. Coba lagi sebentar lagi.",
+
         memoryTypePreference:
           "Preferensi",
         memoryTypeGoal:
@@ -2168,6 +2179,17 @@ const dictionaries = {
           "Forget this memory permanently? This action cannot be undone.",
         memoryError:
           "AI memory could not be loaded. Please try again in a moment.",
+
+        memorySuggestionTitle:
+          "Save this for future conversations?",
+        memorySuggestionRemember:
+          "Remember this",
+        memorySuggestionSkip:
+          "Skip",
+        memorySuggestionSaving:
+          "Saving...",
+        memorySuggestionError:
+          "This memory could not be saved. Please try again in a moment.",
 
         memoryTypePreference:
           "Preference",

@@ -62,6 +62,17 @@ export default async function AIAssistantPage() {
             memoryError:
               copy.chat.memoryError,
 
+            memorySuggestionTitle:
+              copy.chat.memorySuggestionTitle,
+            memorySuggestionRemember:
+              copy.chat.memorySuggestionRemember,
+            memorySuggestionSkip:
+              copy.chat.memorySuggestionSkip,
+            memorySuggestionSaving:
+              copy.chat.memorySuggestionSaving,
+            memorySuggestionError:
+              copy.chat.memorySuggestionError,
+
             memoryTypePreference:
               copy.chat.memoryTypePreference,
             memoryTypeGoal:

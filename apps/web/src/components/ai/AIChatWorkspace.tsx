@@ -49,6 +49,12 @@ type AIChatWorkspaceCopy = {
   memoryDeleteConfirm: string;
   memoryError: string;
 
+  memorySuggestionTitle: string;
+  memorySuggestionRemember: string;
+  memorySuggestionSkip: string;
+  memorySuggestionSaving: string;
+  memorySuggestionError: string;
+
   memoryTypePreference: string;
   memoryTypeGoal: string;
   memoryTypeConstraint: string;
@@ -134,8 +140,268 @@ type MemoryMutationResponse = {
   error?: string;
 };
 
+type MemorySuggestionType =
+  | "preference"
+  | "goal"
+  | "constraint"
+  | "business_context";
+
+type MemorySuggestionCandidate = {
+  memoryType: MemorySuggestionType;
+  memoryKey: string;
+  content: string;
+};
+
+type PendingMemorySuggestion =
+  MemorySuggestionCandidate & {
+    sourceConversationId: string;
+  };
+
 const MAX_MESSAGE_LENGTH = 4000;
 const MAX_CONTEXT_MESSAGES = 20;
+
+const EXPLICIT_MEMORY_COMMAND_PATTERN =
+  /^(?:tolong\s+ingat\b|ingat\s+(?:bahwa|ini)\b|please\s+remember\b|remember\s+(?:that|this)\b|tolong\s+lupakan\b|lupakan\b|please\s+forget\b|forget\b)/i;
+
+const TRANSIENT_MEMORY_PATTERN =
+  /\b(?:untuk\s+jawaban\s+ini\s+saja|kali\s+ini\s+saja|untuk\s+sekarang|sementara\s+saja|for\s+this\s+answer\s+only|just\s+this\s+time|for\s+now)\b/i;
+
+const MEMORY_SUGGESTION_PATTERNS: Array<{
+  memoryType: MemorySuggestionType;
+  pattern: RegExp;
+}> = [
+  {
+    memoryType:
+      "preference",
+    pattern:
+      /\bsaya\s+lebih\s+suka\s+[^,.!?\n]{3,300}/i,
+  },
+  {
+    memoryType:
+      "preference",
+    pattern:
+      /\bsaya\s+suka\s+jawaban\s+[^,.!?\n]{3,300}/i,
+  },
+  {
+    memoryType:
+      "preference",
+    pattern:
+      /\bi\s+prefer\s+[^,.!?\n]{3,300}/i,
+  },
+  {
+    memoryType:
+      "preference",
+    pattern:
+      /\bi\s+like\s+(?:answers|responses)\s+[^,.!?\n]{3,300}/i,
+  },
+
+  {
+    memoryType:
+      "goal",
+    pattern:
+      /\b(?:target|tujuan)\s+saya\s+(?:(?:adalah|ialah)\s+)?[^,.!?\n]{3,300}/i,
+  },
+  {
+    memoryType:
+      "goal",
+    pattern:
+      /\bsaya\s+ingin\s+mencapai\s+[^,.!?\n]{3,300}/i,
+  },
+  {
+    memoryType:
+      "goal",
+    pattern:
+      /\bmy\s+(?:goal|target)\s+is\s+[^,.!?\n]{3,300}/i,
+  },
+  {
+    memoryType:
+      "goal",
+    pattern:
+      /\bi\s+want\s+to\s+achieve\s+[^,.!?\n]{3,300}/i,
+  },
+
+  {
+    memoryType:
+      "constraint",
+    pattern:
+      /\bbatasan\s+saya\s+(?:(?:adalah|ialah)\s+)?[^,.!?\n]{3,300}/i,
+  },
+  {
+    memoryType:
+      "constraint",
+    pattern:
+      /\bsaya\s+hanya\s+bisa\s+[^,.!?\n]{3,300}/i,
+  },
+  {
+    memoryType:
+      "constraint",
+    pattern:
+      /\bmy\s+constraint\s+is\s+[^,.!?\n]{3,300}/i,
+  },
+  {
+    memoryType:
+      "constraint",
+    pattern:
+      /\bi\s+can\s+only\s+[^,.!?\n]{3,300}/i,
+  },
+
+  {
+    memoryType:
+      "business_context",
+    pattern:
+      /\b(?:bisnis|usaha)\s+saya\s+bergerak\s+di\s+[^,.!?\n]{3,300}/i,
+  },
+  {
+    memoryType:
+      "business_context",
+    pattern:
+      /\bkami\s+menjual\s+[^,.!?\n]{3,300}/i,
+  },
+  {
+    memoryType:
+      "business_context",
+    pattern:
+      /\bmy\s+business\s+(?:is\s+in|operates\s+in)\s+[^,.!?\n]{3,300}/i,
+  },
+  {
+    memoryType:
+      "business_context",
+    pattern:
+      /\bwe\s+sell\s+[^,.!?\n]{3,300}/i,
+  },
+];
+
+function cleanMemorySuggestionContent(
+  value: string,
+) {
+  return value
+    .replace(
+      /\s+/g,
+      " ",
+    )
+    .replace(
+      /[,.!?]+$/,
+      "",
+    )
+    .trim();
+}
+
+function buildMemorySuggestionKey(
+  memoryType: MemorySuggestionType,
+  content: string,
+) {
+  let hash =
+    2166136261;
+
+  for (
+    let index = 0;
+    index < content.length;
+    index += 1
+  ) {
+    hash ^=
+      content.charCodeAt(
+        index,
+      );
+
+    hash =
+      Math.imul(
+        hash,
+        16777619,
+      );
+  }
+
+  const slug =
+    content
+      .toLowerCase()
+      .replace(
+        /[^a-z0-9]+/g,
+        "-",
+      )
+      .replace(
+        /^-+|-+$/g,
+        "",
+      )
+      .slice(
+        0,
+        64,
+      ) ||
+    "memory";
+
+  return [
+    "confirmed",
+    memoryType,
+    slug,
+    (
+      hash >>> 0
+    ).toString(36),
+  ]
+    .join("-")
+    .slice(
+      0,
+      120,
+    );
+}
+
+function detectMemorySuggestion(
+  rawContent: string,
+): MemorySuggestionCandidate | null {
+  const content =
+    rawContent.trim();
+
+  if (
+    !content ||
+    content.length > 2000 ||
+    EXPLICIT_MEMORY_COMMAND_PATTERN.test(
+      content,
+    ) ||
+    TRANSIENT_MEMORY_PATTERN.test(
+      content,
+    )
+  ) {
+    return null;
+  }
+
+  for (
+    const candidatePattern
+    of MEMORY_SUGGESTION_PATTERNS
+  ) {
+    const match =
+      content.match(
+        candidatePattern.pattern,
+      );
+
+    if (!match?.[0]) {
+      continue;
+    }
+
+    const candidateContent =
+      cleanMemorySuggestionContent(
+        match[0],
+      );
+
+    if (
+      candidateContent.length < 8
+    ) {
+      continue;
+    }
+
+    return {
+      memoryType:
+        candidatePattern.memoryType,
+
+      memoryKey:
+        buildMemorySuggestionKey(
+          candidatePattern.memoryType,
+          candidateContent,
+        ),
+
+      content:
+        candidateContent,
+    };
+  }
+
+  return null;
+}
 
 export default function AIChatWorkspace({
   copy,
@@ -185,6 +451,26 @@ export default function AIChatWorkspace({
   const [
     memoryActionId,
     setMemoryActionId,
+  ] =
+    useState<string | null>(null);
+
+  const [
+    pendingMemorySuggestion,
+    setPendingMemorySuggestion,
+  ] =
+    useState<PendingMemorySuggestion | null>(
+      null,
+    );
+
+  const [
+    isMemorySuggestionSaving,
+    setIsMemorySuggestionSaving,
+  ] =
+    useState(false);
+
+  const [
+    memorySuggestionError,
+    setMemorySuggestionError,
   ] =
     useState<string | null>(null);
 
@@ -364,6 +650,19 @@ export default function AIChatWorkspace({
       return;
     }
 
+    const memorySuggestionCandidate =
+      detectMemorySuggestion(
+        content,
+      );
+
+    setPendingMemorySuggestion(
+      null,
+    );
+
+    setMemorySuggestionError(
+      null,
+    );
+
     setErrorMessage(null);
     setIsLoading(true);
 
@@ -504,6 +803,17 @@ export default function AIChatWorkspace({
             data.message!.trim(),
         },
       ]);
+
+      if (
+        memorySuggestionCandidate &&
+        activeConversationId
+      ) {
+        setPendingMemorySuggestion({
+          ...memorySuggestionCandidate,
+          sourceConversationId:
+            activeConversationId,
+        });
+      }
     } catch {
       setErrorMessage(
         copy.errorFallback,
@@ -545,6 +855,14 @@ export default function AIChatWorkspace({
 
     const activeConversationId =
       conversationId;
+
+    setPendingMemorySuggestion(
+      null,
+    );
+
+    setMemorySuggestionError(
+      null,
+    );
 
     if (!activeConversationId) {
       setMessages([]);
@@ -593,6 +911,133 @@ export default function AIChatWorkspace({
         false,
       );
     }
+  }
+
+  async function confirmMemorySuggestion() {
+    const suggestion =
+      pendingMemorySuggestion;
+
+    if (
+      !suggestion ||
+      isMemorySuggestionSaving
+    ) {
+      return;
+    }
+
+    setIsMemorySuggestionSaving(
+      true,
+    );
+
+    setMemorySuggestionError(
+      null,
+    );
+
+    try {
+      const response =
+        await fetch(
+          "/api/ai/memories",
+          {
+            method: "POST",
+
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
+
+            body: JSON.stringify({
+              memoryType:
+                suggestion.memoryType,
+
+              memoryKey:
+                suggestion.memoryKey,
+
+              content:
+                suggestion.content,
+
+              sourceKind:
+                "user_confirmed",
+
+              sourceConversationId:
+                suggestion.sourceConversationId,
+            }),
+          },
+        );
+
+      const data =
+        (await response
+          .json()
+          .catch(
+            () => ({}),
+          )) as MemoryMutationResponse;
+
+      if (
+        response.status ===
+        409
+      ) {
+        setPendingMemorySuggestion(
+          null,
+        );
+
+        if (
+          isMemoryPanelOpen
+        ) {
+          await loadMemories();
+        }
+
+        return;
+      }
+
+      if (
+        !response.ok ||
+        !data.memory
+      ) {
+        setMemorySuggestionError(
+          data.error?.trim() ||
+            copy.memorySuggestionError,
+        );
+
+        return;
+      }
+
+      setMemories(
+        (current) => [
+          data.memory!,
+          ...current.filter(
+            (memory) =>
+              memory.id !==
+              data.memory!.id,
+          ),
+        ],
+      );
+
+      setPendingMemorySuggestion(
+        null,
+      );
+    } catch {
+      setMemorySuggestionError(
+        copy.memorySuggestionError,
+      );
+    } finally {
+      setIsMemorySuggestionSaving(
+        false,
+      );
+    }
+  }
+
+  function skipMemorySuggestion() {
+    if (
+      isMemorySuggestionSaving
+    ) {
+      return;
+    }
+
+    setPendingMemorySuggestion(
+      null,
+    );
+
+    setMemorySuggestionError(
+      null,
+    );
   }
 
   function getMemoryTypeLabel(
@@ -1122,6 +1567,80 @@ export default function AIChatWorkspace({
                 );
               },
             )}
+
+            {pendingMemorySuggestion ? (
+              <div className="flex justify-start">
+                <div className="ml-11 w-full max-w-[620px] rounded-xl border bg-background p-4 shadow-sm">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                      <Brain className="h-4 w-4 text-primary" />
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold">
+                        {copy.memorySuggestionTitle}
+                      </p>
+
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
+                          {getMemoryTypeLabel(
+                            pendingMemorySuggestion.memoryType,
+                          )}
+                        </span>
+                      </div>
+
+                      <p className="mt-3 text-sm leading-6">
+                        {
+                          pendingMemorySuggestion.content
+                        }
+                      </p>
+
+                      {memorySuggestionError ? (
+                        <p className="mt-3 text-sm text-destructive">
+                          {memorySuggestionError}
+                        </p>
+                      ) : null}
+
+                      <div className="mt-4 flex flex-wrap items-center gap-2">
+                        <button
+                          type="button"
+                          disabled={
+                            isMemorySuggestionSaving
+                          }
+                          onClick={() => {
+                            void confirmMemorySuggestion();
+                          }}
+                          className="inline-flex h-9 items-center gap-2 rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {isMemorySuggestionSaving ? (
+                            <LoaderCircle className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Brain className="h-4 w-4" />
+                          )}
+
+                          {isMemorySuggestionSaving
+                            ? copy.memorySuggestionSaving
+                            : copy.memorySuggestionRemember}
+                        </button>
+
+                        <button
+                          type="button"
+                          disabled={
+                            isMemorySuggestionSaving
+                          }
+                          onClick={
+                            skipMemorySuggestion
+                          }
+                          className="inline-flex h-9 items-center rounded-lg border px-3 text-sm font-medium transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {copy.memorySuggestionSkip}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : null}
 
             {isLoading ? (
               <div className="flex justify-start">
