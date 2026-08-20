@@ -27,6 +27,10 @@ import {
 } from "@/lib/ai/sales-intelligence-context";
 
 import {
+  buildProductInventoryIntelligenceContext,
+} from "@/lib/ai/product-inventory-intelligence-context";
+
+import {
   buildBusinessProfileContext,
   type BusinessProfileContextRow,
 } from "@/lib/ai/business-profile-context";
@@ -1166,6 +1170,15 @@ export async function POST(
       },
     );
 
+  const productPerformanceResult =
+    await supabase.rpc(
+      "get_product_performance",
+      {
+        p_organization_id:
+          currentOrganization.organizationId,
+        p_product_id: null,
+      },
+    );
   const baseBusinessContext =
     buildBusinessContext({
       generatedAt:
@@ -1206,6 +1219,19 @@ export async function POST(
           commerceAnalyticsResult.error
             ? null
             : commerceAnalyticsResult.data,
+      }),
+
+    product_inventory_intelligence:
+      buildProductInventoryIntelligenceContext({
+        analytics:
+          commerceAnalyticsResult.error
+            ? null
+            : commerceAnalyticsResult.data,
+
+        productPerformance:
+          productPerformanceResult.error
+            ? null
+            : productPerformanceResult.data,
       }),
   };
   const businessProfileResult =
