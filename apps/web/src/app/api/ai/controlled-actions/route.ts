@@ -1,0 +1,150 @@
+import { NextResponse } from "next/server";
+
+import {
+  extractControlledActionId,
+  parseControlledActionProposalInput,
+} from "@/lib/ai/controlled-action-api";
+import {
+  controlledActionRpcErrorResponse,
+  getControlledActionRequestContext,
+  readControlledAction,
+} from "@/lib/ai/controlled-action-server";
+
+export async function POST(
+  request: Request,
+) {
+  const context =
+    await getControlledActionRequestContext();
+
+  if ("error" in context) {
+    return context.error;
+  }
+
+  const {
+    supabase,
+    user,
+    organizationId,
+  } = context;
+
+  const rawBody =
+    await request
+      .json()
+      .catch(
+        () => null,
+      );
+
+  const parsed =
+    parseControlledActionProposalInput(
+      rawBody,
+    );
+
+  if (!parsed.ok) {
+    return NextResponse.json(
+      {
+        error:
+          parsed.error,
+      },
+      {
+        status: 400,
+      },
+    );
+  }
+
+  const {
+    productId,
+    expectedDescription,
+    proposedDescription,
+    idempotencyKey,
+  } = parsed.value;
+
+  const {
+    data,
+    error,
+  } =
+    await supabase.rpc(
+      "propose_ai_controlled_product_description_action",
+      {
+        p_organization_id:
+          organizationId,
+
+        p_product_id:
+          productId,
+
+        p_expected_description:
+          expectedDescription,
+
+        p_proposed_description:
+          proposedDescription,
+
+        p_idempotency_key:
+          idempotencyKey,
+      },
+    );
+
+  if (error) {
+    console.error(
+      "Failed to propose controlled AI action.",
+      {
+        organizationId,
+        userId:
+          user.id,
+        productId,
+        error,
+      },
+    );
+
+    return controlledActionRpcErrorResponse(
+      error.message,
+    );
+  }
+
+  const actionId =
+    extractControlledActionId(
+      data,
+    );
+
+  if (!actionId) {
+    return NextResponse.json(
+      {
+        error:
+          "Controlled action proposal response tidak valid.",
+      },
+      {
+        status: 502,
+      },
+    );
+  }
+
+  const loaded =
+    await readControlledAction(
+      supabase,
+      organizationId,
+      actionId,
+    );
+
+  if ("error" in loaded) {
+    return loaded.error;
+  }
+
+  if ("notFound" in loaded) {
+    return NextResponse.json(
+      {
+        error:
+          "Controlled action yang baru dibuat tidak dapat dimuat.",
+      },
+      {
+        status: 502,
+      },
+    );
+  }
+
+  return NextResponse.json(
+    {
+      action:
+        loaded.action,
+    },
+    {
+      status: 201,
+    },
+  );
+}
