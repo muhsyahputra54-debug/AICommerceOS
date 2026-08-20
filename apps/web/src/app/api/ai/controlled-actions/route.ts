@@ -52,34 +52,56 @@ export async function POST(
 
   const {
     productId,
-    expectedDescription,
-    proposedDescription,
     idempotencyKey,
   } = parsed.value;
+
+  const proposalResult =
+    parsed.value.actionType ===
+    "product.update_name"
+      ? await supabase.rpc(
+          "propose_ai_controlled_product_name_action",
+          {
+            p_organization_id:
+              organizationId,
+
+            p_product_id:
+              productId,
+
+            p_expected_name:
+              parsed.value.expectedName,
+
+            p_proposed_name:
+              parsed.value.proposedName,
+
+            p_idempotency_key:
+              idempotencyKey,
+          },
+        )
+      : await supabase.rpc(
+          "propose_ai_controlled_product_description_action",
+          {
+            p_organization_id:
+              organizationId,
+
+            p_product_id:
+              productId,
+
+            p_expected_description:
+              parsed.value.expectedDescription,
+
+            p_proposed_description:
+              parsed.value.proposedDescription,
+
+            p_idempotency_key:
+              idempotencyKey,
+          },
+        );
 
   const {
     data,
     error,
   } =
-    await supabase.rpc(
-      "propose_ai_controlled_product_description_action",
-      {
-        p_organization_id:
-          organizationId,
-
-        p_product_id:
-          productId,
-
-        p_expected_description:
-          expectedDescription,
-
-        p_proposed_description:
-          proposedDescription,
-
-        p_idempotency_key:
-          idempotencyKey,
-      },
-    );
+    proposalResult;
 
   if (error) {
     console.error(

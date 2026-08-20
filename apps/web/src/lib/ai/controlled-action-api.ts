@@ -11,28 +11,64 @@ export const CONTROLLED_ACTION_API_STATUSES = [
 export type ControlledActionApiStatus =
   (typeof CONTROLLED_ACTION_API_STATUSES)[number];
 
-export type ControlledActionProposalInput = {
+export type ControlledProductDescriptionProposalInput = {
   productId: string;
+
+  /*
+   * Optional only for backward compatibility with the
+   * existing description confirmation UI, which predates
+   * multi-action proposal routing.
+   */
+  actionType?: "product.update_description";
+
   expectedDescription: string | null;
   proposedDescription: string;
   idempotencyKey: string;
 };
 
-export type ControlledActionApiRecord = {
+export type ControlledProductNameProposalInput = {
+  actionType: "product.update_name";
+  productId: string;
+  expectedName: string;
+  proposedName: string;
+  idempotencyKey: string;
+};
+
+export type ControlledActionProposalInput =
+  | ControlledProductDescriptionProposalInput
+  | ControlledProductNameProposalInput;
+
+type ControlledActionApiRecordBase = {
   id: string;
   contractVersion: 1;
-  actionType: "product.update_description";
   status: ControlledActionApiStatus;
   targetResource: "product";
   targetId: string;
-  expectedDescription: string | null;
-  proposedDescription: string;
   createdAt: string;
   confirmedAt: string | null;
   executionStartedAt: string | null;
   finalizedAt: string | null;
   errorMessage: string | null;
 };
+
+export type ControlledProductDescriptionActionApiRecord =
+  ControlledActionApiRecordBase & {
+    actionType: "product.update_description";
+    expectedDescription: string | null;
+    proposedDescription: string;
+  };
+
+export type ControlledProductNameActionApiRecord =
+  ControlledActionApiRecordBase & {
+    actionType: "product.update_name";
+    mutationField: "name";
+    expectedName: string;
+    proposedName: string;
+  };
+
+export type ControlledActionApiRecord =
+  | ControlledProductDescriptionActionApiRecord
+  | ControlledProductNameActionApiRecord;
 
 type ProposalParseResult =
   | {
@@ -47,11 +83,21 @@ type ProposalParseResult =
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-const PROPOSAL_KEYS =
+const DESCRIPTION_PROPOSAL_KEYS =
   new Set([
+    "actionType",
     "productId",
     "expectedDescription",
     "proposedDescription",
+    "idempotencyKey",
+  ]);
+
+const PRODUCT_NAME_PROPOSAL_KEYS =
+  new Set([
+    "actionType",
+    "productId",
+    "expectedName",
+    "proposedName",
     "idempotencyKey",
   ]);
 
@@ -100,10 +146,36 @@ export function parseControlledActionProposalInput(
     };
   }
 
+  const actionType =
+    value.actionType;
+
+  if (
+    actionType !== undefined &&
+    actionType !==
+      "product.update_description" &&
+    actionType !==
+      "product.update_name"
+  ) {
+    return {
+      ok: false,
+      error:
+        "Controlled action type tidak didukung.",
+    };
+  }
+
+  const isProductNameAction =
+    actionType ===
+    "product.update_name";
+
+  const allowedKeys =
+    isProductNameAction
+      ? PRODUCT_NAME_PROPOSAL_KEYS
+      : DESCRIPTION_PROPOSAL_KEYS;
+
   const unexpectedKey =
     Object.keys(value).find(
       (key) =>
-        !PROPOSAL_KEYS.has(key),
+        !allowedKeys.has(key),
     );
 
   if (unexpectedKey) {
@@ -119,6 +191,99 @@ export function parseControlledActionProposalInput(
       ok: false,
       error:
         "Product ID tidak valid.",
+    };
+  }
+
+  if (
+    typeof value.idempotencyKey !==
+    "string"
+  ) {
+    return {
+      ok: false,
+      error:
+        "Idempotency key tidak valid.",
+    };
+  }
+
+  const idempotencyKey =
+    value.idempotencyKey.trim();
+
+  if (
+    idempotencyKey.length < 1 ||
+    idempotencyKey.length > 128
+  ) {
+    return {
+      ok: false,
+      error:
+        "Idempotency key tidak valid.",
+    };
+  }
+
+  if (isProductNameAction) {
+    if (
+      typeof value.expectedName !==
+      "string"
+    ) {
+      return {
+        ok: false,
+        error:
+          "Expected product name tidak valid.",
+      };
+    }
+
+    if (
+      typeof value.proposedName !==
+      "string"
+    ) {
+      return {
+        ok: false,
+        error:
+          "Proposed product name tidak valid.",
+      };
+    }
+
+    const proposedName =
+      value.proposedName.trim();
+
+    if (!proposedName) {
+      return {
+        ok: false,
+        error:
+          "Proposed product name wajib diisi.",
+      };
+    }
+
+    if (
+      value.expectedName ===
+      proposedName
+    ) {
+      return {
+        ok: false,
+        error:
+          "Proposed product name harus berbeda dari nama saat ini.",
+      };
+    }
+
+    return {
+      ok: true,
+      value: {
+        actionType:
+          "product.update_name",
+
+        productId:
+          value.productId,
+
+        /*
+         * Preserve the exact authoritative snapshot.
+         * Do not trim the expected value.
+         */
+        expectedName:
+          value.expectedName,
+
+        proposedName,
+
+        idempotencyKey,
+      },
     };
   }
 
@@ -156,42 +321,20 @@ export function parseControlledActionProposalInput(
     };
   }
 
-  if (
-    typeof value.idempotencyKey !==
-    "string"
-  ) {
-    return {
-      ok: false,
-      error:
-        "Idempotency key tidak valid.",
-    };
-  }
-
-  const idempotencyKey =
-    value.idempotencyKey.trim();
-
-  if (
-    idempotencyKey.length < 1 ||
-    idempotencyKey.length > 128
-  ) {
-    return {
-      ok: false,
-      error:
-        "Idempotency key tidak valid.",
-    };
-  }
-
+  /*
+   * Preserve the old parsed shape for the already-shipped
+   * description UI. The optional actionType is intentionally
+   * omitted here when using the legacy description path.
+   */
   return {
     ok: true,
     value: {
       productId:
         value.productId,
 
-      // Preserve the exact current snapshot.
       expectedDescription:
         value.expectedDescription,
 
-      // Persisted contract requires trimmed proposal text.
       proposedDescription,
 
       idempotencyKey,
@@ -229,19 +372,12 @@ export function projectControlledActionRecord(
   if (
     !isUuid(value.id) ||
     value.contract_version !== 1 ||
-    value.action_type !==
-      "product.update_description" ||
     !isControlledActionStatus(
       value.status,
     ) ||
     value.target_resource !==
       "product" ||
     !isUuid(value.target_id) ||
-    !isNullableString(
-      value.expected_description,
-    ) ||
-    typeof value.proposed_description !==
-      "string" ||
     typeof value.created_at !==
       "string" ||
     !isNullableTimestamp(
@@ -260,29 +396,115 @@ export function projectControlledActionRecord(
     return null;
   }
 
-  return {
-    id: value.id,
-    contractVersion: 1,
-    actionType:
-      "product.update_description",
-    status: value.status,
-    targetResource: "product",
-    targetId: value.target_id,
-    expectedDescription:
-      value.expected_description,
-    proposedDescription:
-      value.proposed_description,
+  const base = {
+    id:
+      value.id,
+
+    contractVersion:
+      1 as const,
+
+    status:
+      value.status,
+
+    targetResource:
+      "product" as const,
+
+    targetId:
+      value.target_id,
+
     createdAt:
       value.created_at,
+
     confirmedAt:
       value.confirmed_at,
+
     executionStartedAt:
       value.execution_started_at,
+
     finalizedAt:
       value.finalized_at,
+
     errorMessage:
       value.error_message,
   };
+
+  if (
+    value.action_type ===
+    "product.update_description"
+  ) {
+    if (
+      !isNullableString(
+        value.expected_description,
+      ) ||
+      typeof value.proposed_description !==
+        "string"
+    ) {
+      return null;
+    }
+
+    return {
+      ...base,
+
+      actionType:
+        "product.update_description",
+
+      expectedDescription:
+        value.expected_description,
+
+      proposedDescription:
+        value.proposed_description,
+    };
+  }
+
+  if (
+    value.action_type ===
+    "product.update_name"
+  ) {
+    if (
+      value.mutation_field !==
+        "name" ||
+      typeof value.expected_value !==
+        "string" ||
+      typeof value.proposed_value !==
+        "string" ||
+      value.expected_description !==
+        null ||
+      value.proposed_description !==
+        null
+    ) {
+      return null;
+    }
+
+    const proposedName =
+      value.proposed_value;
+
+    if (
+      !proposedName ||
+      proposedName.trim() !==
+        proposedName ||
+      value.expected_value ===
+        proposedName
+    ) {
+      return null;
+    }
+
+    return {
+      ...base,
+
+      actionType:
+        "product.update_name",
+
+      mutationField:
+        "name",
+
+      expectedName:
+        value.expected_value,
+
+      proposedName,
+    };
+  }
+
+  return null;
 }
 
 export function extractControlledActionId(
@@ -345,6 +567,12 @@ export function controlledActionRpcErrorStatus(
     ) ||
     normalized.includes(
       "expected description",
+    ) ||
+    normalized.includes(
+      "product name changed",
+    ) ||
+    normalized.includes(
+      "does not change the current name",
     ) ||
     normalized.includes(
       "stale",

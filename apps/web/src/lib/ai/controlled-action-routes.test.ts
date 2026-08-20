@@ -386,7 +386,7 @@ describe(
         expect(
           mocks.rpc,
         ).not.toHaveBeenCalledWith(
-          "execute_ai_controlled_action",
+          "execute_ai_controlled_action_dispatch",
           expect.anything(),
         );
       },
@@ -417,7 +417,7 @@ describe(
         expect(
           mocks.rpc,
         ).toHaveBeenCalledWith(
-          "execute_ai_controlled_action",
+          "execute_ai_controlled_action_dispatch",
           {
             p_action_id:
               ACTION_ID,

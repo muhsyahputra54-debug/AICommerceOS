@@ -666,6 +666,8 @@ export default function AIProductDescriptionPanel({
           ) : null}
 
           {controlledAction &&
+          controlledAction.actionType ===
+            "product.update_description" &&
           controlledGenerationId ===
             latestCompleted.id ? (
             <div className="space-y-4 rounded-xl border bg-muted/20 p-4">

@@ -60,14 +60,15 @@ export async function POST(
    * Deliberately execute only.
    *
    * This route NEVER confirms an action.
-   * The database executor itself also requires
-   * an already-confirmed action by the same requester.
+   * The database dispatcher selects the persisted,
+   * immutable action type. The selected executor still
+   * requires an already-confirmed action by the same requester.
    */
   const {
     error,
   } =
     await supabase.rpc(
-      "execute_ai_controlled_action",
+      "execute_ai_controlled_action_dispatch",
       {
         p_action_id:
           actionId,
