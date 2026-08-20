@@ -108,6 +108,12 @@ export default async function ProductDescriptionPage({
           generations={
             generationsResult.data ?? []
           }
+          canUseControlledActions={
+            currentOrganization.role ===
+              "owner" ||
+            currentOrganization.role ===
+              "admin"
+          }
         />
       </div>
     </DashboardLayout>

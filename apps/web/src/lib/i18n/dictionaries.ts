@@ -135,11 +135,11 @@ const dictionaries = {
         businessProfileSalesModelNone:
           "Belum ditentukan",
         businessProfileSalesModelB2C:
-          "B2C — langsung ke konsumen",
+          "B2C â€” langsung ke konsumen",
         businessProfileSalesModelB2B:
-          "B2B — ke bisnis",
+          "B2B â€” ke bisnis",
         businessProfileSalesModelHybrid:
-          "Hybrid — B2C dan B2B",
+          "Hybrid â€” B2C dan B2B",
         businessProfileSalesModelOther:
           "Lainnya",
 
@@ -1382,7 +1382,39 @@ const dictionaries = {
           metaDescription: "Meta Deskripsi",
           keywords: "Kata Kunci",
           applyNote:
-            "Terapkan Deskripsi hanya memperbarui products.description.",
+            "Controlled action ini hanya memperbarui products.description.",
+
+          controlledAction: {
+            title: "Pratinjau Perubahan",
+            description:
+              "Periksa kondisi sebelum dan sesudah. Konfirmasi dan eksekusi dilakukan terpisah.",
+            before: "Sebelum",
+            after: "Sesudah",
+            status: "Status",
+            prepare: "Tinjau Perubahan",
+            preparing: "Menyiapkan...",
+            confirm: "Konfirmasi",
+            confirming: "Mengonfirmasi...",
+            execute: "Jalankan Perubahan",
+            executing: "Menjalankan...",
+            previewReady:
+              "Pratinjau siap. Periksa perubahan sebelum mengonfirmasi.",
+            confirmedMessage:
+              "Perubahan dikonfirmasi. Jalankan hanya jika pratinjau sudah benar.",
+            executedMessage:
+              "Deskripsi produk berhasil diperbarui.",
+            staleMessage:
+              "Deskripsi produk sudah berubah sejak pratinjau dibuat. Perubahan terbaru tidak ditimpa.",
+            prepareFailed:
+              "Pratinjau perubahan tidak dapat dibuat.",
+            confirmFailed:
+              "Perubahan tidak dapat dikonfirmasi.",
+            executeFailed:
+              "Perubahan tidak dapat dijalankan.",
+            ownerAdminOnly:
+              "Controlled action hanya tersedia untuk owner atau admin.",
+          },
+
           empty:
             "Belum ada deskripsi AI yang selesai.",
         },
@@ -2336,11 +2368,11 @@ const dictionaries = {
         businessProfileSalesModelNone:
           "Not specified",
         businessProfileSalesModelB2C:
-          "B2C — direct to consumers",
+          "B2C â€” direct to consumers",
         businessProfileSalesModelB2B:
-          "B2B — selling to businesses",
+          "B2B â€” selling to businesses",
         businessProfileSalesModelHybrid:
-          "Hybrid — B2C and B2B",
+          "Hybrid â€” B2C and B2B",
         businessProfileSalesModelOther:
           "Other",
 
@@ -3583,7 +3615,39 @@ const dictionaries = {
           metaDescription: "Meta Description",
           keywords: "Keywords",
           applyNote:
-            "Apply Description only updates products.description.",
+            "This controlled action only updates products.description.",
+
+          controlledAction: {
+            title: "Change Preview",
+            description:
+              "Review the before and after values. Confirmation and execution are separate.",
+            before: "Before",
+            after: "After",
+            status: "Status",
+            prepare: "Review Change",
+            preparing: "Preparing...",
+            confirm: "Confirm",
+            confirming: "Confirming...",
+            execute: "Execute Change",
+            executing: "Executing...",
+            previewReady:
+              "The preview is ready. Review it before confirming.",
+            confirmedMessage:
+              "The change is confirmed. Execute only when the preview is correct.",
+            executedMessage:
+              "The product description was updated successfully.",
+            staleMessage:
+              "The product description changed after the preview was created. The newer value was not overwritten.",
+            prepareFailed:
+              "The change preview could not be created.",
+            confirmFailed:
+              "The change could not be confirmed.",
+            executeFailed:
+              "The change could not be executed.",
+            ownerAdminOnly:
+              "Controlled actions are available only to owners and admins.",
+          },
+
           empty:
             "No completed AI description yet.",
         },

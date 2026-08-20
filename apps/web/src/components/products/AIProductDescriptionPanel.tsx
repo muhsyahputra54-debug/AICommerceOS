@@ -1,13 +1,17 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import {
+  useRef,
+  useState,
+  type FormEvent,
+} from "react";
 import { useRouter } from "next/navigation";
 
 import { useLanguage } from "@/components/i18n/LanguageProvider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import type { ControlledActionApiRecord } from "@/lib/ai/controlled-action-api";
 import { getDictionary } from "@/lib/i18n/dictionaries";
-import { createClient } from "@/lib/supabase/client";
 
 type Product = {
   id: string;
@@ -43,6 +47,12 @@ type Generation = {
 type Props = {
   product: Product;
   generations: Generation[];
+  canUseControlledActions: boolean;
+};
+
+type ControlledActionResponse = {
+  action?: ControlledActionApiRecord;
+  error?: string;
 };
 
 function stringArray(value: unknown) {
@@ -66,6 +76,7 @@ function formatDate(value: string, locale: "id" | "en") {
 export default function AIProductDescriptionPanel({
   product,
   generations,
+  canUseControlledActions,
 }: Props) {
   const router = useRouter();
   const { locale } = useLanguage();
@@ -75,8 +86,30 @@ export default function AIProductDescriptionPanel({
   const [isGenerating, setIsGenerating] =
     useState(false);
 
-  const [applyingId, setApplyingId] =
+  const [
+    controlledAction,
+    setControlledAction,
+  ] =
+    useState<ControlledActionApiRecord | null>(
+      null,
+    );
+
+  const [
+    controlledGenerationId,
+    setControlledGenerationId,
+  ] =
     useState<string | null>(null);
+
+  const [
+    controlledActionBusy,
+    setControlledActionBusy,
+  ] =
+    useState<
+      "propose" | "confirm" | "execute" | null
+    >(null);
+
+  const proposalKeys =
+    useRef(new Map<string, string>());
 
   const [message, setMessage] =
     useState<string | null>(null);
@@ -192,33 +225,242 @@ export default function AIProductDescriptionPanel({
     }
   }
 
-  async function handleApply(
+  async function parseControlledResponse(
+    response: Response,
+  ) {
+    return (
+      await response
+        .json()
+        .catch(() => ({}))
+    ) as ControlledActionResponse;
+  }
+
+  function proposalKey(
     generationId: string,
   ) {
-    setMessage(null);
-    setApplyingId(generationId);
+    const existing =
+      proposalKeys.current.get(generationId);
 
-    const supabase = createClient();
+    if (existing) {
+      return existing;
+    }
 
-    const { error } = await supabase.rpc(
-      "apply_product_description_generation",
-      {
-        p_generation_id: generationId,
-      },
+    const created =
+      `product-description:${generationId}:${crypto.randomUUID()}`;
+
+    proposalKeys.current.set(
+      generationId,
+      created,
     );
 
-    if (error) {
-      setMessage(copy.messages.applyFailed);
-      setApplyingId(null);
+    return created;
+  }
+
+  async function handlePrepare(
+    generation: Generation,
+  ) {
+    const proposedDescription =
+      generation.generated_description?.trim();
+
+    if (!proposedDescription) {
+      setMessage(
+        copy.latest.controlledAction.prepareFailed,
+      );
       return;
     }
 
-    setMessage(
-      copy.messages.applied,
-    );
+    setMessage(null);
+    setControlledActionBusy("propose");
 
-    setApplyingId(null);
-    router.refresh();
+    try {
+      const response =
+        await fetch(
+          "/api/ai/controlled-actions",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
+            body: JSON.stringify({
+              productId:
+                product.id,
+              expectedDescription:
+                product.description,
+              proposedDescription,
+              idempotencyKey:
+                proposalKey(generation.id),
+            }),
+          },
+        );
+
+      const data =
+        await parseControlledResponse(
+          response,
+        );
+
+      if (!response.ok || !data.action) {
+        if (
+          response.status >= 400 &&
+          response.status < 500
+        ) {
+          proposalKeys.current.delete(
+            generation.id,
+          );
+        }
+
+        setMessage(
+          response.status === 409
+            ? copy.latest.controlledAction
+                .staleMessage
+            : copy.latest.controlledAction
+                .prepareFailed,
+        );
+        return;
+      }
+
+      proposalKeys.current.delete(
+        generation.id,
+      );
+
+      setControlledAction(
+        data.action,
+      );
+
+      setControlledGenerationId(
+        generation.id,
+      );
+
+      setMessage(
+        copy.latest.controlledAction
+          .previewReady,
+      );
+    } catch {
+      setMessage(
+        copy.latest.controlledAction
+          .prepareFailed,
+      );
+    } finally {
+      setControlledActionBusy(null);
+    }
+  }
+
+  async function handleConfirm() {
+    if (
+      !controlledAction ||
+      controlledAction.status !== "proposed"
+    ) {
+      return;
+    }
+
+    setMessage(null);
+    setControlledActionBusy("confirm");
+
+    try {
+      const response =
+        await fetch(
+          `/api/ai/controlled-actions/${controlledAction.id}/confirm`,
+          {
+            method: "POST",
+          },
+        );
+
+      const data =
+        await parseControlledResponse(
+          response,
+        );
+
+      if (!response.ok || !data.action) {
+        setMessage(
+          copy.latest.controlledAction
+            .confirmFailed,
+        );
+        return;
+      }
+
+      setControlledAction(data.action);
+
+      setMessage(
+        copy.latest.controlledAction
+          .confirmedMessage,
+      );
+    } catch {
+      setMessage(
+        copy.latest.controlledAction
+          .confirmFailed,
+      );
+    } finally {
+      setControlledActionBusy(null);
+    }
+  }
+
+  async function handleExecute() {
+    if (
+      !controlledAction ||
+      controlledAction.status !== "confirmed"
+    ) {
+      return;
+    }
+
+    setMessage(null);
+    setControlledActionBusy("execute");
+
+    try {
+      const response =
+        await fetch(
+          `/api/ai/controlled-actions/${controlledAction.id}/execute`,
+          {
+            method: "POST",
+          },
+        );
+
+      const data =
+        await parseControlledResponse(
+          response,
+        );
+
+      if (!response.ok || !data.action) {
+        setMessage(
+          copy.latest.controlledAction
+            .executeFailed,
+        );
+        return;
+      }
+
+      setControlledAction(data.action);
+
+      if (data.action.status === "executed") {
+        setMessage(
+          copy.latest.controlledAction
+            .executedMessage,
+        );
+        router.refresh();
+        return;
+      }
+
+      if (data.action.status === "stale") {
+        setMessage(
+          copy.latest.controlledAction
+            .staleMessage,
+        );
+        router.refresh();
+        return;
+      }
+
+      if (data.action.status === "failed") {
+        setMessage(
+          copy.latest.controlledAction
+            .executeFailed,
+        );
+      }
+    } catch {
+      setMessage(
+        copy.latest.controlledAction
+          .executeFailed,
+      );
+    } finally {
+      setControlledActionBusy(null);
+    }
   }
 
   return (
@@ -315,7 +557,7 @@ export default function AIProductDescriptionPanel({
               </h2>
 
               <p className="mt-1 text-sm text-muted-foreground">
-                {latestCompleted.model} •{" "}
+                {latestCompleted.model} â€¢{" "}
                 {formatDate(
                   latestCompleted.created_at,
                   locale,
@@ -327,15 +569,23 @@ export default function AIProductDescriptionPanel({
               type="button"
               variant="outline"
               disabled={
-                applyingId === latestCompleted.id
+                !canUseControlledActions ||
+                controlledActionBusy !== null ||
+                !latestCompleted
+                  .generated_description
+                  ?.trim()
               }
               onClick={() =>
-                handleApply(latestCompleted.id)
+                handlePrepare(
+                  latestCompleted,
+                )
               }
             >
-              {applyingId === latestCompleted.id
-                ? copy.latest.applying
-                : copy.latest.apply}
+              {controlledActionBusy === "propose"
+                ? copy.latest.controlledAction
+                    .preparing
+                : copy.latest.controlledAction
+                    .prepare}
             </Button>
           </div>
 
@@ -356,7 +606,7 @@ export default function AIProductDescriptionPanel({
 
             <p className="mt-2 text-sm text-muted-foreground">
               {latestCompleted.short_description ??
-                "—"}
+                "â€”"}
             </p>
           </div>
 
@@ -367,7 +617,7 @@ export default function AIProductDescriptionPanel({
               </div>
 
               <p className="mt-2 text-sm text-muted-foreground">
-                {latestCompleted.seo_title ?? "—"}
+                {latestCompleted.seo_title ?? "â€”"}
               </p>
             </div>
 
@@ -378,7 +628,7 @@ export default function AIProductDescriptionPanel({
 
               <p className="mt-2 text-sm text-muted-foreground">
                 {latestCompleted.meta_description ??
-                  "—"}
+                  "â€”"}
               </p>
             </div>
           </div>
@@ -405,6 +655,120 @@ export default function AIProductDescriptionPanel({
           <p className="text-xs text-muted-foreground">
             {copy.latest.applyNote}
           </p>
+
+          {!canUseControlledActions ? (
+            <p className="rounded-xl border border-dashed px-4 py-3 text-sm text-muted-foreground">
+              {
+                copy.latest.controlledAction
+                  .ownerAdminOnly
+              }
+            </p>
+          ) : null}
+
+          {controlledAction &&
+          controlledGenerationId ===
+            latestCompleted.id ? (
+            <div className="space-y-4 rounded-xl border bg-muted/20 p-4">
+              <div>
+                <h3 className="font-medium">
+                  {
+                    copy.latest.controlledAction
+                      .title
+                  }
+                </h3>
+
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {
+                    copy.latest.controlledAction
+                      .description
+                  }
+                </p>
+
+                <p className="mt-2 text-xs text-muted-foreground">
+                  {
+                    copy.latest.controlledAction
+                      .status
+                  }
+                  {": "}
+                  {controlledAction.status}
+                </p>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <div className="text-sm font-medium">
+                    {
+                      copy.latest.controlledAction
+                        .before
+                    }
+                  </div>
+
+                  <div className="mt-2 min-h-24 whitespace-pre-wrap rounded-lg border bg-background p-3 text-sm leading-6">
+                    {controlledAction
+                      .expectedDescription
+                      ?.trim() ||
+                      copy.current.empty}
+                  </div>
+                </div>
+
+                <div>
+                  <div className="text-sm font-medium">
+                    {
+                      copy.latest.controlledAction
+                        .after
+                    }
+                  </div>
+
+                  <div className="mt-2 min-h-24 whitespace-pre-wrap rounded-lg border bg-background p-3 text-sm leading-6">
+                    {
+                      controlledAction
+                        .proposedDescription
+                    }
+                  </div>
+                </div>
+              </div>
+
+              {controlledAction.status ===
+              "proposed" ? (
+                <Button
+                  type="button"
+                  disabled={
+                    controlledActionBusy !== null
+                  }
+                  onClick={handleConfirm}
+                >
+                  {controlledActionBusy ===
+                  "confirm"
+                    ? copy.latest
+                        .controlledAction
+                        .confirming
+                    : copy.latest
+                        .controlledAction
+                        .confirm}
+                </Button>
+              ) : null}
+
+              {controlledAction.status ===
+              "confirmed" ? (
+                <Button
+                  type="button"
+                  disabled={
+                    controlledActionBusy !== null
+                  }
+                  onClick={handleExecute}
+                >
+                  {controlledActionBusy ===
+                  "execute"
+                    ? copy.latest
+                        .controlledAction
+                        .executing
+                    : copy.latest
+                        .controlledAction
+                        .execute}
+                </Button>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       ) : (
         <div className="rounded-2xl border bg-card px-6 py-10 text-center shadow-sm">
@@ -472,7 +836,7 @@ export default function AIProductDescriptionPanel({
 
                       <td className="max-w-xs px-6 py-4 text-muted-foreground">
                         {generation.error_message ??
-                          "—"}
+                          "â€”"}
                       </td>
                     </tr>
                   ),
