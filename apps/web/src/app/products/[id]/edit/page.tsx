@@ -111,6 +111,12 @@ export default async function EditProductPage({
             product={product}
             categories={categories}
             copy={productsCopy.workflow}
+            canUseControlledActions={
+              currentOrganization.role ===
+                "owner" ||
+              currentOrganization.role ===
+                "admin"
+            }
           />
         </div>
       </div>

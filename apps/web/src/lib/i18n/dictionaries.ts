@@ -1119,6 +1119,70 @@ const dictionaries = {
           description:
             "Perbarui informasi produk pada organisasi aktif.",
           saveChanges: "Simpan perubahan",
+
+          controlledName: {
+            title:
+              "Perubahan Nama Terkontrol",
+            description:
+              "Siapkan perubahan nama sebagai controlled action. Nama produk tidak berubah sampai Anda mengonfirmasi lalu menjalankannya.",
+            label:
+              "Calon nama produk",
+            placeholder:
+              "Masukkan nama produk baru",
+            review:
+              "Tinjau perubahan",
+            reviewing:
+              "Menyiapkan...",
+            before:
+              "Sebelum",
+            after:
+              "Sesudah",
+            status:
+              "Status",
+            confirm:
+              "Konfirmasi",
+            confirming:
+              "Mengonfirmasi...",
+            execute:
+              "Jalankan perubahan",
+            executing:
+              "Menjalankan...",
+            previewReady:
+              "Pratinjau nama siap. Periksa nilai sebelum dan sesudah sebelum mengonfirmasi.",
+            confirmedMessage:
+              "Perubahan nama sudah dikonfirmasi. Jalankan hanya jika pratinjau sudah benar.",
+            executedMessage:
+              "Nama produk berhasil diperbarui.",
+            staleMessage:
+              "Nama produk berubah sejak pratinjau dibuat. Nilai yang lebih baru tidak ditimpa.",
+            prepareFailed:
+              "Pratinjau perubahan nama tidak dapat dibuat.",
+            confirmFailed:
+              "Perubahan nama tidak dapat dikonfirmasi.",
+            executeFailed:
+              "Perubahan nama tidak dapat dijalankan.",
+            ownerAdminOnly:
+              "Controlled action nama produk hanya tersedia untuk owner atau admin.",
+            sameName:
+              "Calon nama sama dengan nama produk saat ini.",
+
+            statuses: {
+              proposed:
+                "Menunggu konfirmasi",
+              confirmed:
+                "Terkonfirmasi",
+              executing:
+                "Sedang dijalankan",
+              executed:
+                "Selesai",
+              stale:
+                "Data berubah",
+              failed:
+                "Gagal",
+              cancelled:
+                "Dibatalkan",
+            },
+          },
         },
 
         fields: {
@@ -3352,6 +3416,70 @@ const dictionaries = {
           description:
             "Update product information for the active organization.",
           saveChanges: "Save changes",
+
+          controlledName: {
+            title:
+              "Controlled Name Change",
+            description:
+              "Prepare a product-name change as a controlled action. The product name does not change until you confirm and execute it.",
+            label:
+              "Proposed product name",
+            placeholder:
+              "Enter a new product name",
+            review:
+              "Review change",
+            reviewing:
+              "Preparing...",
+            before:
+              "Before",
+            after:
+              "After",
+            status:
+              "Status",
+            confirm:
+              "Confirm",
+            confirming:
+              "Confirming...",
+            execute:
+              "Execute change",
+            executing:
+              "Executing...",
+            previewReady:
+              "The name preview is ready. Review the before and after values before confirming.",
+            confirmedMessage:
+              "The name change is confirmed. Execute only when the preview is correct.",
+            executedMessage:
+              "The product name was updated successfully.",
+            staleMessage:
+              "The product name changed after this preview was created. The newer value was not overwritten.",
+            prepareFailed:
+              "The product-name preview could not be created.",
+            confirmFailed:
+              "The product-name change could not be confirmed.",
+            executeFailed:
+              "The product-name change could not be executed.",
+            ownerAdminOnly:
+              "Controlled product-name actions are available only to owners and admins.",
+            sameName:
+              "The proposed name is the same as the current product name.",
+
+            statuses: {
+              proposed:
+                "Awaiting confirmation",
+              confirmed:
+                "Confirmed",
+              executing:
+                "Executing",
+              executed:
+                "Completed",
+              stale:
+                "Data changed",
+              failed:
+                "Failed",
+              cancelled:
+                "Cancelled",
+            },
+          },
         },
 
         fields: {

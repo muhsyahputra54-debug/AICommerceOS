@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  useRef,
   useState,
   type FormEvent,
 } from "react";
@@ -8,6 +9,7 @@ import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import type { ControlledActionApiRecord } from "@/lib/ai/controlled-action-api";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 import { createClient } from "@/lib/supabase/client";
 
@@ -36,6 +38,20 @@ type EditProductFormProps = {
   product: EditableProduct;
   categories: ProductCategory[];
   copy: ProductWorkflowCopy;
+  canUseControlledActions: boolean;
+};
+
+type ControlledNameAction =
+  Extract<
+    ControlledActionApiRecord,
+    {
+      actionType: "product.update_name";
+    }
+  >;
+
+type ControlledActionResponse = {
+  action?: ControlledActionApiRecord;
+  error?: string;
 };
 
 export default function EditProductForm({
@@ -43,6 +59,7 @@ export default function EditProductForm({
   product,
   categories,
   copy,
+  canUseControlledActions,
 }: EditProductFormProps) {
   const router = useRouter();
 
@@ -55,6 +72,363 @@ export default function EditProductForm({
     errorMessage,
     setErrorMessage,
   ] = useState<string | null>(null);
+
+  const [
+    controlledName,
+    setControlledName,
+  ] = useState("");
+
+  const [
+    controlledNameAction,
+    setControlledNameAction,
+  ] =
+    useState<ControlledNameAction | null>(
+      null,
+    );
+
+  const [
+    controlledNameBusy,
+    setControlledNameBusy,
+  ] =
+    useState<
+      "propose" | "confirm" | "execute" | null
+    >(null);
+
+  const [
+    controlledNameMessage,
+    setControlledNameMessage,
+  ] =
+    useState<string | null>(null);
+
+  const controlledNameProposalKey =
+    useRef<{
+      signature: string;
+      key: string;
+    } | null>(null);
+
+  function getControlledNameProposalKey(
+    proposedName: string,
+  ) {
+    const signature =
+      JSON.stringify([
+        product.name,
+        proposedName,
+      ]);
+
+    const existing =
+      controlledNameProposalKey.current;
+
+    if (
+      existing?.signature ===
+      signature
+    ) {
+      return existing.key;
+    }
+
+    const created = {
+      signature,
+      key: [
+        "product-name",
+        product.id,
+        crypto.randomUUID(),
+      ].join(":"),
+    };
+
+    controlledNameProposalKey.current =
+      created;
+
+    return created.key;
+  }
+
+  async function readControlledActionResponse(
+    response: Response,
+  ) {
+    return (
+      await response
+        .json()
+        .catch(() => ({}))
+    ) as ControlledActionResponse;
+  }
+
+  function nameActionFrom(
+    response: ControlledActionResponse,
+  ): ControlledNameAction | null {
+    const action =
+      response.action;
+
+    return action?.actionType ===
+      "product.update_name"
+      ? action
+      : null;
+  }
+
+  async function handleReviewControlledName() {
+    if (!canUseControlledActions) {
+      setControlledNameMessage(
+        copy.edit.controlledName
+          .ownerAdminOnly,
+      );
+      return;
+    }
+
+    const proposedName =
+      controlledName.trim();
+
+    if (!proposedName) {
+      setControlledNameMessage(
+        copy.validation.nameRequired,
+      );
+      return;
+    }
+
+    if (proposedName === product.name) {
+      setControlledNameMessage(
+        copy.edit.controlledName.sameName,
+      );
+      return;
+    }
+
+    setControlledNameMessage(null);
+    setControlledNameBusy("propose");
+
+    const idempotencyKey =
+      getControlledNameProposalKey(
+        proposedName,
+      );
+
+    try {
+      const response =
+        await fetch(
+          "/api/ai/controlled-actions",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
+            body: JSON.stringify({
+              actionType:
+                "product.update_name",
+              productId:
+                product.id,
+              expectedName:
+                product.name,
+              proposedName,
+              idempotencyKey,
+            }),
+          },
+        );
+
+      const data =
+        await readControlledActionResponse(
+          response,
+        );
+
+      const action =
+        nameActionFrom(data);
+
+      if (!response.ok || !action) {
+        if (
+          response.status >= 400 &&
+          response.status < 500
+        ) {
+          controlledNameProposalKey.current =
+            null;
+        }
+
+        setControlledNameMessage(
+          response.status === 409
+            ? copy.edit.controlledName
+                .staleMessage
+            : copy.edit.controlledName
+                .prepareFailed,
+        );
+
+        if (response.status === 409) {
+          router.refresh();
+        }
+
+        return;
+      }
+
+      setControlledName(
+        action.proposedName,
+      );
+
+      setControlledNameAction(
+        action,
+      );
+
+      setControlledNameMessage(
+        copy.edit.controlledName
+          .previewReady,
+      );
+    } catch {
+      setControlledNameMessage(
+        copy.edit.controlledName
+          .prepareFailed,
+      );
+    } finally {
+      setControlledNameBusy(null);
+    }
+  }
+
+  async function handleConfirmControlledName() {
+    if (
+      !canUseControlledActions ||
+      !controlledNameAction ||
+      controlledNameAction.status !==
+        "proposed"
+    ) {
+      return;
+    }
+
+    setControlledNameMessage(null);
+    setControlledNameBusy("confirm");
+
+    try {
+      const response =
+        await fetch(
+          `/api/ai/controlled-actions/${controlledNameAction.id}/confirm`,
+          {
+            method: "POST",
+          },
+        );
+
+      const data =
+        await readControlledActionResponse(
+          response,
+        );
+
+      const action =
+        nameActionFrom(data);
+
+      if (
+        !response.ok ||
+        !action ||
+        action.status !== "confirmed"
+      ) {
+        setControlledNameMessage(
+          copy.edit.controlledName
+            .confirmFailed,
+        );
+        return;
+      }
+
+      setControlledNameAction(
+        action,
+      );
+
+      setControlledNameMessage(
+        copy.edit.controlledName
+          .confirmedMessage,
+      );
+    } catch {
+      setControlledNameMessage(
+        copy.edit.controlledName
+          .confirmFailed,
+      );
+    } finally {
+      setControlledNameBusy(null);
+    }
+  }
+
+  async function handleExecuteControlledName() {
+    if (
+      !canUseControlledActions ||
+      !controlledNameAction ||
+      controlledNameAction.status !==
+        "confirmed"
+    ) {
+      return;
+    }
+
+    setControlledNameMessage(null);
+    setControlledNameBusy("execute");
+
+    try {
+      const response =
+        await fetch(
+          `/api/ai/controlled-actions/${controlledNameAction.id}/execute`,
+          {
+            method: "POST",
+          },
+        );
+
+      const data =
+        await readControlledActionResponse(
+          response,
+        );
+
+      const action =
+        nameActionFrom(data);
+
+      if (!action) {
+        setControlledNameMessage(
+          copy.edit.controlledName
+            .executeFailed,
+        );
+        return;
+      }
+
+      setControlledNameAction(
+        action,
+      );
+
+      if (
+        action.status ===
+        "executed"
+      ) {
+        controlledNameProposalKey.current =
+          null;
+
+        setControlledNameMessage(
+          copy.edit.controlledName
+            .executedMessage,
+        );
+
+        router.refresh();
+        return;
+      }
+
+      if (
+        action.status ===
+        "stale"
+      ) {
+        controlledNameProposalKey.current =
+          null;
+
+        setControlledNameMessage(
+          copy.edit.controlledName
+            .staleMessage,
+        );
+
+        router.refresh();
+        return;
+      }
+
+      if (
+        action.status ===
+          "failed" ||
+        !response.ok
+      ) {
+        controlledNameProposalKey.current =
+          null;
+
+        setControlledNameMessage(
+          copy.edit.controlledName
+            .executeFailed,
+        );
+      }
+    } catch {
+      setControlledNameMessage(
+        copy.edit.controlledName
+          .executeFailed,
+      );
+    } finally {
+      setControlledNameBusy(null);
+    }
+  }
 
   async function handleSubmit(
     event: FormEvent<HTMLFormElement>,
@@ -205,6 +579,17 @@ export default function EditProductForm({
     router.refresh();
   }
 
+  const controlledNameCandidate =
+    controlledName.trim();
+
+  const controlledNameActive =
+    controlledNameAction?.status ===
+      "proposed" ||
+    controlledNameAction?.status ===
+      "confirmed" ||
+    controlledNameAction?.status ===
+      "executing";
+
   return (
     <form
       onSubmit={handleSubmit}
@@ -220,6 +605,7 @@ export default function EditProductForm({
           </label>
 
           <Input
+            key={product.name}
             id="name"
             name="name"
             type="text"
@@ -401,6 +787,220 @@ export default function EditProductForm({
             </option>
           </select>
         </div>
+      </div>
+
+      <div className="space-y-4 rounded-xl border bg-muted/20 p-4">
+        <div>
+          <h2 className="font-medium">
+            {
+              copy.edit.controlledName
+                .title
+            }
+          </h2>
+
+          <p className="mt-1 text-sm text-muted-foreground">
+            {
+              copy.edit.controlledName
+                .description
+            }
+          </p>
+        </div>
+
+        {!canUseControlledActions ? (
+          <p className="rounded-lg border border-dashed px-3 py-2 text-sm text-muted-foreground">
+            {
+              copy.edit.controlledName
+                .ownerAdminOnly
+            }
+          </p>
+        ) : (
+          <>
+            <div className="space-y-2">
+              <label
+                htmlFor="controlled_product_name"
+                className="text-sm font-medium"
+              >
+                {
+                  copy.edit.controlledName
+                    .label
+                }
+              </label>
+
+              <Input
+                id="controlled_product_name"
+                type="text"
+                value={controlledName}
+                placeholder={
+                  copy.edit.controlledName
+                    .placeholder
+                }
+                disabled={
+                  controlledNameBusy !==
+                    null ||
+                  controlledNameActive
+                }
+                onChange={(event) => {
+                  setControlledName(
+                    event.target.value,
+                  );
+
+                  setControlledNameAction(
+                    null,
+                  );
+
+                  setControlledNameMessage(
+                    null,
+                  );
+
+                  controlledNameProposalKey.current =
+                    null;
+                }}
+                onKeyDown={(event) => {
+                  if (
+                    event.key ===
+                    "Enter"
+                  ) {
+                    event.preventDefault();
+                  }
+                }}
+              />
+            </div>
+
+            <div>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={
+                  controlledNameBusy !==
+                    null ||
+                  controlledNameActive ||
+                  !controlledNameCandidate ||
+                  controlledNameCandidate ===
+                    product.name
+                }
+                onClick={
+                  handleReviewControlledName
+                }
+              >
+                {controlledNameBusy ===
+                "propose"
+                  ? copy.edit
+                      .controlledName
+                      .reviewing
+                  : copy.edit
+                      .controlledName
+                      .review}
+              </Button>
+            </div>
+          </>
+        )}
+
+        {controlledNameAction ? (
+          <div className="space-y-4 rounded-xl border bg-background p-4">
+            <div className="text-xs text-muted-foreground">
+              {
+                copy.edit.controlledName
+                  .status
+              }
+              {": "}
+              {
+                copy.edit.controlledName
+                  .statuses[
+                    controlledNameAction
+                      .status
+                  ]
+              }
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <div className="text-sm font-medium">
+                  {
+                    copy.edit
+                      .controlledName
+                      .before
+                  }
+                </div>
+
+                <div className="mt-2 min-h-16 whitespace-pre-wrap rounded-lg border bg-muted/20 p-3 text-sm">
+                  {
+                    controlledNameAction
+                      .expectedName
+                  }
+                </div>
+              </div>
+
+              <div>
+                <div className="text-sm font-medium">
+                  {
+                    copy.edit
+                      .controlledName
+                      .after
+                  }
+                </div>
+
+                <div className="mt-2 min-h-16 whitespace-pre-wrap rounded-lg border bg-muted/20 p-3 text-sm">
+                  {
+                    controlledNameAction
+                      .proposedName
+                  }
+                </div>
+              </div>
+            </div>
+
+            {controlledNameAction.status ===
+            "proposed" ? (
+              <Button
+                type="button"
+                disabled={
+                  controlledNameBusy !==
+                  null
+                }
+                onClick={
+                  handleConfirmControlledName
+                }
+              >
+                {controlledNameBusy ===
+                "confirm"
+                  ? copy.edit
+                      .controlledName
+                      .confirming
+                  : copy.edit
+                      .controlledName
+                      .confirm}
+              </Button>
+            ) : null}
+
+            {controlledNameAction.status ===
+            "confirmed" ? (
+              <Button
+                type="button"
+                disabled={
+                  controlledNameBusy !==
+                  null
+                }
+                onClick={
+                  handleExecuteControlledName
+                }
+              >
+                {controlledNameBusy ===
+                "execute"
+                  ? copy.edit
+                      .controlledName
+                      .executing
+                  : copy.edit
+                      .controlledName
+                      .execute}
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
+
+        {controlledNameMessage ? (
+          <p className="text-sm text-muted-foreground">
+            {controlledNameMessage}
+          </p>
+        ) : null}
       </div>
 
       {errorMessage ? (
