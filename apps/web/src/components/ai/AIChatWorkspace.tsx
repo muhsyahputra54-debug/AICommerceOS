@@ -1060,6 +1060,8 @@ export default function AIChatWorkspace({
 
   async function sendMessage(
     rawContent: string,
+    proactiveInsightCode?:
+      ProactiveInsightCode,
   ) {
     if (
       isLoading ||
@@ -1193,6 +1195,12 @@ export default function AIChatWorkspace({
 
               messages:
                 requestMessages,
+
+              ...(proactiveInsightCode
+                ? {
+                    proactiveInsightCode,
+                  }
+                : {}),
             }),
           },
         );
@@ -2566,6 +2574,7 @@ export default function AIChatWorkspace({
                           onClick={() => {
                             void sendMessage(
                               `${copy.insightAskPrefix} ${presentation.title}.`,
+                              insight.code,
                             );
                           }}
                           className="group flex w-full items-start gap-3 rounded-xl border bg-background p-3 text-left transition-colors hover:bg-muted/60 disabled:cursor-not-allowed disabled:opacity-50"
