@@ -23,6 +23,10 @@ import {
 import { buildBusinessContext } from "@/lib/ai/business-context";
 
 import {
+  buildSalesIntelligenceContext,
+} from "@/lib/ai/sales-intelligence-context";
+
+import {
   buildBusinessProfileContext,
   type BusinessProfileContextRow,
 } from "@/lib/ai/business-profile-context";
@@ -1152,7 +1156,17 @@ export async function POST(
   const recentOrders =
     ordersResult.data ?? [];
 
-  const businessContext =
+  const commerceAnalyticsResult =
+    await supabase.rpc(
+      "get_commerce_analytics",
+      {
+        p_organization_id:
+          currentOrganization.organizationId,
+        p_days: 30,
+      },
+    );
+
+  const baseBusinessContext =
     buildBusinessContext({
       generatedAt:
         new Date().toISOString(),
@@ -1182,6 +1196,18 @@ export async function POST(
       priceObservations:
         priceObservationsResult.data ?? [],
     });
+
+  const businessContext = {
+    ...baseBusinessContext,
+
+    sales_intelligence:
+      buildSalesIntelligenceContext({
+        analytics:
+          commerceAnalyticsResult.error
+            ? null
+            : commerceAnalyticsResult.data,
+      }),
+  };
   const businessProfileResult =
     await supabase
       .from(
