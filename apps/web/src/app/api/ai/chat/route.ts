@@ -20,6 +20,10 @@ import {
   buildProactiveInsightContext,
 } from "@/lib/ai/assistant-prompt";
 
+import {
+  loadAssistantAgentAdvisoryContext,
+} from "@/lib/ai/assistant-agent-adapter";
+
 import { buildBusinessContext } from "@/lib/ai/business-context";
 
 import {
@@ -171,6 +175,47 @@ async function persistMemoryCommandAssistantMessage({
   return null;
 }
 
+type AgentAdvisoryReference = {
+  agentId: string;
+  runId: string;
+};
+
+function parseAgentAdvisoryReference(
+  value: unknown,
+): AgentAdvisoryReference | null {
+  if (
+    typeof value !== "object" ||
+    value === null ||
+    Array.isArray(value)
+  ) {
+    return null;
+  }
+
+  const record =
+    value as Record<string, unknown>;
+
+  const agentId =
+    typeof record.agentId === "string"
+      ? record.agentId.trim()
+      : "";
+
+  const runId =
+    typeof record.runId === "string"
+      ? record.runId.trim()
+      : "";
+
+  if (
+    !agentId ||
+    !runId
+  ) {
+    return null;
+  }
+
+  return {
+    agentId,
+    runId,
+  };
+}
 export async function POST(
   request: Request,
 ) {
@@ -237,13 +282,14 @@ export async function POST(
         () => ({}),
       )) as ChatRequestBody & {
         proactiveInsightCode?: unknown;
+        agentAdvisory?: unknown;
       };
 
   const proactiveInsightCode =
     parseProactiveInsightCode(
       body.proactiveInsightCode,
     );
-
+  const agentAdvisoryReference =    parseAgentAdvisoryReference(      body.agentAdvisory,    );
   const messages =
     parseMessages(
       body.messages,
@@ -1372,6 +1418,82 @@ export async function POST(
 
       activeMemories,
     });
+  const loadedAgentAdvisoryContext =
+    agentAdvisoryReference === null
+      ? null
+      : await loadAssistantAgentAdvisoryContext({
+          organizationId,
+
+          agentId:
+            agentAdvisoryReference.agentId,
+
+          runId:
+            agentAdvisoryReference.runId,
+
+          dependencies: {
+            loadCandidate:
+              async ({
+                organizationId:
+                  scopedOrganizationId,
+                agentId,
+              }) => {
+                const {
+                  data,
+                  error,
+                } = await supabase
+                  .from("ai_agents")
+                  .select(
+                    "id, name, purpose, approved_contexts, is_active",
+                  )
+                  .eq("id", agentId)
+                  .eq(
+                    "organization_id",
+                    scopedOrganizationId,
+                  )
+                  .maybeSingle();
+
+                return {
+                  data,
+                  error,
+                };
+              },
+
+            loadRun:
+              async ({
+                organizationId:
+                  scopedOrganizationId,
+                agentId,
+                runId,
+              }) => {
+                const {
+                  data,
+                  error,
+                } = await supabase
+                  .from("ai_agent_runs")
+                  .select(
+                    "id, agent_id, status, objective, summary, recommendation, risks, next_actions",
+                  )
+                  .eq("id", runId)
+                  .eq("agent_id", agentId)
+                  .eq(
+                    "organization_id",
+                    scopedOrganizationId,
+                  )
+                  .maybeSingle();
+
+                return {
+                  data,
+                  error,
+                };
+              },
+          },
+        });
+
+  const assistantAgentAdvisoryContext =
+    loadedAgentAdvisoryContext?.available ===
+    true
+      ? loadedAgentAdvisoryContext
+      : null;
   const proactiveInsightContext =
     buildProactiveInsightContext(
       proactiveInsightCode,
@@ -1391,6 +1513,8 @@ export async function POST(
       businessContext,
       businessProfileContext,
       memoryContext,
+      agentAdvisoryContext:
+        assistantAgentAdvisoryContext,
       proactiveInsightContext,
     });
 
