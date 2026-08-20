@@ -31,6 +31,10 @@ import {
 } from "@/lib/ai/product-inventory-intelligence-context";
 
 import {
+  buildBusinessIntelligenceSynthesis,
+} from "@/lib/ai/business-intelligence-synthesis";
+
+import {
   buildBusinessProfileContext,
   type BusinessProfileContextRow,
 } from "@/lib/ai/business-profile-context";
@@ -1179,6 +1183,32 @@ export async function POST(
         p_product_id: null,
       },
     );
+  const salesIntelligence =
+    buildSalesIntelligenceContext({
+      analytics:
+        commerceAnalyticsResult.error
+          ? null
+          : commerceAnalyticsResult.data,
+    });
+
+  const productInventoryIntelligence =
+    buildProductInventoryIntelligenceContext({
+      analytics:
+        commerceAnalyticsResult.error
+          ? null
+          : commerceAnalyticsResult.data,
+
+      productPerformance:
+        productPerformanceResult.error
+          ? null
+          : productPerformanceResult.data,
+    });
+
+  const businessIntelligenceSynthesis =
+    buildBusinessIntelligenceSynthesis({
+      salesIntelligence,
+      productInventoryIntelligence,
+    });
   const baseBusinessContext =
     buildBusinessContext({
       generatedAt:
@@ -1214,25 +1244,13 @@ export async function POST(
     ...baseBusinessContext,
 
     sales_intelligence:
-      buildSalesIntelligenceContext({
-        analytics:
-          commerceAnalyticsResult.error
-            ? null
-            : commerceAnalyticsResult.data,
-      }),
+      salesIntelligence,
 
     product_inventory_intelligence:
-      buildProductInventoryIntelligenceContext({
-        analytics:
-          commerceAnalyticsResult.error
-            ? null
-            : commerceAnalyticsResult.data,
+      productInventoryIntelligence,
 
-        productPerformance:
-          productPerformanceResult.error
-            ? null
-            : productPerformanceResult.data,
-      }),
+    business_intelligence_synthesis:
+      businessIntelligenceSynthesis,
   };
   const businessProfileResult =
     await supabase
