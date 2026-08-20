@@ -1352,7 +1352,7 @@ const dictionaries = {
         generator: {
           title: "Buat Deskripsi",
           description:
-            "AI hanya membuat draft. Deskripsi produk tidak berubah sampai Anda memilih Terapkan Deskripsi.",
+            "AI hanya membuat draft. Deskripsi produk hanya berubah setelah Anda meninjau, mengonfirmasi, dan menjalankan perubahan.",
 
           form: {
             tone: "Gaya",
@@ -1374,8 +1374,8 @@ const dictionaries = {
 
         latest: {
           title: "Konten Terbaru dari AI",
-          applying: "Menerapkan...",
-          apply: "Terapkan Deskripsi",
+          applying: "Menyiapkan Perubahan...",
+          apply: "Tinjau Perubahan",
           productDescription: "Deskripsi Produk",
           shortDescription: "Deskripsi Singkat",
           seoTitle: "Judul SEO",
@@ -3585,7 +3585,7 @@ const dictionaries = {
         generator: {
           title: "Generate Description",
           description:
-            "AI only creates a draft. The product description will not change until you select Apply Description.",
+            "AI only creates a draft. The product description only changes after you review, confirm, and execute the change.",
 
           form: {
             tone: "Tone",
@@ -3607,8 +3607,8 @@ const dictionaries = {
 
         latest: {
           title: "Latest Generated Content",
-          applying: "Applying...",
-          apply: "Apply Description",
+          applying: "Preparing Change...",
+          apply: "Review Change",
           productDescription: "Product Description",
           shortDescription: "Short Description",
           seoTitle: "SEO Title",
