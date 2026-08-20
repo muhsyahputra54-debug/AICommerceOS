@@ -75,6 +75,76 @@ const dictionaries = {
         clear:
           "Hapus percakapan",
 
+        businessProfileButton:
+          "Profil bisnis AI",
+        businessProfileTitle:
+          "Profil bisnis AI",
+        businessProfileDescription:
+          "Atur informasi bisnis yang relatif stabil agar LAKUVO memahami konteks bisnis Anda dengan lebih baik. Perubahan hanya disimpan saat Anda menekan Simpan perubahan.",
+        businessProfileLoading:
+          "Memuat profil bisnis...",
+        businessProfileError:
+          "Profil bisnis belum dapat dimuat atau disimpan. Coba lagi sebentar lagi.",
+        businessProfileSaved:
+          "Profil bisnis berhasil disimpan.",
+        businessProfileSave:
+          "Simpan perubahan",
+        businessProfileSaving:
+          "Menyimpan...",
+
+        businessProfileIndustry:
+          "Industri",
+        businessProfileIndustryPlaceholder:
+          "Contoh: E-commerce, fashion, makanan",
+
+        businessProfileBusinessType:
+          "Jenis bisnis",
+        businessProfileBusinessTypePlaceholder:
+          "Contoh: Online retail, distributor",
+
+        businessProfileSalesModel:
+          "Model penjualan",
+        businessProfileSalesModelNone:
+          "Belum ditentukan",
+        businessProfileSalesModelB2C:
+          "B2C — langsung ke konsumen",
+        businessProfileSalesModelB2B:
+          "B2B — ke bisnis",
+        businessProfileSalesModelHybrid:
+          "Hybrid — B2C dan B2B",
+        businessProfileSalesModelOther:
+          "Lainnya",
+
+        businessProfilePrimaryMarket:
+          "Pasar utama",
+        businessProfilePrimaryMarketPlaceholder:
+          "Contoh: Indonesia, Asia Tenggara",
+
+        businessProfileSalesChannels:
+          "Channel penjualan utama",
+        businessProfileSalesChannelsHint:
+          "Pisahkan beberapa channel dengan koma atau baris baru. Maksimal 20 channel.",
+
+        businessProfilePricingStrategy:
+          "Strategi harga",
+        businessProfilePricingStrategyPlaceholder:
+          "Contoh: Harga kompetitif dengan margin minimum tertentu",
+
+        businessProfilePrimaryGoal:
+          "Tujuan utama",
+        businessProfilePrimaryGoalPlaceholder:
+          "Apa tujuan bisnis utama yang sedang dikejar?",
+
+        businessProfileOperationalPriorities:
+          "Prioritas operasional",
+        businessProfileOperationalPrioritiesHint:
+          "Pisahkan beberapa prioritas dengan koma atau baris baru. Maksimal 20 prioritas.",
+
+        businessProfileDescriptionLabel:
+          "Deskripsi bisnis",
+        businessProfileDescriptionPlaceholder:
+          "Jelaskan bisnis, produk utama, posisi pasar, atau konteks penting lainnya.",
+
         memoryButton:
           "Yang diingat AI",
         memoryTitle:
@@ -2154,6 +2224,76 @@ const dictionaries = {
         send: "Send",
         clear:
           "Clear conversation",
+
+        businessProfileButton:
+          "Business profile",
+        businessProfileTitle:
+          "AI business profile",
+        businessProfileDescription:
+          "Manage relatively stable business information so LAKUVO can understand your business context more accurately. Changes are saved only when you press Save changes.",
+        businessProfileLoading:
+          "Loading business profile...",
+        businessProfileError:
+          "The business profile could not be loaded or saved. Please try again in a moment.",
+        businessProfileSaved:
+          "Business profile saved.",
+        businessProfileSave:
+          "Save changes",
+        businessProfileSaving:
+          "Saving...",
+
+        businessProfileIndustry:
+          "Industry",
+        businessProfileIndustryPlaceholder:
+          "Example: E-commerce, fashion, food",
+
+        businessProfileBusinessType:
+          "Business type",
+        businessProfileBusinessTypePlaceholder:
+          "Example: Online retail, distributor",
+
+        businessProfileSalesModel:
+          "Sales model",
+        businessProfileSalesModelNone:
+          "Not specified",
+        businessProfileSalesModelB2C:
+          "B2C — direct to consumers",
+        businessProfileSalesModelB2B:
+          "B2B — selling to businesses",
+        businessProfileSalesModelHybrid:
+          "Hybrid — B2C and B2B",
+        businessProfileSalesModelOther:
+          "Other",
+
+        businessProfilePrimaryMarket:
+          "Primary market",
+        businessProfilePrimaryMarketPlaceholder:
+          "Example: Indonesia, Southeast Asia",
+
+        businessProfileSalesChannels:
+          "Primary sales channels",
+        businessProfileSalesChannelsHint:
+          "Separate channels with commas or new lines. Maximum 20 channels.",
+
+        businessProfilePricingStrategy:
+          "Pricing strategy",
+        businessProfilePricingStrategyPlaceholder:
+          "Example: Competitive pricing with a minimum margin target",
+
+        businessProfilePrimaryGoal:
+          "Primary goal",
+        businessProfilePrimaryGoalPlaceholder:
+          "What is the main business goal you are currently pursuing?",
+
+        businessProfileOperationalPriorities:
+          "Operational priorities",
+        businessProfileOperationalPrioritiesHint:
+          "Separate priorities with commas or new lines. Maximum 20 priorities.",
+
+        businessProfileDescriptionLabel:
+          "Business description",
+        businessProfileDescriptionPlaceholder:
+          "Describe the business, core products, market position, or other important context.",
 
         memoryButton:
           "AI memory",

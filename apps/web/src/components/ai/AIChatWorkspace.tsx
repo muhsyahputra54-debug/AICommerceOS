@@ -4,6 +4,7 @@ import {
   Archive,
   Bot,
   Brain,
+  Building2,
   LoaderCircle,
   RotateCcw,
   Send,
@@ -35,6 +36,46 @@ type AIChatWorkspaceCopy = {
 
   send: string;
   clear: string;
+
+  businessProfileButton: string;
+  businessProfileTitle: string;
+  businessProfileDescription: string;
+  businessProfileLoading: string;
+  businessProfileError: string;
+  businessProfileSaved: string;
+  businessProfileSave: string;
+  businessProfileSaving: string;
+
+  businessProfileIndustry: string;
+  businessProfileIndustryPlaceholder: string;
+
+  businessProfileBusinessType: string;
+  businessProfileBusinessTypePlaceholder: string;
+
+  businessProfileSalesModel: string;
+  businessProfileSalesModelNone: string;
+  businessProfileSalesModelB2C: string;
+  businessProfileSalesModelB2B: string;
+  businessProfileSalesModelHybrid: string;
+  businessProfileSalesModelOther: string;
+
+  businessProfilePrimaryMarket: string;
+  businessProfilePrimaryMarketPlaceholder: string;
+
+  businessProfileSalesChannels: string;
+  businessProfileSalesChannelsHint: string;
+
+  businessProfilePricingStrategy: string;
+  businessProfilePricingStrategyPlaceholder: string;
+
+  businessProfilePrimaryGoal: string;
+  businessProfilePrimaryGoalPlaceholder: string;
+
+  businessProfileOperationalPriorities: string;
+  businessProfileOperationalPrioritiesHint: string;
+
+  businessProfileDescriptionLabel: string;
+  businessProfileDescriptionPlaceholder: string;
 
   memoryButton: string;
   memoryTitle: string;
@@ -156,6 +197,157 @@ type PendingMemorySuggestion =
   MemorySuggestionCandidate & {
     sourceConversationId: string;
   };
+
+type BusinessProfile = {
+  organization_id: string;
+
+  industry:
+    | string
+    | null;
+
+  business_type:
+    | string
+    | null;
+
+  sales_model:
+    | string
+    | null;
+
+  primary_market:
+    | string
+    | null;
+
+  primary_sales_channels:
+    string[];
+
+  pricing_strategy:
+    | string
+    | null;
+
+  primary_goal:
+    | string
+    | null;
+
+  operational_priorities:
+    string[];
+
+  business_description:
+    | string
+    | null;
+
+  created_by:
+    | string
+    | null;
+
+  updated_by:
+    | string
+    | null;
+
+  created_at: string;
+  updated_at: string;
+};
+
+type BusinessProfileResponse = {
+  profile?:
+    | BusinessProfile
+    | null;
+
+  error?: string;
+};
+
+type BusinessProfileForm = {
+  industry: string;
+  businessType: string;
+  salesModel: string;
+  primaryMarket: string;
+  primarySalesChannels: string;
+  pricingStrategy: string;
+  primaryGoal: string;
+  operationalPriorities: string;
+  businessDescription: string;
+};
+
+const EMPTY_BUSINESS_PROFILE_FORM:
+  BusinessProfileForm = {
+    industry: "",
+    businessType: "",
+    salesModel: "",
+    primaryMarket: "",
+    primarySalesChannels: "",
+    pricingStrategy: "",
+    primaryGoal: "",
+    operationalPriorities: "",
+    businessDescription: "",
+  };
+
+function listInputToArray(
+  value: string,
+) {
+  return Array.from(
+    new Set(
+      value
+        .split(/[\n,]/)
+        .map(
+          (item) =>
+            item.trim(),
+        )
+        .filter(Boolean),
+    ),
+  );
+}
+
+function businessProfileToForm(
+  profile:
+    | BusinessProfile
+    | null,
+): BusinessProfileForm {
+  if (!profile) {
+    return {
+      ...EMPTY_BUSINESS_PROFILE_FORM,
+    };
+  }
+
+  return {
+    industry:
+      profile.industry ?? "",
+
+    businessType:
+      profile.business_type ?? "",
+
+    salesModel:
+      profile.sales_model ?? "",
+
+    primaryMarket:
+      profile.primary_market ?? "",
+
+    primarySalesChannels:
+      Array.isArray(
+        profile.primary_sales_channels,
+      )
+        ? profile.primary_sales_channels.join(
+            ", ",
+          )
+        : "",
+
+    pricingStrategy:
+      profile.pricing_strategy ?? "",
+
+    primaryGoal:
+      profile.primary_goal ?? "",
+
+    operationalPriorities:
+      Array.isArray(
+        profile.operational_priorities,
+      )
+        ? profile.operational_priorities.join(
+            ", ",
+          )
+        : "",
+
+    businessDescription:
+      profile.business_description ?? "",
+  };
+}
 
 const MAX_MESSAGE_LENGTH = 4000;
 const MAX_CONTEXT_MESSAGES = 20;
@@ -425,6 +617,40 @@ export default function AIChatWorkspace({
 
   const [errorMessage, setErrorMessage] =
     useState<string | null>(null);
+
+  const [
+    isBusinessProfilePanelOpen,
+    setIsBusinessProfilePanelOpen,
+  ] = useState(false);
+
+  const [
+    businessProfileForm,
+    setBusinessProfileForm,
+  ] =
+    useState<BusinessProfileForm>({
+      ...EMPTY_BUSINESS_PROFILE_FORM,
+    });
+
+  const [
+    isBusinessProfileLoading,
+    setIsBusinessProfileLoading,
+  ] = useState(false);
+
+  const [
+    isBusinessProfileSaving,
+    setIsBusinessProfileSaving,
+  ] = useState(false);
+
+  const [
+    businessProfileError,
+    setBusinessProfileError,
+  ] =
+    useState<string | null>(null);
+
+  const [
+    businessProfileSaved,
+    setBusinessProfileSaved,
+  ] = useState(false);
 
   const [
     isMemoryPanelOpen,
@@ -1061,6 +1287,190 @@ export default function AIChatWorkspace({
     }
   }
 
+  async function loadBusinessProfile() {
+    setIsBusinessProfileLoading(
+      true,
+    );
+
+    setBusinessProfileError(
+      null,
+    );
+
+    setBusinessProfileSaved(
+      false,
+    );
+
+    try {
+      const response =
+        await fetch(
+          "/api/ai/business-profile",
+          {
+            cache: "no-store",
+          },
+        );
+
+      const data =
+        (await response
+          .json()
+          .catch(
+            () => ({}),
+          )) as BusinessProfileResponse;
+
+      if (!response.ok) {
+        setBusinessProfileError(
+          data.error?.trim() ||
+            copy.businessProfileError,
+        );
+
+        return;
+      }
+
+      setBusinessProfileForm(
+        businessProfileToForm(
+          data.profile ?? null,
+        ),
+      );
+    } catch {
+      setBusinessProfileError(
+        copy.businessProfileError,
+      );
+    } finally {
+      setIsBusinessProfileLoading(
+        false,
+      );
+    }
+  }
+
+  async function toggleBusinessProfilePanel() {
+    if (
+      isBusinessProfilePanelOpen
+    ) {
+      setIsBusinessProfilePanelOpen(
+        false,
+      );
+
+      return;
+    }
+
+    setIsMemoryPanelOpen(false);
+
+    setIsBusinessProfilePanelOpen(
+      true,
+    );
+
+    await loadBusinessProfile();
+  }
+
+  async function saveBusinessProfile(
+    event:
+      FormEvent<HTMLFormElement>,
+  ) {
+    event.preventDefault();
+
+    if (
+      isBusinessProfileSaving
+    ) {
+      return;
+    }
+
+    setIsBusinessProfileSaving(
+      true,
+    );
+
+    setBusinessProfileError(
+      null,
+    );
+
+    setBusinessProfileSaved(
+      false,
+    );
+
+    try {
+      const response =
+        await fetch(
+          "/api/ai/business-profile",
+          {
+            method: "PUT",
+
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
+
+            body: JSON.stringify({
+              industry:
+                businessProfileForm.industry,
+
+              businessType:
+                businessProfileForm.businessType,
+
+              salesModel:
+                businessProfileForm.salesModel,
+
+              primaryMarket:
+                businessProfileForm.primaryMarket,
+
+              primarySalesChannels:
+                listInputToArray(
+                  businessProfileForm.primarySalesChannels,
+                ),
+
+              pricingStrategy:
+                businessProfileForm.pricingStrategy,
+
+              primaryGoal:
+                businessProfileForm.primaryGoal,
+
+              operationalPriorities:
+                listInputToArray(
+                  businessProfileForm.operationalPriorities,
+                ),
+
+              businessDescription:
+                businessProfileForm.businessDescription,
+            }),
+          },
+        );
+
+      const data =
+        (await response
+          .json()
+          .catch(
+            () => ({}),
+          )) as BusinessProfileResponse;
+
+      if (
+        !response.ok ||
+        !data.profile
+      ) {
+        setBusinessProfileError(
+          data.error?.trim() ||
+            copy.businessProfileError,
+        );
+
+        return;
+      }
+
+      setBusinessProfileForm(
+        businessProfileToForm(
+          data.profile,
+        ),
+      );
+
+      setBusinessProfileSaved(
+        true,
+      );
+    } catch {
+      setBusinessProfileError(
+        copy.businessProfileError,
+      );
+    } finally {
+      setIsBusinessProfileSaving(
+        false,
+      );
+    }
+  }
+
   async function loadMemories() {
     setIsMemoryLoading(true);
     setMemoryError(null);
@@ -1111,6 +1521,10 @@ export default function AIChatWorkspace({
       setIsMemoryPanelOpen(false);
       return;
     }
+
+    setIsBusinessProfilePanelOpen(
+      false,
+    );
 
     setIsMemoryPanelOpen(true);
 
@@ -1292,6 +1706,29 @@ export default function AIChatWorkspace({
           <button
             type="button"
             onClick={() => {
+              void toggleBusinessProfilePanel();
+            }}
+            disabled={
+              isBusinessProfileLoading ||
+              isBusinessProfileSaving
+            }
+            aria-expanded={
+              isBusinessProfilePanelOpen
+            }
+            className="inline-flex h-9 items-center gap-2 rounded-lg border px-3 text-sm font-medium transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {isBusinessProfileLoading ? (
+              <LoaderCircle className="h-4 w-4 animate-spin" />
+            ) : (
+              <Building2 className="h-4 w-4" />
+            )}
+
+            {copy.businessProfileButton}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
               void toggleMemoryPanel();
             }}
             disabled={
@@ -1327,6 +1764,405 @@ export default function AIChatWorkspace({
           </button>
         </div>
       </div>
+
+      {isBusinessProfilePanelOpen ? (
+        <div className="border-b bg-muted/20 p-4 sm:p-6">
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+              <Building2 className="h-5 w-5 text-primary" />
+            </div>
+
+            <div>
+              <h3 className="font-semibold">
+                {copy.businessProfileTitle}
+              </h3>
+
+              <p className="mt-1 max-w-3xl text-sm leading-6 text-muted-foreground">
+                {copy.businessProfileDescription}
+              </p>
+            </div>
+          </div>
+
+          {businessProfileError ? (
+            <div className="mt-4 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+              {businessProfileError}
+            </div>
+          ) : null}
+
+          {businessProfileSaved ? (
+            <div className="mt-4 rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-3 text-sm text-emerald-700">
+              {copy.businessProfileSaved}
+            </div>
+          ) : null}
+
+          {isBusinessProfileLoading ? (
+            <div className="mt-5 flex items-center gap-2 text-sm text-muted-foreground">
+              <LoaderCircle className="h-4 w-4 animate-spin" />
+
+              {copy.businessProfileLoading}
+            </div>
+          ) : (
+            <form
+              className="mt-5 space-y-5"
+              onSubmit={
+                saveBusinessProfile
+              }
+            >
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <label
+                    htmlFor="ai-business-profile-industry"
+                    className="text-sm font-medium"
+                  >
+                    {copy.businessProfileIndustry}
+                  </label>
+
+                  <input
+                    id="ai-business-profile-industry"
+                    type="text"
+                    maxLength={120}
+                    value={
+                      businessProfileForm.industry
+                    }
+                    onChange={(event) => {
+                      setBusinessProfileSaved(
+                        false,
+                      );
+
+                      setBusinessProfileForm(
+                        (current) => ({
+                          ...current,
+                          industry:
+                            event.target.value,
+                        }),
+                      );
+                    }}
+                    placeholder={
+                      copy.businessProfileIndustryPlaceholder
+                    }
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none transition-colors placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label
+                    htmlFor="ai-business-profile-type"
+                    className="text-sm font-medium"
+                  >
+                    {copy.businessProfileBusinessType}
+                  </label>
+
+                  <input
+                    id="ai-business-profile-type"
+                    type="text"
+                    maxLength={120}
+                    value={
+                      businessProfileForm.businessType
+                    }
+                    onChange={(event) => {
+                      setBusinessProfileSaved(
+                        false,
+                      );
+
+                      setBusinessProfileForm(
+                        (current) => ({
+                          ...current,
+                          businessType:
+                            event.target.value,
+                        }),
+                      );
+                    }}
+                    placeholder={
+                      copy.businessProfileBusinessTypePlaceholder
+                    }
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none transition-colors placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label
+                    htmlFor="ai-business-profile-sales-model"
+                    className="text-sm font-medium"
+                  >
+                    {copy.businessProfileSalesModel}
+                  </label>
+
+                  <select
+                    id="ai-business-profile-sales-model"
+                    value={
+                      businessProfileForm.salesModel
+                    }
+                    onChange={(event) => {
+                      setBusinessProfileSaved(
+                        false,
+                      );
+
+                      setBusinessProfileForm(
+                        (current) => ({
+                          ...current,
+                          salesModel:
+                            event.target.value,
+                        }),
+                      );
+                    }}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <option value="">
+                      {copy.businessProfileSalesModelNone}
+                    </option>
+
+                    <option value="b2c">
+                      {copy.businessProfileSalesModelB2C}
+                    </option>
+
+                    <option value="b2b">
+                      {copy.businessProfileSalesModelB2B}
+                    </option>
+
+                    <option value="hybrid">
+                      {copy.businessProfileSalesModelHybrid}
+                    </option>
+
+                    <option value="other">
+                      {copy.businessProfileSalesModelOther}
+                    </option>
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <label
+                    htmlFor="ai-business-profile-market"
+                    className="text-sm font-medium"
+                  >
+                    {copy.businessProfilePrimaryMarket}
+                  </label>
+
+                  <input
+                    id="ai-business-profile-market"
+                    type="text"
+                    maxLength={160}
+                    value={
+                      businessProfileForm.primaryMarket
+                    }
+                    onChange={(event) => {
+                      setBusinessProfileSaved(
+                        false,
+                      );
+
+                      setBusinessProfileForm(
+                        (current) => ({
+                          ...current,
+                          primaryMarket:
+                            event.target.value,
+                        }),
+                      );
+                    }}
+                    placeholder={
+                      copy.businessProfilePrimaryMarketPlaceholder
+                    }
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none transition-colors placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                  />
+                </div>
+
+                <div className="space-y-2 sm:col-span-2">
+                  <label
+                    htmlFor="ai-business-profile-channels"
+                    className="text-sm font-medium"
+                  >
+                    {copy.businessProfileSalesChannels}
+                  </label>
+
+                  <textarea
+                    id="ai-business-profile-channels"
+                    rows={2}
+                    value={
+                      businessProfileForm.primarySalesChannels
+                    }
+                    onChange={(event) => {
+                      setBusinessProfileSaved(
+                        false,
+                      );
+
+                      setBusinessProfileForm(
+                        (current) => ({
+                          ...current,
+                          primarySalesChannels:
+                            event.target.value,
+                        }),
+                      );
+                    }}
+                    className="flex w-full resize-y rounded-md border border-input bg-background px-3 py-2 text-sm outline-none transition-colors placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                  />
+
+                  <p className="text-xs text-muted-foreground">
+                    {copy.businessProfileSalesChannelsHint}
+                  </p>
+                </div>
+
+                <div className="space-y-2 sm:col-span-2">
+                  <label
+                    htmlFor="ai-business-profile-pricing"
+                    className="text-sm font-medium"
+                  >
+                    {copy.businessProfilePricingStrategy}
+                  </label>
+
+                  <textarea
+                    id="ai-business-profile-pricing"
+                    rows={2}
+                    maxLength={500}
+                    value={
+                      businessProfileForm.pricingStrategy
+                    }
+                    onChange={(event) => {
+                      setBusinessProfileSaved(
+                        false,
+                      );
+
+                      setBusinessProfileForm(
+                        (current) => ({
+                          ...current,
+                          pricingStrategy:
+                            event.target.value,
+                        }),
+                      );
+                    }}
+                    placeholder={
+                      copy.businessProfilePricingStrategyPlaceholder
+                    }
+                    className="flex w-full resize-y rounded-md border border-input bg-background px-3 py-2 text-sm outline-none transition-colors placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                  />
+                </div>
+
+                <div className="space-y-2 sm:col-span-2">
+                  <label
+                    htmlFor="ai-business-profile-goal"
+                    className="text-sm font-medium"
+                  >
+                    {copy.businessProfilePrimaryGoal}
+                  </label>
+
+                  <textarea
+                    id="ai-business-profile-goal"
+                    rows={3}
+                    maxLength={1000}
+                    value={
+                      businessProfileForm.primaryGoal
+                    }
+                    onChange={(event) => {
+                      setBusinessProfileSaved(
+                        false,
+                      );
+
+                      setBusinessProfileForm(
+                        (current) => ({
+                          ...current,
+                          primaryGoal:
+                            event.target.value,
+                        }),
+                      );
+                    }}
+                    placeholder={
+                      copy.businessProfilePrimaryGoalPlaceholder
+                    }
+                    className="flex w-full resize-y rounded-md border border-input bg-background px-3 py-2 text-sm outline-none transition-colors placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                  />
+                </div>
+
+                <div className="space-y-2 sm:col-span-2">
+                  <label
+                    htmlFor="ai-business-profile-priorities"
+                    className="text-sm font-medium"
+                  >
+                    {copy.businessProfileOperationalPriorities}
+                  </label>
+
+                  <textarea
+                    id="ai-business-profile-priorities"
+                    rows={2}
+                    value={
+                      businessProfileForm.operationalPriorities
+                    }
+                    onChange={(event) => {
+                      setBusinessProfileSaved(
+                        false,
+                      );
+
+                      setBusinessProfileForm(
+                        (current) => ({
+                          ...current,
+                          operationalPriorities:
+                            event.target.value,
+                        }),
+                      );
+                    }}
+                    className="flex w-full resize-y rounded-md border border-input bg-background px-3 py-2 text-sm outline-none transition-colors placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                  />
+
+                  <p className="text-xs text-muted-foreground">
+                    {copy.businessProfileOperationalPrioritiesHint}
+                  </p>
+                </div>
+
+                <div className="space-y-2 sm:col-span-2">
+                  <label
+                    htmlFor="ai-business-profile-description"
+                    className="text-sm font-medium"
+                  >
+                    {copy.businessProfileDescriptionLabel}
+                  </label>
+
+                  <textarea
+                    id="ai-business-profile-description"
+                    rows={4}
+                    maxLength={3000}
+                    value={
+                      businessProfileForm.businessDescription
+                    }
+                    onChange={(event) => {
+                      setBusinessProfileSaved(
+                        false,
+                      );
+
+                      setBusinessProfileForm(
+                        (current) => ({
+                          ...current,
+                          businessDescription:
+                            event.target.value,
+                        }),
+                      );
+                    }}
+                    placeholder={
+                      copy.businessProfileDescriptionPlaceholder
+                    }
+                    className="flex w-full resize-y rounded-md border border-input bg-background px-3 py-2 text-sm outline-none transition-colors placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end">
+                <button
+                  type="submit"
+                  disabled={
+                    isBusinessProfileSaving
+                  }
+                  className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isBusinessProfileSaving ? (
+                    <LoaderCircle className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Building2 className="h-4 w-4" />
+                  )}
+
+                  {isBusinessProfileSaving
+                    ? copy.businessProfileSaving
+                    : copy.businessProfileSave}
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
+      ) : null}
 
       {isMemoryPanelOpen ? (
         <div className="border-b bg-muted/20 p-4 sm:p-6">

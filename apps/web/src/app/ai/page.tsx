@@ -37,6 +37,76 @@ export default async function AIAssistantPage() {
             clear:
               copy.chat.clear,
 
+            businessProfileButton:
+              copy.chat.businessProfileButton,
+            businessProfileTitle:
+              copy.chat.businessProfileTitle,
+            businessProfileDescription:
+              copy.chat.businessProfileDescription,
+            businessProfileLoading:
+              copy.chat.businessProfileLoading,
+            businessProfileError:
+              copy.chat.businessProfileError,
+            businessProfileSaved:
+              copy.chat.businessProfileSaved,
+            businessProfileSave:
+              copy.chat.businessProfileSave,
+            businessProfileSaving:
+              copy.chat.businessProfileSaving,
+
+            businessProfileIndustry:
+              copy.chat.businessProfileIndustry,
+            businessProfileIndustryPlaceholder:
+              copy.chat.businessProfileIndustryPlaceholder,
+
+            businessProfileBusinessType:
+              copy.chat.businessProfileBusinessType,
+            businessProfileBusinessTypePlaceholder:
+              copy.chat.businessProfileBusinessTypePlaceholder,
+
+            businessProfileSalesModel:
+              copy.chat.businessProfileSalesModel,
+            businessProfileSalesModelNone:
+              copy.chat.businessProfileSalesModelNone,
+            businessProfileSalesModelB2C:
+              copy.chat.businessProfileSalesModelB2C,
+            businessProfileSalesModelB2B:
+              copy.chat.businessProfileSalesModelB2B,
+            businessProfileSalesModelHybrid:
+              copy.chat.businessProfileSalesModelHybrid,
+            businessProfileSalesModelOther:
+              copy.chat.businessProfileSalesModelOther,
+
+            businessProfilePrimaryMarket:
+              copy.chat.businessProfilePrimaryMarket,
+            businessProfilePrimaryMarketPlaceholder:
+              copy.chat.businessProfilePrimaryMarketPlaceholder,
+
+            businessProfileSalesChannels:
+              copy.chat.businessProfileSalesChannels,
+            businessProfileSalesChannelsHint:
+              copy.chat.businessProfileSalesChannelsHint,
+
+            businessProfilePricingStrategy:
+              copy.chat.businessProfilePricingStrategy,
+            businessProfilePricingStrategyPlaceholder:
+              copy.chat.businessProfilePricingStrategyPlaceholder,
+
+            businessProfilePrimaryGoal:
+              copy.chat.businessProfilePrimaryGoal,
+            businessProfilePrimaryGoalPlaceholder:
+              copy.chat.businessProfilePrimaryGoalPlaceholder,
+
+            businessProfileOperationalPriorities:
+              copy.chat.businessProfileOperationalPriorities,
+            businessProfileOperationalPrioritiesHint:
+              copy.chat.businessProfileOperationalPrioritiesHint,
+
+            businessProfileDescriptionLabel:
+              copy.chat.businessProfileDescriptionLabel,
+            businessProfileDescriptionPlaceholder:
+              copy.chat.businessProfileDescriptionPlaceholder,
+
             memoryButton:
               copy.chat.memoryButton,
             memoryTitle:
