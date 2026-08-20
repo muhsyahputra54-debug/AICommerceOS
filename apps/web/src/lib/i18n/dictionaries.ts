@@ -218,6 +218,27 @@ const dictionaries = {
         memoryTypeBusinessContext:
           "Konteks bisnis",
 
+        agentDelegationButton: "Delegasikan ke Agent",
+        agentDelegationTitle: "Minta Agent menganalisis",
+        agentDelegationDescription:
+          "Pilih sendiri Agent read-only dan tujuan analisis. Agent hanya memakai konteks yang sudah disetujui.",
+        agentDelegationAgent: "Agent",
+        agentDelegationSelectPlaceholder: "Pilih Agent",
+        agentDelegationObjective: "Tujuan analisis",
+        agentDelegationObjectivePlaceholder:
+          "Contoh: Tinjau risiko stok dan produk yang perlu perhatian.",
+        agentDelegationRun: "Jalankan Agent",
+        agentDelegationRunning: "Agent sedang menganalisis...",
+        agentDelegationNoAgents:
+          "Belum ada Agent aktif yang tersedia.",
+        agentDelegationCompleted:
+          "Analisis Agent selesai. Periksa pesan yang disiapkan lalu kirim untuk meminta Asisten membahas hasilnya.",
+        agentDelegationPending:
+          "Ada hasil Agent yang belum digunakan. Kirim pesan yang sudah disiapkan sebelum menjalankan Agent lain.",
+        agentDelegationClose: "Tutup",
+        agentDelegationError:
+          "Agent belum berhasil menyelesaikan analisis. Coba lagi.",
+
         thinking:
           "Saya sedang melihat data bisnis Anda...",
         userLabel: "Anda",
@@ -2397,6 +2418,27 @@ const dictionaries = {
           "Constraint",
         memoryTypeBusinessContext:
           "Business context",
+
+        agentDelegationButton: "Delegate to Agent",
+        agentDelegationTitle: "Ask an Agent to analyze",
+        agentDelegationDescription:
+          "Choose a read-only Agent yourself and provide the analysis objective. The Agent only uses its approved context.",
+        agentDelegationAgent: "Agent",
+        agentDelegationSelectPlaceholder: "Select Agent",
+        agentDelegationObjective: "Analysis objective",
+        agentDelegationObjectivePlaceholder:
+          "Example: Review inventory risks and products that need attention.",
+        agentDelegationRun: "Run Agent",
+        agentDelegationRunning: "Agent is analyzing...",
+        agentDelegationNoAgents:
+          "No active Agent is currently available.",
+        agentDelegationCompleted:
+          "Agent analysis completed. Review the prepared message, then send it to ask the Assistant to discuss the result.",
+        agentDelegationPending:
+          "An Agent result is waiting to be used. Send the prepared message before running another Agent.",
+        agentDelegationClose: "Close",
+        agentDelegationError:
+          "The Agent did not complete the analysis. Please try again.",
 
         thinking:
           "I'm looking at your business data...",

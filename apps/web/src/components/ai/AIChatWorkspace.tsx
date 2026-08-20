@@ -45,6 +45,10 @@ import {
   stripAssistantAgentHandoffFromUrl,
   type AssistantAgentHandoff,
 } from "@/lib/ai/assistant-agent-handoff";
+import AssistantAgentDelegationPanel from "@/components/ai/AssistantAgentDelegationPanel";
+import type {
+  AssistantAgentDelegationOption,
+} from "@/lib/ai/assistant-agent-delegation";
 type ChatMessage = {
   role: "user" | "assistant";
   content: string;
@@ -143,6 +147,21 @@ type AIChatWorkspaceCopy = {
   memoryTypeConstraint: string;
   memoryTypeBusinessContext: string;
 
+  agentDelegationButton: string;
+  agentDelegationTitle: string;
+  agentDelegationDescription: string;
+  agentDelegationAgent: string;
+  agentDelegationSelectPlaceholder: string;
+  agentDelegationObjective: string;
+  agentDelegationObjectivePlaceholder: string;
+  agentDelegationRun: string;
+  agentDelegationRunning: string;
+  agentDelegationNoAgents: string;
+  agentDelegationCompleted: string;
+  agentDelegationPending: string;
+  agentDelegationClose: string;
+  agentDelegationError: string;
+
   thinking: string;
 
   userLabel: string;
@@ -155,6 +174,9 @@ type AIChatWorkspaceCopy = {
 
 type AIChatWorkspaceProps = {
   copy: AIChatWorkspaceCopy;
+
+  agentOptions:
+    readonly AssistantAgentDelegationOption[];
 };
 
 type ChatResponse = {
@@ -228,6 +250,7 @@ const MAX_CONTEXT_MESSAGES = 20;
 
 export default function AIChatWorkspace({
   copy,
+  agentOptions,
 }: AIChatWorkspaceProps) {
   const [
     agentAdvisoryHandoff,
@@ -619,6 +642,28 @@ export default function AIChatWorkspace({
     errorMessage,
   ]);
 
+  function handleAgentDelegationCompleted({
+    agentId,
+    runId,
+    objective,
+  }: {
+    agentId: string;
+    runId: string;
+    objective: string;
+  }) {
+    setAgentAdvisoryHandoff({
+      agentId,
+      runId,
+    });
+
+    setInput(
+      objective,
+    );
+
+    setErrorMessage(
+      null,
+    );
+  }
   async function sendMessage(
     rawContent: string,
     proactiveInsightCode?:
@@ -2393,6 +2438,45 @@ export default function AIChatWorkspace({
 
       {/* Composer */}
       <div className="border-t bg-background/50 p-4">
+        <AssistantAgentDelegationPanel
+          agentOptions={agentOptions}
+          hasPendingAdvisory={Boolean(
+            agentAdvisoryHandoff,
+          )}
+          copy={{
+            button:
+              copy.agentDelegationButton,
+            title:
+              copy.agentDelegationTitle,
+            description:
+              copy.agentDelegationDescription,
+            agentLabel:
+              copy.agentDelegationAgent,
+            selectPlaceholder:
+              copy.agentDelegationSelectPlaceholder,
+            objectiveLabel:
+              copy.agentDelegationObjective,
+            objectivePlaceholder:
+              copy.agentDelegationObjectivePlaceholder,
+            run:
+              copy.agentDelegationRun,
+            running:
+              copy.agentDelegationRunning,
+            noAgents:
+              copy.agentDelegationNoAgents,
+            completed:
+              copy.agentDelegationCompleted,
+            pending:
+              copy.agentDelegationPending,
+            close:
+              copy.agentDelegationClose,
+            error:
+              copy.agentDelegationError,
+          }}
+          onCompleted={
+            handleAgentDelegationCompleted
+          }
+        />
         <form
           onSubmit={handleSubmit}
           className="space-y-3"

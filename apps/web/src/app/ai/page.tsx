@@ -1,4 +1,9 @@
 import AIChatWorkspace from "@/components/ai/AIChatWorkspace";
+import {
+  projectAssistantAgentDelegationOption,
+} from "@/lib/ai/assistant-agent-delegation";
+import { getCurrentOrganization } from "@/lib/supabase/current-organization";
+import { createClient } from "@/lib/supabase/server";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { getLocale } from "@/lib/i18n/server";
@@ -6,6 +11,61 @@ import { getLocale } from "@/lib/i18n/server";
 export default async function AIAssistantPage() {
   const locale = await getLocale();
   const copy = getDictionary(locale).aiAssistant;
+
+  const currentOrganization =
+    await getCurrentOrganization();
+
+  const supabase =
+    await createClient();
+
+  const agentRowsResult =
+    currentOrganization
+      ? await supabase
+          .from("ai_agents")
+          .select(
+            "id, name, purpose, approved_contexts, is_active",
+          )
+          .eq(
+            "organization_id",
+            currentOrganization.organizationId,
+          )
+          .eq(
+            "is_active",
+            true,
+          )
+          .order("created_at", {
+            ascending:
+              false,
+          })
+      : {
+          data:
+            null,
+
+          error:
+            null,
+        };
+
+  const agentRows =
+    agentRowsResult.data;
+
+  const agentRowsError =
+    agentRowsResult.error;
+
+  const agentOptions =
+    agentRowsError
+      ? []
+      : (agentRows ?? []).flatMap(
+          (row) => {
+            const option =
+              projectAssistantAgentDelegationOption(
+                row,
+              );
+
+            return option
+              ? [option]
+              : [];
+          },
+        );
 
   return (
     <DashboardLayout>
@@ -21,6 +81,7 @@ export default async function AIAssistantPage() {
         </div>
 
         <AIChatWorkspace
+          agentOptions={agentOptions}
           copy={{
             assistantTitle:
               copy.assistant.title,
@@ -179,6 +240,35 @@ export default async function AIAssistantPage() {
               copy.chat.memoryTypeConstraint,
             memoryTypeBusinessContext:
               copy.chat.memoryTypeBusinessContext,
+
+            agentDelegationButton:
+              copy.chat.agentDelegationButton,
+            agentDelegationTitle:
+              copy.chat.agentDelegationTitle,
+            agentDelegationDescription:
+              copy.chat.agentDelegationDescription,
+            agentDelegationAgent:
+              copy.chat.agentDelegationAgent,
+            agentDelegationSelectPlaceholder:
+              copy.chat.agentDelegationSelectPlaceholder,
+            agentDelegationObjective:
+              copy.chat.agentDelegationObjective,
+            agentDelegationObjectivePlaceholder:
+              copy.chat.agentDelegationObjectivePlaceholder,
+            agentDelegationRun:
+              copy.chat.agentDelegationRun,
+            agentDelegationRunning:
+              copy.chat.agentDelegationRunning,
+            agentDelegationNoAgents:
+              copy.chat.agentDelegationNoAgents,
+            agentDelegationCompleted:
+              copy.chat.agentDelegationCompleted,
+            agentDelegationPending:
+              copy.chat.agentDelegationPending,
+            agentDelegationClose:
+              copy.chat.agentDelegationClose,
+            agentDelegationError:
+              copy.chat.agentDelegationError,
 
             thinking:
               copy.chat.thinking,
