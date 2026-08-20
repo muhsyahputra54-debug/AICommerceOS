@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  AlertTriangle,
   Archive,
   Bot,
   Brain,
@@ -36,6 +37,23 @@ type AIChatWorkspaceCopy = {
 
   send: string;
   clear: string;
+
+  insightsTitle: string;
+  insightsDescription: string;
+
+  insightCatalogReadinessTitle: string;
+  insightCatalogReadinessDescription: string;
+
+  insightCompetitorThresholdTitle: string;
+  insightCompetitorThresholdDescription: string;
+
+  insightNoOrdersTitle: string;
+  insightNoOrdersDescription: string;
+
+  insightPriceMonitoringNoObservationsTitle: string;
+  insightPriceMonitoringNoObservationsDescription: string;
+
+  insightAskPrefix: string;
 
   businessProfileButton: string;
   businessProfileTitle: string;
@@ -120,6 +138,70 @@ type ChatResponse = {
   conversationId?: string | null;
   error?: string;
 };
+
+const PROACTIVE_INSIGHT_CODES = [
+  "catalog_readiness",
+  "competitor_threshold_alert",
+  "no_orders",
+  "price_monitoring_no_observations",
+] as const;
+
+type ProactiveInsightCode =
+  (typeof PROACTIVE_INSIGHT_CODES)[number];
+
+type ProactiveInsight = {
+  code: ProactiveInsightCode;
+  severity:
+    | "high"
+    | "medium";
+  source:
+    "deterministic_rule_engine";
+};
+
+type ProactiveInsightsResponse = {
+  insights?: unknown;
+};
+
+function isProactiveInsight(
+  value: unknown,
+): value is ProactiveInsight {
+  if (
+    typeof value !== "object" ||
+    value === null
+  ) {
+    return false;
+  }
+
+  const insight =
+    value as Record<
+      string,
+      unknown
+    >;
+
+  const code =
+    insight.code;
+
+  if (
+    typeof code !== "string" ||
+    !PROACTIVE_INSIGHT_CODES.includes(
+      code as ProactiveInsightCode,
+    )
+  ) {
+    return false;
+  }
+
+  if (
+    insight.severity !== "high" &&
+    insight.severity !== "medium"
+  ) {
+    return false;
+  }
+
+  return (
+    insight.source ===
+    "deterministic_rule_engine"
+  );
+}
 
 type ConversationRecord = {
   id: string;
@@ -619,6 +701,48 @@ export default function AIChatWorkspace({
     useState<string | null>(null);
 
   const [
+    insights,
+    setInsights,
+  ] =
+    useState<ProactiveInsight[]>([]);
+
+  const insightPresentations: Record<
+    ProactiveInsightCode,
+    {
+      title: string;
+      description: string;
+    }
+  > = {
+    catalog_readiness: {
+      title:
+        copy.insightCatalogReadinessTitle,
+      description:
+        copy.insightCatalogReadinessDescription,
+    },
+
+    competitor_threshold_alert: {
+      title:
+        copy.insightCompetitorThresholdTitle,
+      description:
+        copy.insightCompetitorThresholdDescription,
+    },
+
+    no_orders: {
+      title:
+        copy.insightNoOrdersTitle,
+      description:
+        copy.insightNoOrdersDescription,
+    },
+
+    price_monitoring_no_observations: {
+      title:
+        copy.insightPriceMonitoringNoObservationsTitle,
+      description:
+        copy.insightPriceMonitoringNoObservationsDescription,
+    },
+  };
+
+  const [
     isBusinessProfilePanelOpen,
     setIsBusinessProfilePanelOpen,
   ] = useState(false);
@@ -839,6 +963,88 @@ export default function AIChatWorkspace({
     };
   }, [
     copy.errorFallback,
+  ]);
+
+  useEffect(() => {
+    if (
+      isConversationLoading ||
+      messages.length > 0
+    ) {
+      return;
+    }
+
+    const controller =
+      new AbortController();
+
+    async function loadInsights() {
+      try {
+        const response =
+          await fetch(
+            "/api/ai/insights",
+            {
+              cache:
+                "no-store",
+              signal:
+                controller.signal,
+            },
+          );
+
+        const data =
+          (await response
+            .json()
+            .catch(
+              () => ({}),
+            )) as ProactiveInsightsResponse;
+
+        if (
+          !response.ok ||
+          !Array.isArray(
+            data.insights,
+          )
+        ) {
+          if (
+            !controller.signal.aborted
+          ) {
+            setInsights([]);
+          }
+
+          return;
+        }
+
+        const nextInsights =
+          data.insights
+            .filter(
+              isProactiveInsight,
+            )
+            .slice(
+              0,
+              3,
+            );
+
+        if (
+          !controller.signal.aborted
+        ) {
+          setInsights(
+            nextInsights,
+          );
+        }
+      } catch {
+        if (
+          !controller.signal.aborted
+        ) {
+          setInsights([]);
+        }
+      }
+    }
+
+    void loadInsights();
+
+    return () => {
+      controller.abort();
+    };
+  }, [
+    isConversationLoading,
+    messages.length,
   ]);
 
   useEffect(() => {
@@ -2316,6 +2522,83 @@ export default function AIChatWorkspace({
             <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">
               {copy.welcomeDescription}
             </p>
+
+            {insights.length > 0 ? (
+              <div className="mt-6 w-full max-w-2xl rounded-2xl border bg-muted/20 p-4 text-left">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                    <AlertTriangle className="h-4 w-4 text-primary" />
+                  </div>
+
+                  <div>
+                    <p className="font-semibold">
+                      {copy.insightsTitle}
+                    </p>
+
+                    <p className="mt-1 text-sm leading-5 text-muted-foreground">
+                      {copy.insightsDescription}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-4 grid gap-2">
+                  {insights.map(
+                    (insight) => {
+                      const presentation =
+                        insightPresentations[
+                          insight.code
+                        ];
+
+                      const isHigh =
+                        insight.severity ===
+                        "high";
+
+                      return (
+                        <button
+                          key={
+                            insight.code
+                          }
+                          type="button"
+                          disabled={
+                            isLoading ||
+                            isConversationLoading
+                          }
+                          onClick={() => {
+                            void sendMessage(
+                              `${copy.insightAskPrefix} ${presentation.title}.`,
+                            );
+                          }}
+                          className="group flex w-full items-start gap-3 rounded-xl border bg-background p-3 text-left transition-colors hover:bg-muted/60 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          <span
+                            className={
+                              isHigh
+                                ? "mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full bg-destructive"
+                                : "mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full bg-amber-500"
+                            }
+                            aria-hidden="true"
+                          />
+
+                          <span className="min-w-0 flex-1">
+                            <span className="block text-sm font-medium">
+                              {
+                                presentation.title
+                              }
+                            </span>
+
+                            <span className="mt-1 block text-sm leading-5 text-muted-foreground">
+                              {
+                                presentation.description
+                              }
+                            </span>
+                          </span>
+                        </button>
+                      );
+                    },
+                  )}
+                </div>
+              </div>
+            ) : null}
 
             <div className="mt-6 grid w-full max-w-2xl gap-2 sm:grid-cols-2">
               {copy.suggestions.map(

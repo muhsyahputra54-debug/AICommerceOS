@@ -75,6 +75,34 @@ const dictionaries = {
         clear:
           "Hapus percakapan",
 
+        insightsTitle:
+          "Perlu perhatian",
+        insightsDescription:
+          "Insight ini dihitung dari data bisnis terbaru yang tersedia.",
+
+        insightCatalogReadinessTitle:
+          "Kesiapan katalog",
+        insightCatalogReadinessDescription:
+          "Ada produk yang masih memiliki stok atau harga nol atau kurang.",
+
+        insightCompetitorThresholdTitle:
+          "Perubahan harga pesaing melewati batas",
+        insightCompetitorThresholdDescription:
+          "Data harga terbaru pada setidaknya satu target aktif melewati batas monitoring yang Anda tetapkan.",
+
+        insightNoOrdersTitle:
+          "Belum ada pesanan",
+        insightNoOrdersDescription:
+          "Produk sudah tersedia, tetapi belum ada pesanan yang tercatat.",
+
+        insightPriceMonitoringNoObservationsTitle:
+          "Monitoring harga belum memiliki data",
+        insightPriceMonitoringNoObservationsDescription:
+          "Ada target monitoring aktif, tetapi belum ada data harga yang tercatat.",
+
+        insightAskPrefix:
+          "Jelaskan insight bisnis ini berdasarkan data bisnis saya saat ini dan berikan satu prioritas utama:",
+
         businessProfileButton:
           "Profil bisnis AI",
         businessProfileTitle:
@@ -2224,6 +2252,34 @@ const dictionaries = {
         send: "Send",
         clear:
           "Clear conversation",
+
+        insightsTitle:
+          "Needs attention",
+        insightsDescription:
+          "These insights are calculated from the latest available business data.",
+
+        insightCatalogReadinessTitle:
+          "Catalog readiness",
+        insightCatalogReadinessDescription:
+          "Some products still have stock or price values at zero or below.",
+
+        insightCompetitorThresholdTitle:
+          "Competitor price crossed a threshold",
+        insightCompetitorThresholdDescription:
+          "The latest price data for at least one active target crossed the monitoring threshold you configured.",
+
+        insightNoOrdersTitle:
+          "No orders yet",
+        insightNoOrdersDescription:
+          "Products are available, but no orders have been recorded yet.",
+
+        insightPriceMonitoringNoObservationsTitle:
+          "Price monitoring has no data yet",
+        insightPriceMonitoringNoObservationsDescription:
+          "There is an active monitoring target, but no price observation has been recorded yet.",
+
+        insightAskPrefix:
+          "Explain this business insight using my current business data and give me one primary priority:",
 
         businessProfileButton:
           "Business profile",

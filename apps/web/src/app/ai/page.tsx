@@ -37,6 +37,34 @@ export default async function AIAssistantPage() {
             clear:
               copy.chat.clear,
 
+            insightsTitle:
+              copy.chat.insightsTitle,
+            insightsDescription:
+              copy.chat.insightsDescription,
+
+            insightCatalogReadinessTitle:
+              copy.chat.insightCatalogReadinessTitle,
+            insightCatalogReadinessDescription:
+              copy.chat.insightCatalogReadinessDescription,
+
+            insightCompetitorThresholdTitle:
+              copy.chat.insightCompetitorThresholdTitle,
+            insightCompetitorThresholdDescription:
+              copy.chat.insightCompetitorThresholdDescription,
+
+            insightNoOrdersTitle:
+              copy.chat.insightNoOrdersTitle,
+            insightNoOrdersDescription:
+              copy.chat.insightNoOrdersDescription,
+
+            insightPriceMonitoringNoObservationsTitle:
+              copy.chat.insightPriceMonitoringNoObservationsTitle,
+            insightPriceMonitoringNoObservationsDescription:
+              copy.chat.insightPriceMonitoringNoObservationsDescription,
+
+            insightAskPrefix:
+              copy.chat.insightAskPrefix,
+
             businessProfileButton:
               copy.chat.businessProfileButton,
             businessProfileTitle:
