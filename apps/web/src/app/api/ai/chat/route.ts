@@ -20,6 +20,8 @@ import {
   buildProactiveInsightContext,
 } from "@/lib/ai/assistant-prompt";
 
+import { buildBusinessContext } from "@/lib/ai/business-context";
+
 import {
   checkAiAllowance,
   getAiAllowanceMessage,
@@ -1140,111 +1142,36 @@ export async function POST(
   const recentOrders =
     ordersResult.data ?? [];
 
-  const recentOrdersByStatus =
-    recentOrders.reduce<Record<string, number>>(
-      (summary, order) => {
-        const status =
-          order.status?.trim() ||
-          "unknown";
+  const businessContext =
+    buildBusinessContext({
+      generatedAt:
+        new Date().toISOString(),
 
-        summary[status] =
-          (summary[status] ?? 0) + 1;
+      products,
 
-        return summary;
-      },
-      {},
-    );
+      productTotalCount:
+        productsCountResult.count,
 
-  const recentOrderValue =
-    recentOrders.reduce(
-      (sum, order) => {
-        const total =
-          Number(order.total ?? 0);
+      nonpositiveStockCount:
+        nonpositiveStockCountResult.count,
 
-        return (
-          sum +
-          (Number.isFinite(total)
-            ? total
-            : 0)
-        );
-      },
-      0,
-    );
+      nonpositivePriceCount:
+        nonpositivePriceCountResult.count,
 
-  const businessContext = {
-    generated_at:
-      new Date().toISOString(),
+      recentOrders,
 
-    business_summary: {
-      products: {
-        total_count:
-          productsCountResult.count ??
-          products.length,
+      orderTotalCount:
+        ordersCountResult.count,
 
-        nonpositive_stock_count:
-          nonpositiveStockCountResult.count ??
-          0,
+      customerTotalCount:
+        customersResult.count,
 
-        nonpositive_price_count:
-          nonpositivePriceCountResult.count ??
-          0,
-      },
-
-      orders: {
-        total_count:
-          ordersCountResult.count ??
-          recentOrders.length,
-
-        recent_count:
-          recentOrders.length,
-
-        recent_value:
-          recentOrderValue,
-
-        recent_by_status:
-          recentOrdersByStatus,
-
-        recent_window_limit: 30,
-      },
-
-      customers: {
-        total_count:
-          customersResult.count ?? 0,
-      },
-    },
-
-    products,
-
-    sales: {
-      recent_orders:
-        recentOrders,
-
-      customer_count:
-        customersResult.count ?? 0,
-    },
-
-    price_monitoring: {
-      targets:
+      priceTargets:
         priceTargetsResult.data ?? [],
 
-      observations:
+      priceObservations:
         priceObservationsResult.data ?? [],
-    },
-
-    limitations: [
-      "Only the 30 selected product records are included as product details.",
-      "Only the 30 most recent orders are included as order details.",
-      "business_summary.orders.recent_value is only the sum of total from those recent order records. It is not official revenue, profit, or completed-sales value.",
-      "The recent order value includes all order statuses in the recent window.",
-      "nonpositive_stock_count means products where stock is less than or equal to zero.",
-      "nonpositive_price_count means products where price is less than or equal to zero.",
-      "Order item details are not included.",
-      "Customer names, email addresses, and phone numbers are not included.",
-      "Competitor prices come only from stored price monitoring observations.",
-      "A price observation is a historical snapshot and may not represent the competitor price at this exact moment.",
-    ],
-  };
-
+    });
   const businessProfileResult =
     await supabase
       .from(
