@@ -33,6 +33,13 @@ import {
   type BusinessProfileForm,
   type BusinessProfileResponse,
 } from "@/lib/ai/business-profile-client";
+
+import {
+  isProactiveInsight,
+  type ProactiveInsight,
+  type ProactiveInsightCode,
+  type ProactiveInsightsResponse,
+} from "@/lib/ai/proactive-insight-client";
 type ChatMessage = {
   role: "user" | "assistant";
   content: string;
@@ -150,70 +157,6 @@ type ChatResponse = {
   conversationId?: string | null;
   error?: string;
 };
-
-const PROACTIVE_INSIGHT_CODES = [
-  "catalog_readiness",
-  "competitor_threshold_alert",
-  "no_orders",
-  "price_monitoring_no_observations",
-] as const;
-
-type ProactiveInsightCode =
-  (typeof PROACTIVE_INSIGHT_CODES)[number];
-
-type ProactiveInsight = {
-  code: ProactiveInsightCode;
-  severity:
-    | "high"
-    | "medium";
-  source:
-    "deterministic_rule_engine";
-};
-
-type ProactiveInsightsResponse = {
-  insights?: unknown;
-};
-
-function isProactiveInsight(
-  value: unknown,
-): value is ProactiveInsight {
-  if (
-    typeof value !== "object" ||
-    value === null
-  ) {
-    return false;
-  }
-
-  const insight =
-    value as Record<
-      string,
-      unknown
-    >;
-
-  const code =
-    insight.code;
-
-  if (
-    typeof code !== "string" ||
-    !PROACTIVE_INSIGHT_CODES.includes(
-      code as ProactiveInsightCode,
-    )
-  ) {
-    return false;
-  }
-
-  if (
-    insight.severity !== "high" &&
-    insight.severity !== "medium"
-  ) {
-    return false;
-  }
-
-  return (
-    insight.source ===
-    "deterministic_rule_engine"
-  );
-}
 
 type ConversationRecord = {
   id: string;
