@@ -57,6 +57,14 @@ type ControlledStatusAction =
     }
   >;
 
+type ControlledPriceAction =
+  Extract<
+    ControlledActionApiRecord,
+    {
+      actionType: "product.update_price";
+    }
+  >;
+
 type ProductStatus =
   "active" | "inactive";
 
@@ -64,6 +72,34 @@ type ControlledActionResponse = {
   action?: ControlledActionApiRecord;
   error?: string;
 };
+
+const CONTROLLED_PRICE_INPUT_PATTERN =
+  /^(0|[1-9][0-9]{0,9})(?:\.([0-9]{1,2}))?$/;
+
+function canonicalControlledPrice(
+  value: unknown,
+): string | null {
+  if (
+    typeof value !== "string" &&
+    typeof value !== "number"
+  ) {
+    return null;
+  }
+
+  const match =
+    CONTROLLED_PRICE_INPUT_PATTERN.exec(
+      String(value),
+    );
+
+  if (!match) {
+    return null;
+  }
+
+  return [
+    match[1],
+    (match[2] ?? "").padEnd(2, "0"),
+  ].join(".");
+}
 
 export default function EditProductForm({
   organizationId,
@@ -143,6 +179,42 @@ export default function EditProductForm({
   ] =
     useState<string | null>(null);
 
+  const [
+    controlledPrice,
+    setControlledPrice,
+  ] =
+    useState(
+      () =>
+        canonicalControlledPrice(
+          product.price,
+        ) ?? "",
+    );
+
+  const [
+    controlledPriceAction,
+    setControlledPriceAction,
+  ] =
+    useState<ControlledPriceAction | null>(
+      null,
+    );
+
+  const [
+    controlledPriceBusy,
+    setControlledPriceBusy,
+  ] =
+    useState<
+      "propose" | "confirm" | "execute" | null
+    >(null);
+
+  const [
+    controlledPriceMessage,
+    setControlledPriceMessage,
+  ] =
+    useState<string | null>(null);
+
+  const manualPriceInputRef =
+    useRef<HTMLInputElement | null>(null);
+
   const controlledNameProposalKey =
     useRef<{
       signature: string;
@@ -150,6 +222,12 @@ export default function EditProductForm({
     } | null>(null);
 
   const controlledStatusProposalKey =
+    useRef<{
+      signature: string;
+      key: string;
+    } | null>(null);
+
+  const controlledPriceProposalKey =
     useRef<{
       signature: string;
       key: string;
@@ -224,6 +302,41 @@ export default function EditProductForm({
     return created.key;
   }
 
+  function getControlledPriceProposalKey(
+    expectedPrice: string,
+    proposedPrice: string,
+  ) {
+    const signature =
+      JSON.stringify([
+        expectedPrice,
+        proposedPrice,
+      ]);
+
+    const existing =
+      controlledPriceProposalKey.current;
+
+    if (
+      existing?.signature ===
+      signature
+    ) {
+      return existing.key;
+    }
+
+    const created = {
+      signature,
+      key: [
+        "product-price",
+        product.id,
+        crypto.randomUUID(),
+      ].join(":"),
+    };
+
+    controlledPriceProposalKey.current =
+      created;
+
+    return created.key;
+  }
+
   async function readControlledActionResponse(
     response: Response,
   ) {
@@ -254,6 +367,18 @@ export default function EditProductForm({
 
     return action?.actionType ===
       "product.update_status"
+      ? action
+      : null;
+  }
+
+  function priceActionFrom(
+    response: ControlledActionResponse,
+  ): ControlledPriceAction | null {
+    const action =
+      response.action;
+
+    return action?.actionType ===
+      "product.update_price"
       ? action
       : null;
   }
@@ -798,6 +923,300 @@ export default function EditProductForm({
     }
   }
 
+  async function handleReviewControlledPrice() {
+    if (!canUseControlledActions) {
+      setControlledPriceMessage(
+        copy.edit.controlledPrice
+          .ownerAdminOnly,
+      );
+      return;
+    }
+
+    const expectedPrice =
+      canonicalControlledPrice(
+        product.price,
+      );
+
+    if (!expectedPrice) {
+      setControlledPriceMessage(
+        copy.edit.controlledPrice
+          .currentInvalid,
+      );
+      return;
+    }
+
+    const proposedPrice =
+      canonicalControlledPrice(
+        controlledPrice,
+      );
+
+    if (!proposedPrice) {
+      setControlledPriceMessage(
+        copy.edit.controlledPrice
+          .invalidPrice,
+      );
+      return;
+    }
+
+    if (proposedPrice === expectedPrice) {
+      setControlledPriceMessage(
+        copy.edit.controlledPrice
+          .samePrice,
+      );
+      return;
+    }
+
+    setControlledPriceMessage(null);
+    setControlledPriceBusy("propose");
+
+    const idempotencyKey =
+      getControlledPriceProposalKey(
+        expectedPrice,
+        proposedPrice,
+      );
+
+    try {
+      const response =
+        await fetch(
+          "/api/ai/controlled-actions",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
+            body: JSON.stringify({
+              actionType:
+                "product.update_price",
+              productId:
+                product.id,
+              expectedPrice,
+              proposedPrice,
+              idempotencyKey,
+            }),
+          },
+        );
+
+      const data =
+        await readControlledActionResponse(
+          response,
+        );
+
+      const action =
+        priceActionFrom(data);
+
+      if (!response.ok || !action) {
+        if (
+          response.status >= 400 &&
+          response.status < 500
+        ) {
+          controlledPriceProposalKey.current =
+            null;
+        }
+
+        setControlledPriceMessage(
+          response.status === 409
+            ? copy.edit
+                .controlledPrice
+                .staleMessage
+            : copy.edit
+                .controlledPrice
+                .prepareFailed,
+        );
+
+        if (response.status === 409) {
+          router.refresh();
+        }
+
+        return;
+      }
+
+      setControlledPrice(
+        action.proposedPrice,
+      );
+
+      setControlledPriceAction(
+        action,
+      );
+
+      setControlledPriceMessage(
+        copy.edit.controlledPrice
+          .previewReady,
+      );
+    } catch {
+      setControlledPriceMessage(
+        copy.edit.controlledPrice
+          .prepareFailed,
+      );
+    } finally {
+      setControlledPriceBusy(null);
+    }
+  }
+
+  async function handleConfirmControlledPrice() {
+    if (
+      !canUseControlledActions ||
+      !controlledPriceAction ||
+      controlledPriceAction.status !==
+        "proposed"
+    ) {
+      return;
+    }
+
+    setControlledPriceMessage(null);
+    setControlledPriceBusy("confirm");
+
+    try {
+      const response =
+        await fetch(
+          `/api/ai/controlled-actions/${controlledPriceAction.id}/confirm`,
+          {
+            method: "POST",
+          },
+        );
+
+      const data =
+        await readControlledActionResponse(
+          response,
+        );
+
+      const action =
+        priceActionFrom(data);
+
+      if (
+        !response.ok ||
+        !action ||
+        action.status !== "confirmed"
+      ) {
+        setControlledPriceMessage(
+          copy.edit.controlledPrice
+            .confirmFailed,
+        );
+        return;
+      }
+
+      setControlledPriceAction(
+        action,
+      );
+
+      setControlledPriceMessage(
+        copy.edit.controlledPrice
+          .confirmedMessage,
+      );
+    } catch {
+      setControlledPriceMessage(
+        copy.edit.controlledPrice
+          .confirmFailed,
+      );
+    } finally {
+      setControlledPriceBusy(null);
+    }
+  }
+
+  async function handleExecuteControlledPrice() {
+    if (
+      !canUseControlledActions ||
+      !controlledPriceAction ||
+      controlledPriceAction.status !==
+        "confirmed"
+    ) {
+      return;
+    }
+
+    setControlledPriceMessage(null);
+    setControlledPriceBusy("execute");
+
+    try {
+      const response =
+        await fetch(
+          `/api/ai/controlled-actions/${controlledPriceAction.id}/execute`,
+          {
+            method: "POST",
+          },
+        );
+
+      const data =
+        await readControlledActionResponse(
+          response,
+        );
+
+      const action =
+        priceActionFrom(data);
+
+      if (!action) {
+        setControlledPriceMessage(
+          copy.edit.controlledPrice
+            .executeFailed,
+        );
+        return;
+      }
+
+      setControlledPriceAction(
+        action,
+      );
+
+      if (
+        action.status ===
+        "executed"
+      ) {
+        controlledPriceProposalKey.current =
+          null;
+
+        if (
+          manualPriceInputRef.current
+        ) {
+          manualPriceInputRef.current.value =
+            action.proposedPrice;
+        }
+
+        setControlledPriceMessage(
+          copy.edit.controlledPrice
+            .executedMessage,
+        );
+
+        router.refresh();
+        return;
+      }
+
+      if (
+        action.status ===
+        "stale"
+      ) {
+        controlledPriceProposalKey.current =
+          null;
+
+        setControlledPriceMessage(
+          copy.edit.controlledPrice
+            .staleMessage,
+        );
+
+        router.refresh();
+        return;
+      }
+
+      if (
+        action.status ===
+          "failed" ||
+        !response.ok
+      ) {
+        controlledPriceProposalKey.current =
+          null;
+
+        setControlledPriceMessage(
+          copy.edit.controlledPrice
+            .executeFailed,
+        );
+      }
+    } catch {
+      setControlledPriceMessage(
+        copy.edit.controlledPrice
+          .executeFailed,
+      );
+    } finally {
+      setControlledPriceBusy(null);
+    }
+  }
+
   async function handleSubmit(
     event: FormEvent<HTMLFormElement>,
   ) {
@@ -972,6 +1391,24 @@ export default function EditProductForm({
     controlledStatusAction?.status ===
       "executing";
 
+  const currentControlledPrice =
+    canonicalControlledPrice(
+      product.price,
+    );
+
+  const controlledPriceCandidate =
+    canonicalControlledPrice(
+      controlledPrice,
+    );
+
+  const controlledPriceActive =
+    controlledPriceAction?.status ===
+      "proposed" ||
+    controlledPriceAction?.status ===
+      "confirmed" ||
+    controlledPriceAction?.status ===
+      "executing";
+
   return (
     <form
       onSubmit={handleSubmit}
@@ -1087,11 +1524,13 @@ export default function EditProductForm({
           </label>
 
           <Input
+            key={String(product.price)}
+            ref={manualPriceInputRef}
             id="price"
             name="price"
             type="number"
             min="0"
-            step="1"
+            step="0.01"
             defaultValue={
               String(product.price)
             }
@@ -1604,6 +2043,242 @@ export default function EditProductForm({
         {controlledStatusMessage ? (
           <p className="text-sm text-muted-foreground">
             {controlledStatusMessage}
+          </p>
+        ) : null}
+      </div>
+
+      <div className="space-y-4 rounded-xl border bg-muted/20 p-4">
+        <div>
+          <h2 className="font-medium">
+            {
+              copy.edit.controlledPrice
+                .title
+            }
+          </h2>
+
+          <p className="mt-1 text-sm text-muted-foreground">
+            {
+              copy.edit.controlledPrice
+                .description
+            }
+          </p>
+
+          <p className="mt-2 text-xs font-medium text-amber-700 dark:text-amber-300">
+            {
+              copy.edit.controlledPrice
+                .risk
+            }
+          </p>
+
+          <p className="mt-1 text-xs text-muted-foreground">
+            {
+              copy.edit.controlledPrice
+                .impact
+            }
+          </p>
+        </div>
+
+        {!canUseControlledActions ? (
+          <p className="rounded-lg border border-dashed px-3 py-2 text-sm text-muted-foreground">
+            {
+              copy.edit.controlledPrice
+                .ownerAdminOnly
+            }
+          </p>
+        ) : (
+          <>
+            <div className="space-y-2">
+              <label
+                htmlFor="controlled_product_price"
+                className="text-sm font-medium"
+              >
+                {
+                  copy.edit.controlledPrice
+                    .label
+                }
+              </label>
+
+              <Input
+                id="controlled_product_price"
+                type="text"
+                inputMode="decimal"
+                value={controlledPrice}
+                placeholder={
+                  copy.edit.controlledPrice
+                    .placeholder
+                }
+                disabled={
+                  controlledPriceBusy !==
+                    null ||
+                  controlledPriceActive
+                }
+                onChange={(event) => {
+                  setControlledPrice(
+                    event.target.value,
+                  );
+
+                  setControlledPriceAction(
+                    null,
+                  );
+
+                  setControlledPriceMessage(
+                    null,
+                  );
+
+                  controlledPriceProposalKey.current =
+                    null;
+                }}
+                onKeyDown={(event) => {
+                  if (
+                    event.key ===
+                    "Enter"
+                  ) {
+                    event.preventDefault();
+                  }
+                }}
+              />
+
+              <p className="text-xs text-muted-foreground">
+                {
+                  copy.edit.controlledPrice
+                    .formatHelp
+                }
+              </p>
+            </div>
+
+            <div>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={
+                  controlledPriceBusy !==
+                    null ||
+                  controlledPriceActive ||
+                  !controlledPriceCandidate ||
+                  controlledPriceCandidate ===
+                    currentControlledPrice
+                }
+                onClick={
+                  handleReviewControlledPrice
+                }
+              >
+                {controlledPriceBusy ===
+                "propose"
+                  ? copy.edit
+                      .controlledPrice
+                      .reviewing
+                  : copy.edit
+                      .controlledPrice
+                      .review}
+              </Button>
+            </div>
+          </>
+        )}
+
+        {controlledPriceAction ? (
+          <div className="space-y-4 rounded-xl border bg-background p-4">
+            <div className="text-xs text-muted-foreground">
+              {
+                copy.edit.controlledPrice
+                  .status
+              }
+              {": "}
+              {
+                copy.edit.controlledPrice
+                  .statuses[
+                    controlledPriceAction
+                      .status
+                  ]
+              }
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <div className="text-sm font-medium">
+                  {
+                    copy.edit
+                      .controlledPrice
+                      .before
+                  }
+                </div>
+
+                <div className="mt-2 rounded-lg border bg-muted/20 p-3 text-sm">
+                  {
+                    controlledPriceAction
+                      .expectedPrice
+                  }
+                </div>
+              </div>
+
+              <div>
+                <div className="text-sm font-medium">
+                  {
+                    copy.edit
+                      .controlledPrice
+                      .after
+                  }
+                </div>
+
+                <div className="mt-2 rounded-lg border bg-muted/20 p-3 text-sm">
+                  {
+                    controlledPriceAction
+                      .proposedPrice
+                  }
+                </div>
+              </div>
+            </div>
+
+            {controlledPriceAction.status ===
+            "proposed" ? (
+              <Button
+                type="button"
+                disabled={
+                  controlledPriceBusy !==
+                  null
+                }
+                onClick={
+                  handleConfirmControlledPrice
+                }
+              >
+                {controlledPriceBusy ===
+                "confirm"
+                  ? copy.edit
+                      .controlledPrice
+                      .confirming
+                  : copy.edit
+                      .controlledPrice
+                      .confirm}
+              </Button>
+            ) : null}
+
+            {controlledPriceAction.status ===
+            "confirmed" ? (
+              <Button
+                type="button"
+                disabled={
+                  controlledPriceBusy !==
+                  null
+                }
+                onClick={
+                  handleExecuteControlledPrice
+                }
+              >
+                {controlledPriceBusy ===
+                "execute"
+                  ? copy.edit
+                      .controlledPrice
+                      .executing
+                  : copy.edit
+                      .controlledPrice
+                      .execute}
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
+
+        {controlledPriceMessage ? (
+          <p className="text-sm text-muted-foreground">
+            {controlledPriceMessage}
           </p>
         ) : null}
       </div>

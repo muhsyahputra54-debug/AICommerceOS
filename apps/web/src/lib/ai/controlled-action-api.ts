@@ -42,10 +42,19 @@ export type ControlledProductStatusProposalInput = {
   idempotencyKey: string;
 };
 
+export type ControlledProductPriceProposalInput = {
+  actionType: "product.update_price";
+  productId: string;
+  expectedPrice: string;
+  proposedPrice: string;
+  idempotencyKey: string;
+};
+
 export type ControlledActionProposalInput =
   | ControlledProductDescriptionProposalInput
   | ControlledProductNameProposalInput
-  | ControlledProductStatusProposalInput;
+  | ControlledProductStatusProposalInput
+  | ControlledProductPriceProposalInput;
 
 type ControlledActionApiRecordBase = {
   id: string;
@@ -83,10 +92,19 @@ export type ControlledProductStatusActionApiRecord =
     proposedStatus: "active" | "inactive";
   };
 
+export type ControlledProductPriceActionApiRecord =
+  ControlledActionApiRecordBase & {
+    actionType: "product.update_price";
+    mutationField: "price";
+    expectedPrice: string;
+    proposedPrice: string;
+  };
+
 export type ControlledActionApiRecord =
   | ControlledProductDescriptionActionApiRecord
   | ControlledProductNameActionApiRecord
-  | ControlledProductStatusActionApiRecord;
+  | ControlledProductStatusActionApiRecord
+  | ControlledProductPriceActionApiRecord;
 
 type ProposalParseResult =
   | {
@@ -127,6 +145,29 @@ const PRODUCT_STATUS_PROPOSAL_KEYS =
     "proposedStatus",
     "idempotencyKey",
   ]);
+
+const PRODUCT_PRICE_PROPOSAL_KEYS =
+  new Set([
+    "actionType",
+    "productId",
+    "expectedPrice",
+    "proposedPrice",
+    "idempotencyKey",
+  ]);
+
+const CANONICAL_PRODUCT_PRICE_PATTERN =
+  /^(?:0|[1-9][0-9]{0,9})\.[0-9]{2}$/;
+
+function isCanonicalProductPrice(
+  value: unknown,
+): value is string {
+  return (
+    typeof value === "string" &&
+    CANONICAL_PRODUCT_PRICE_PATTERN.test(
+      value,
+    )
+  );
+}
 
 function isPlainObject(
   value: unknown,
@@ -183,7 +224,9 @@ export function parseControlledActionProposalInput(
     actionType !==
       "product.update_name" &&
     actionType !==
-      "product.update_status"
+      "product.update_status" &&
+    actionType !==
+      "product.update_price"
   ) {
     return {
       ok: false,
@@ -200,12 +243,18 @@ export function parseControlledActionProposalInput(
     actionType ===
     "product.update_status";
 
+  const isProductPriceAction =
+    actionType ===
+    "product.update_price";
+
   const allowedKeys =
     isProductNameAction
       ? PRODUCT_NAME_PROPOSAL_KEYS
       : isProductStatusAction
         ? PRODUCT_STATUS_PROPOSAL_KEYS
-        : DESCRIPTION_PROPOSAL_KEYS;
+        : isProductPriceAction
+          ? PRODUCT_PRICE_PROPOSAL_KEYS
+          : DESCRIPTION_PROPOSAL_KEYS;
 
   const unexpectedKey =
     Object.keys(value).find(
@@ -374,6 +423,63 @@ export function parseControlledActionProposalInput(
         expectedStatus,
 
         proposedStatus,
+
+        idempotencyKey,
+      },
+    };
+  }
+
+  if (isProductPriceAction) {
+    const expectedPrice =
+      value.expectedPrice;
+
+    const proposedPrice =
+      value.proposedPrice;
+
+    if (
+      !isCanonicalProductPrice(
+        expectedPrice,
+      )
+    ) {
+      return {
+        ok: false,
+        error:
+          "Expected product price tidak valid.",
+      };
+    }
+
+    if (
+      !isCanonicalProductPrice(
+        proposedPrice,
+      )
+    ) {
+      return {
+        ok: false,
+        error:
+          "Proposed product price tidak valid.",
+      };
+    }
+
+    if (expectedPrice === proposedPrice) {
+      return {
+        ok: false,
+        error:
+          "Proposed product price harus berbeda dari harga saat ini.",
+      };
+    }
+
+    return {
+      ok: true,
+      value: {
+        actionType:
+          "product.update_price",
+
+        productId:
+          value.productId,
+
+        expectedPrice,
+
+        proposedPrice,
 
         idempotencyKey,
       },
@@ -643,6 +749,46 @@ export function projectControlledActionRecord(
     };
   }
 
+  if (
+    value.action_type ===
+    "product.update_price"
+  ) {
+    if (
+      value.mutation_field !==
+        "price" ||
+      !isCanonicalProductPrice(
+        value.expected_value,
+      ) ||
+      !isCanonicalProductPrice(
+        value.proposed_value,
+      ) ||
+      value.expected_value ===
+        value.proposed_value ||
+      value.expected_description !==
+        null ||
+      value.proposed_description !==
+        null
+    ) {
+      return null;
+    }
+
+    return {
+      ...base,
+
+      actionType:
+        "product.update_price",
+
+      mutationField:
+        "price",
+
+      expectedPrice:
+        value.expected_value,
+
+      proposedPrice:
+        value.proposed_value,
+    };
+  }
+
   return null;
 }
 
@@ -718,6 +864,12 @@ export function controlledActionRpcErrorStatus(
     ) ||
     normalized.includes(
       "does not change the current status",
+    ) ||
+    normalized.includes(
+      "product price changed",
+    ) ||
+    normalized.includes(
+      "does not change the current price",
     ) ||
     normalized.includes(
       "stale",

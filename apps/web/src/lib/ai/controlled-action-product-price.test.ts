@@ -19,7 +19,7 @@ const PRODUCT_ID =
 const ACTION_ID =
   "11111111-1111-4111-8111-111111111111";
 
-function statusRow(
+function priceRow(
   overrides: Record<string, unknown> = {},
 ) {
   return {
@@ -28,7 +28,7 @@ function statusRow(
     contract_version:
       1,
     action_type:
-      "product.update_status",
+      "product.update_price",
     status:
       "proposed",
     target_resource:
@@ -42,11 +42,11 @@ function statusRow(
       null,
 
     mutation_field:
-      "status",
+      "price",
     expected_value:
-      "active",
+      "99999.00",
     proposed_value:
-      "inactive",
+      "105000.00",
 
     created_at:
       "2026-08-21T00:00:00.000Z",
@@ -64,203 +64,227 @@ function statusRow(
 }
 
 describe(
-  "controlled product status action",
+  "controlled product price action",
   () => {
     it(
-      "registers controlled product actions",
+      "registers the price action",
       () => {
         expect(
           CONTROLLED_ACTION_TYPES,
-        ).toEqual([
-          "product.update_description",
-          "product.update_name",
-          "product.update_status",
+        ).toContain(
           "product.update_price",
-        ]);
+        );
       },
     );
 
     it(
-      "parses an explicit active to inactive proposal",
+      "parses canonical decimal price text",
       () => {
-        const result =
+        expect(
           parseControlledActionProposalInput({
             actionType:
-              "product.update_status",
+              "product.update_price",
             productId:
               PRODUCT_ID,
-            expectedStatus:
-              "active",
-            proposedStatus:
-              "inactive",
+            expectedPrice:
+              "0.00",
+            proposedPrice:
+              "1.25",
             idempotencyKey:
-              "status-action-1",
-          });
-
-        expect(result).toEqual({
+              "price-action-1",
+          }),
+        ).toEqual({
           ok: true,
           value: {
             actionType:
-              "product.update_status",
+              "product.update_price",
             productId:
               PRODUCT_ID,
-            expectedStatus:
-              "active",
-            proposedStatus:
-              "inactive",
+            expectedPrice:
+              "0.00",
+            proposedPrice:
+              "1.25",
             idempotencyKey:
-              "status-action-1",
+              "price-action-1",
           },
         });
       },
     );
 
     it(
-      "parses an explicit inactive to active proposal",
+      "accepts the numeric 12,2 upper bound",
       () => {
-        const result =
+        expect(
           parseControlledActionProposalInput({
             actionType:
-              "product.update_status",
+              "product.update_price",
             productId:
               PRODUCT_ID,
-            expectedStatus:
-              "inactive",
-            proposedStatus:
-              "active",
+            expectedPrice:
+              "0.00",
+            proposedPrice:
+              "9999999999.99",
             idempotencyKey:
-              "status-action-2",
-          });
-
-        expect(result.ok).toBe(true);
+              "price-action-2",
+          }).ok,
+        ).toBe(true);
       },
     );
 
     it(
-      "rejects unsupported status values",
+      "rejects JavaScript numbers for price snapshots",
       () => {
-        const result =
+        expect(
           parseControlledActionProposalInput({
             actionType:
-              "product.update_status",
+              "product.update_price",
             productId:
               PRODUCT_ID,
-            expectedStatus:
-              "active",
-            proposedStatus:
-              "archived",
+            expectedPrice:
+              99999,
+            proposedPrice:
+              "105000.00",
             idempotencyKey:
-              "status-action-3",
-          });
+              "price-action-3",
+          }).ok,
+        ).toBe(false);
+      },
+    );
 
-        expect(result.ok).toBe(false);
+    it.each([
+      "1",
+      "1.0",
+      "1.000",
+      "01.00",
+      "1,00",
+      "1e2",
+      " 1.00",
+      "1.00 ",
+      "10000000000.00",
+      "-1.00",
+      "+1.00",
+    ])(
+      "rejects non-canonical price text %s",
+      (invalidPrice) => {
+        expect(
+          parseControlledActionProposalInput({
+            actionType:
+              "product.update_price",
+            productId:
+              PRODUCT_ID,
+            expectedPrice:
+              invalidPrice,
+            proposedPrice:
+              "105000.00",
+            idempotencyKey:
+              "price-action-invalid",
+          }).ok,
+        ).toBe(false);
       },
     );
 
     it(
-      "rejects a status no-op",
+      "rejects a price no-op",
       () => {
-        const result =
+        expect(
           parseControlledActionProposalInput({
             actionType:
-              "product.update_status",
+              "product.update_price",
             productId:
               PRODUCT_ID,
-            expectedStatus:
-              "active",
-            proposedStatus:
-              "active",
+            expectedPrice:
+              "99999.00",
+            proposedPrice:
+              "99999.00",
             idempotencyKey:
-              "status-action-4",
-          });
-
-        expect(result.ok).toBe(false);
+              "price-action-4",
+          }).ok,
+        ).toBe(false);
       },
     );
 
     it(
-      "rejects mixed name fields on a status proposal",
+      "rejects mixed status fields on a price proposal",
       () => {
-        const result =
+        expect(
           parseControlledActionProposalInput({
             actionType:
-              "product.update_status",
+              "product.update_price",
             productId:
               PRODUCT_ID,
+            expectedPrice:
+              "99999.00",
+            proposedPrice:
+              "105000.00",
             expectedStatus:
               "active",
-            proposedStatus:
-              "inactive",
-            expectedName:
-              "Unexpected field",
             idempotencyKey:
-              "status-action-5",
-          });
-
-        expect(result.ok).toBe(false);
+              "price-action-5",
+          }).ok,
+        ).toBe(false);
       },
     );
 
     it(
-      "projects a persisted product status snapshot",
+      "projects a persisted canonical price snapshot",
       () => {
         const result =
           projectControlledActionRecord(
-            statusRow(),
+            priceRow(),
           );
 
         expect(result?.actionType).toBe(
-          "product.update_status",
+          "product.update_price",
         );
 
         if (
           !result ||
           result.actionType !==
-            "product.update_status"
+            "product.update_price"
         ) {
           throw new Error(
-            "Expected product.update_status projection.",
+            "Expected product.update_price projection.",
           );
         }
 
         expect(
           result.mutationField,
-        ).toBe("status");
+        ).toBe("price");
 
         expect(
-          result.expectedStatus,
-        ).toBe("active");
+          result.expectedPrice,
+        ).toBe("99999.00");
 
         expect(
-          result.proposedStatus,
-        ).toBe("inactive");
+          result.proposedPrice,
+        ).toBe("105000.00");
       },
     );
 
     it(
-      "rejects invalid persisted status payloads",
+      "rejects invalid persisted price payloads",
       () => {
         expect(
           projectControlledActionRecord(
-            statusRow({
+            priceRow({
               proposed_value:
-                "archived",
+                "105000.0",
             }),
           ),
         ).toBeNull();
 
         expect(
           projectControlledActionRecord(
-            statusRow({
+            priceRow({
               proposed_value:
-                "active",
+                "99999.00",
             }),
           ),
         ).toBeNull();
 
         expect(
           projectControlledActionRecord(
-            statusRow({
+            priceRow({
               expected_description:
                 "must stay null",
             }),
@@ -270,17 +294,17 @@ describe(
     );
 
     it(
-      "maps product status concurrency conflicts to 409",
+      "maps product price concurrency conflicts to 409",
       () => {
         expect(
           controlledActionRpcErrorStatus(
-            "Product status changed before proposal creation",
+            "Product price changed before proposal creation",
           ),
         ).toBe(409);
 
         expect(
           controlledActionRpcErrorStatus(
-            "proposed product status does not change the current status",
+            "proposed product price does not change the current price",
           ),
         ).toBe(409);
       },

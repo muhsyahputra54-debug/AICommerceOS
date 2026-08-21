@@ -1245,6 +1245,80 @@ const dictionaries = {
                 "Dibatalkan",
             },
           },
+          controlledPrice: {
+            title:
+              "Perubahan Harga Terkontrol",
+            description:
+              "Siapkan perubahan harga jual produk sebagai controlled action. Harga baru tidak diterapkan sampai Anda mengonfirmasi dan menjalankannya.",
+            risk:
+              "Risiko sedang · dapat dibalik",
+            impact:
+              "Perubahan memengaruhi order baru untuk produk tanpa varian. Harga varian dan histori order tidak diubah.",
+            label:
+              "Calon harga produk",
+            placeholder:
+              "Contoh: 125000.00",
+            formatHelp:
+              "Gunakan angka 0 atau lebih besar, maksimal 10 digit sebelum desimal dan maksimal 2 angka desimal.",
+            review:
+              "Tinjau perubahan",
+            reviewing:
+              "Menyiapkan...",
+            before:
+              "Sebelum",
+            after:
+              "Sesudah",
+            status:
+              "Status",
+            confirm:
+              "Konfirmasi",
+            confirming:
+              "Mengonfirmasi...",
+            execute:
+              "Jalankan perubahan",
+            executing:
+              "Menjalankan...",
+            previewReady:
+              "Pratinjau harga siap. Periksa harga sebelum dan sesudah sebelum mengonfirmasi.",
+            confirmedMessage:
+              "Perubahan harga sudah dikonfirmasi. Jalankan hanya jika pratinjau sudah benar.",
+            executedMessage:
+              "Harga produk berhasil diperbarui.",
+            staleMessage:
+              "Harga produk berubah sejak pratinjau dibuat. Harga yang lebih baru tidak ditimpa.",
+            prepareFailed:
+              "Pratinjau perubahan harga tidak dapat dibuat.",
+            confirmFailed:
+              "Perubahan harga tidak dapat dikonfirmasi.",
+            executeFailed:
+              "Perubahan harga tidak dapat dijalankan.",
+            ownerAdminOnly:
+              "Controlled action harga produk hanya tersedia untuk owner atau admin.",
+            invalidPrice:
+              "Harga harus 0 atau lebih besar dengan maksimal 2 angka desimal.",
+            currentInvalid:
+              "Harga produk saat ini tidak dapat dinormalisasi ke format harga terkontrol.",
+            samePrice:
+              "Calon harga sama dengan harga produk saat ini.",
+
+            statuses: {
+              proposed:
+                "Menunggu konfirmasi",
+              confirmed:
+                "Terkonfirmasi",
+              executing:
+                "Sedang dijalankan",
+              executed:
+                "Selesai",
+              stale:
+                "Data berubah",
+              failed:
+                "Gagal",
+              cancelled:
+                "Dibatalkan",
+            },
+          },
+
         },
 
         fields: {
@@ -3604,6 +3678,80 @@ const dictionaries = {
                 "Cancelled",
             },
           },
+          controlledPrice: {
+            title:
+              "Controlled Price Change",
+            description:
+              "Prepare a product selling-price change as a controlled action. The new price is not applied until you confirm and execute it.",
+            risk:
+              "Medium risk · reversible",
+            impact:
+              "The change affects new orders for products without variants. Variant prices and historical orders are not changed.",
+            label:
+              "Proposed product price",
+            placeholder:
+              "Example: 125000.00",
+            formatHelp:
+              "Use a value of 0 or more, with up to 10 digits before the decimal point and up to 2 decimal places.",
+            review:
+              "Review change",
+            reviewing:
+              "Preparing...",
+            before:
+              "Before",
+            after:
+              "After",
+            status:
+              "Status",
+            confirm:
+              "Confirm",
+            confirming:
+              "Confirming...",
+            execute:
+              "Execute change",
+            executing:
+              "Executing...",
+            previewReady:
+              "The price preview is ready. Review the before and after prices before confirming.",
+            confirmedMessage:
+              "The price change is confirmed. Execute only when the preview is correct.",
+            executedMessage:
+              "The product price was updated successfully.",
+            staleMessage:
+              "The product price changed after this preview was created. The newer price was not overwritten.",
+            prepareFailed:
+              "The product-price preview could not be created.",
+            confirmFailed:
+              "The product-price change could not be confirmed.",
+            executeFailed:
+              "The product-price change could not be executed.",
+            ownerAdminOnly:
+              "Controlled product-price actions are available only to owners and admins.",
+            invalidPrice:
+              "The price must be 0 or more with no more than 2 decimal places.",
+            currentInvalid:
+              "The current product price could not be normalized to the controlled price format.",
+            samePrice:
+              "The proposed price is the same as the current product price.",
+
+            statuses: {
+              proposed:
+                "Awaiting confirmation",
+              confirmed:
+                "Confirmed",
+              executing:
+                "Executing",
+              executed:
+                "Completed",
+              stale:
+                "Data changed",
+              failed:
+                "Failed",
+              cancelled:
+                "Cancelled",
+            },
+          },
+
         },
 
         fields: {

@@ -33,7 +33,7 @@ describe(
   "controlled action contract",
   () => {
     it(
-      "allowlists only the first controlled action",
+      "allowlists controlled action types",
       () => {
         expect(
       CONTROLLED_ACTION_TYPES,
@@ -41,6 +41,7 @@ describe(
       "product.update_description",
       "product.update_name",
       "product.update_status",
+      "product.update_price",
     ]);
 
         expect(

@@ -98,25 +98,46 @@ export async function POST(
                 idempotencyKey,
             },
           )
-        : await supabase.rpc(
-          "propose_ai_controlled_product_description_action",
-          {
-            p_organization_id:
-              organizationId,
+        : parsed.value.actionType ===
+            "product.update_price"
+          ? await supabase.rpc(
+              "propose_ai_controlled_product_price_action",
+              {
+                p_organization_id:
+                  organizationId,
 
-            p_product_id:
-              productId,
+                p_product_id:
+                  productId,
 
-            p_expected_description:
-              parsed.value.expectedDescription,
+                p_expected_price:
+                  parsed.value.expectedPrice,
 
-            p_proposed_description:
-              parsed.value.proposedDescription,
+                p_proposed_price:
+                  parsed.value.proposedPrice,
 
-            p_idempotency_key:
-              idempotencyKey,
-          },
-        );
+                p_idempotency_key:
+                  idempotencyKey,
+              },
+            )
+          : await supabase.rpc(
+              "propose_ai_controlled_product_description_action",
+              {
+                p_organization_id:
+                  organizationId,
+
+                p_product_id:
+                  productId,
+
+                p_expected_description:
+                  parsed.value.expectedDescription,
+
+                p_proposed_description:
+                  parsed.value.proposedDescription,
+
+                p_idempotency_key:
+                  idempotencyKey,
+              },
+            );
 
   const {
     data,

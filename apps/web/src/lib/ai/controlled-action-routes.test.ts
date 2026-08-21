@@ -277,6 +277,74 @@ describe(
     );
 
     it(
+      "routes product price proposals through the price proposer",
+      async () => {
+        const response =
+          await proposeAction(
+            request(
+              "/api/ai/controlled-actions",
+              {
+                actionType:
+                  "product.update_price",
+
+                productId:
+                  PRODUCT_ID,
+
+                expectedPrice:
+                  "99999.00",
+
+                proposedPrice:
+                  "105000.00",
+
+                idempotencyKey:
+                  "route-price-1",
+              },
+            ),
+          );
+
+        expect(
+          response!.status,
+        ).toBe(201);
+
+        expect(
+          mocks.rpc,
+        ).toHaveBeenCalledTimes(
+          1,
+        );
+
+        expect(
+          mocks.rpc,
+        ).toHaveBeenCalledWith(
+          "propose_ai_controlled_product_price_action",
+          {
+            p_organization_id:
+              ORGANIZATION_ID,
+
+            p_product_id:
+              PRODUCT_ID,
+
+            p_expected_price:
+              "99999.00",
+
+            p_proposed_price:
+              "105000.00",
+
+            p_idempotency_key:
+              "route-price-1",
+          },
+        );
+
+        expect(
+          mocks.readAction,
+        ).toHaveBeenCalledWith(
+          expect.any(Object),
+          ORGANIZATION_ID,
+          ACTION_ID,
+        );
+      },
+    );
+
+    it(
       "fails closed when proposal tries to smuggle confirmation",
       async () => {
         const response =
