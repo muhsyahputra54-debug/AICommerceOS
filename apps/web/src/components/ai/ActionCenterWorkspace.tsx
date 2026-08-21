@@ -793,6 +793,8 @@ export default function ActionCenterWorkspace() {
         }
       },
       [
+        copy.messages.invalidResponse,
+        copy.messages.loadFailed,
         offset,
         statusFilter,
       ],
