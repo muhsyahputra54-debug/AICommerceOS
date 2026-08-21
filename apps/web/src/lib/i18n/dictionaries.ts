@@ -135,11 +135,11 @@ const dictionaries = {
         businessProfileSalesModelNone:
           "Belum ditentukan",
         businessProfileSalesModelB2C:
-          "B2C â€” langsung ke konsumen",
+          "B2C ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â langsung ke konsumen",
         businessProfileSalesModelB2B:
-          "B2B â€” ke bisnis",
+          "B2B ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â ke bisnis",
         businessProfileSalesModelHybrid:
-          "Hybrid â€” B2C dan B2B",
+          "Hybrid ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â B2C dan B2B",
         businessProfileSalesModelOther:
           "Lainnya",
 
@@ -1251,7 +1251,7 @@ const dictionaries = {
             description:
               "Siapkan perubahan harga jual produk sebagai controlled action. Harga baru tidak diterapkan sampai Anda mengonfirmasi dan menjalankannya.",
             risk:
-              "Risiko sedang · dapat dibalik",
+              "Risiko sedang Ã‚Â· dapat dibalik",
             impact:
               "Perubahan memengaruhi order baru untuk produk tanpa varian. Harga varian dan histori order tidak diubah.",
             label:
@@ -2568,11 +2568,11 @@ const dictionaries = {
         businessProfileSalesModelNone:
           "Not specified",
         businessProfileSalesModelB2C:
-          "B2C â€” direct to consumers",
+          "B2C ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â direct to consumers",
         businessProfileSalesModelB2B:
-          "B2B â€” selling to businesses",
+          "B2B ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â selling to businesses",
         businessProfileSalesModelHybrid:
-          "Hybrid â€” B2C and B2B",
+          "Hybrid ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â B2C and B2B",
         businessProfileSalesModelOther:
           "Other",
 
@@ -3684,7 +3684,7 @@ const dictionaries = {
             description:
               "Prepare a product selling-price change as a controlled action. The new price is not applied until you confirm and execute it.",
             risk:
-              "Medium risk · reversible",
+              "Medium risk Ã‚Â· reversible",
             impact:
               "The change affects new orders for products without variants. Variant prices and historical orders are not changed.",
             label:
@@ -4864,11 +4864,407 @@ const dictionaries = {
   },
 } as const;
 
+export type ActionCenterCopy = {
+  header: {
+    title: string;
+    badge: string;
+    description: string;
+    refresh: string;
+    loading: string;
+    notice: string;
+  };
+
+  lifecycle: {
+    needsReview: string;
+    readyToExecute: string;
+    inProgress: string;
+    completed: string;
+    needsAttention: string;
+    cancelled: string;
+  };
+
+  statuses: {
+    all: string;
+    proposed: string;
+    confirmed: string;
+    executing: string;
+    executed: string;
+    stale: string;
+    failed: string;
+    cancelled: string;
+  };
+
+  actionTypes: {
+    updateDescription: string;
+    updateName: string;
+    updateStatus: string;
+    updatePrice: string;
+  };
+
+  fields: {
+    description: string;
+    name: string;
+    status: string;
+    price: string;
+  };
+
+  values: {
+    empty: string;
+    unavailable: string;
+    rationaleUnavailable: string;
+  };
+
+  preview: {
+    title: string;
+    before: string;
+    after: string;
+    product: string;
+  };
+
+  timeline: {
+    created: string;
+    confirmed: string;
+    executionStarted: string;
+    finalized: string;
+    contract: string;
+  };
+
+  metadata: {
+    error: string;
+    risk: string;
+    rationale: string;
+    auditDetail: string;
+    actionId: string;
+    targetId: string;
+    actionType: string;
+    field: string;
+  };
+
+  summary: {
+    needsReview: string;
+    needsReviewDescription: string;
+    ready: string;
+    readyDescription: string;
+    attention: string;
+    attentionDescription: string;
+    completed: string;
+    completedDescription: string;
+  };
+
+  filter: {
+    label: string;
+    description: string;
+  };
+
+  messages: {
+    loadFailedTitle: string;
+    loadFailed: string;
+    invalidResponse: string;
+    retry: string;
+    emptyTitle: string;
+    emptyDescription: string;
+  };
+
+  pagination: {
+    page: string;
+    actionsShown: string;
+    previous: string;
+    next: string;
+  };
+
+  workflow: {
+    reviewTitle: string;
+    reviewDescription: string;
+    readyTitle: string;
+    readyDescription: string;
+    confirm: string;
+    confirming: string;
+    execute: string;
+    executing: string;
+    processFailed: string;
+    invalidResponse: string;
+  };
+};
+
+const actionCenterDictionaries:
+  Record<Locale, ActionCenterCopy> = {
+  id: {
+    header: {
+      title: "AI Action Center",
+      badge: "Controlled workflow",
+      description:
+        "Pantau controlled AI actions, perubahan yang diusulkan, lifecycle eksekusi, dan hasil audit dari satu tempat.",
+      refresh: "Refresh",
+      loading: "Memuat...",
+      notice:
+        "Review, konfirmasi, dan eksekusi tetap merupakan langkah terpisah. Setiap lifecycle action divalidasi kembali oleh server dengan authorization dan stale protection.",
+    },
+
+    lifecycle: {
+      needsReview: "Perlu Review",
+      readyToExecute: "Siap Dieksekusi",
+      inProgress: "Sedang Diproses",
+      completed: "Selesai",
+      needsAttention: "Perlu Perhatian",
+      cancelled: "Dibatalkan",
+    },
+
+    statuses: {
+      all: "Semua status",
+      proposed: "Diusulkan",
+      confirmed: "Dikonfirmasi",
+      executing: "Sedang dieksekusi",
+      executed: "Selesai",
+      stale: "Data berubah",
+      failed: "Gagal",
+      cancelled: "Dibatalkan",
+    },
+
+    actionTypes: {
+      updateDescription: "Perbarui deskripsi produk",
+      updateName: "Perbarui nama produk",
+      updateStatus: "Perbarui status produk",
+      updatePrice: "Perbarui harga produk",
+    },
+
+    fields: {
+      description: "Deskripsi",
+      name: "Nama",
+      status: "Status",
+      price: "Harga",
+    },
+
+    values: {
+      empty: "Kosong",
+      unavailable: "Belum tersedia",
+      rationaleUnavailable:
+        "Belum tersedia pada read model saat ini.",
+    },
+
+    preview: {
+      title: "Preview perubahan",
+      before: "Sebelum",
+      after: "Sesudah",
+      product: "Produk",
+    },
+
+    timeline: {
+      created: "Dibuat",
+      confirmed: "Dikonfirmasi",
+      executionStarted: "Mulai eksekusi",
+      finalized: "Selesai",
+      contract: "Contract",
+    },
+
+    metadata: {
+      error: "Error",
+      risk: "Risk",
+      rationale: "Rationale",
+      auditDetail: "Detail audit",
+      actionId: "Action ID",
+      targetId: "Target ID",
+      actionType: "Action type",
+      field: "Field",
+    },
+
+    summary: {
+      needsReview: "Perlu Review",
+      needsReviewDescription:
+        "Pada halaman yang sedang dilihat",
+      ready: "Siap Dieksekusi",
+      readyDescription: "Sudah dikonfirmasi",
+      attention: "Perlu Perhatian",
+      attentionDescription: "Failed atau stale",
+      completed: "Selesai",
+      completedDescription: "Eksekusi selesai",
+    },
+
+    filter: {
+      label: "Filter status",
+      description:
+        "Filter dikirim ke safe Action Center read API.",
+    },
+
+    messages: {
+      loadFailedTitle: "Gagal memuat Action Center",
+      loadFailed: "Action Center tidak dapat dimuat.",
+      invalidResponse: "Response Action Center tidak valid.",
+      retry: "Coba lagi",
+      emptyTitle: "Belum ada controlled action",
+      emptyDescription:
+        "Tidak ada action yang cocok dengan filter dan halaman saat ini.",
+    },
+
+    pagination: {
+      page: "Halaman",
+      actionsShown: "action ditampilkan",
+      previous: "Sebelumnya",
+      next: "Berikutnya",
+    },
+
+    workflow: {
+      reviewTitle: "Review dan konfirmasi",
+      reviewDescription:
+        "Tinjau nilai sebelum dan sesudah di atas. Konfirmasi hanya menyetujui proposal dan tidak mengeksekusi perubahan.",
+      readyTitle: "Siap untuk dieksekusi",
+      readyDescription:
+        "Proposal sudah dikonfirmasi. Eksekusi dilakukan terpisah dan tetap divalidasi server dengan stale protection.",
+      confirm: "Konfirmasi perubahan",
+      confirming: "Mengonfirmasi...",
+      execute: "Eksekusi perubahan",
+      executing: "Mengeksekusi...",
+      processFailed:
+        "Controlled action tidak dapat diproses.",
+      invalidResponse:
+        "Response controlled action tidak valid.",
+    },
+  },
+
+  en: {
+    header: {
+      title: "AI Action Center",
+      badge: "Controlled workflow",
+      description:
+        "Monitor controlled AI actions, proposed changes, execution lifecycle, and audit results from one place.",
+      refresh: "Refresh",
+      loading: "Loading...",
+      notice:
+        "Review, confirmation, and execution remain separate steps. Every lifecycle action is revalidated by the server with authorization and stale protection.",
+    },
+
+    lifecycle: {
+      needsReview: "Needs Review",
+      readyToExecute: "Ready to Execute",
+      inProgress: "In Progress",
+      completed: "Completed",
+      needsAttention: "Needs Attention",
+      cancelled: "Cancelled",
+    },
+
+    statuses: {
+      all: "All statuses",
+      proposed: "Proposed",
+      confirmed: "Confirmed",
+      executing: "Executing",
+      executed: "Executed",
+      stale: "Data Changed",
+      failed: "Failed",
+      cancelled: "Cancelled",
+    },
+
+    actionTypes: {
+      updateDescription: "Update product description",
+      updateName: "Update product name",
+      updateStatus: "Update product status",
+      updatePrice: "Update product price",
+    },
+
+    fields: {
+      description: "Description",
+      name: "Name",
+      status: "Status",
+      price: "Price",
+    },
+
+    values: {
+      empty: "Empty",
+      unavailable: "Not available yet",
+      rationaleUnavailable:
+        "Not available in the current read model.",
+    },
+
+    preview: {
+      title: "Change preview",
+      before: "Before",
+      after: "After",
+      product: "Product",
+    },
+
+    timeline: {
+      created: "Created",
+      confirmed: "Confirmed",
+      executionStarted: "Execution started",
+      finalized: "Finalized",
+      contract: "Contract",
+    },
+
+    metadata: {
+      error: "Error",
+      risk: "Risk",
+      rationale: "Rationale",
+      auditDetail: "Audit details",
+      actionId: "Action ID",
+      targetId: "Target ID",
+      actionType: "Action type",
+      field: "Field",
+    },
+
+    summary: {
+      needsReview: "Needs Review",
+      needsReviewDescription: "On the current page",
+      ready: "Ready to Execute",
+      readyDescription: "Already confirmed",
+      attention: "Needs Attention",
+      attentionDescription: "Failed or stale",
+      completed: "Completed",
+      completedDescription: "Execution completed",
+    },
+
+    filter: {
+      label: "Status filter",
+      description:
+        "The filter is sent to the safe Action Center read API.",
+    },
+
+    messages: {
+      loadFailedTitle: "Failed to load Action Center",
+      loadFailed: "Action Center could not be loaded.",
+      invalidResponse: "Invalid Action Center response.",
+      retry: "Try again",
+      emptyTitle: "No controlled actions yet",
+      emptyDescription:
+        "No actions match the current filter and page.",
+    },
+
+    pagination: {
+      page: "Page",
+      actionsShown: "actions shown",
+      previous: "Previous",
+      next: "Next",
+    },
+
+    workflow: {
+      reviewTitle: "Review and confirm",
+      reviewDescription:
+        "Review the before and after values above. Confirmation only approves the proposal and does not execute the change.",
+      readyTitle: "Ready to execute",
+      readyDescription:
+        "The proposal has been confirmed. Execution remains separate and is revalidated by the server with stale protection.",
+      confirm: "Confirm change",
+      confirming: "Confirming...",
+      execute: "Execute change",
+      executing: "Executing...",
+      processFailed:
+        "The controlled action could not be processed.",
+      invalidResponse:
+        "Invalid controlled action response.",
+    },
+  },
+};
+
 export type Dictionary =
-  (typeof dictionaries)[Locale];
+  (typeof dictionaries)[Locale] & {
+    actionCenter: ActionCenterCopy;
+  };
 
 export function getDictionary(
   locale: Locale
 ): Dictionary {
-  return dictionaries[locale];
+  return {
+    ...dictionaries[locale],
+    actionCenter:
+      actionCenterDictionaries[
+        locale
+      ],
+  } as Dictionary;
 }

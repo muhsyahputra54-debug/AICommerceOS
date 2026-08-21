@@ -7,6 +7,13 @@ import {
   useState,
 } from "react";
 
+import ActionCenterLifecycleActions from "@/components/ai/ActionCenterLifecycleActions";
+import { useLanguage } from "@/components/i18n/LanguageProvider";
+import {
+  getDictionary,
+  type ActionCenterCopy,
+} from "@/lib/i18n/dictionaries";
+
 import type {
   ActionCenterItem,
   ActionCenterLifecycleBucket,
@@ -67,29 +74,60 @@ const STATUS_OPTIONS: Array<{
   },
 ];
 
-const LIFECYCLE_LABELS:
+const LIFECYCLE_COPY_KEYS:
   Record<
     ActionCenterLifecycleBucket,
-    string
+    keyof ActionCenterCopy["lifecycle"]
   > = {
     needs_review:
-      "Perlu Review",
+      "needsReview",
 
     ready_to_execute:
-      "Siap Dieksekusi",
+      "readyToExecute",
 
     in_progress:
-      "Sedang Diproses",
+      "inProgress",
 
     completed:
-      "Selesai",
+      "completed",
 
     needs_attention:
-      "Perlu Perhatian",
+      "needsAttention",
 
     cancelled:
-      "Dibatalkan",
+      "cancelled",
   };
+
+function statusOptionLabel(
+  copy: ActionCenterCopy,
+  status: StatusFilter,
+) {
+  switch (status) {
+    case "all":
+      return copy.statuses.all;
+
+    case "proposed":
+      return copy.statuses.proposed;
+
+    case "confirmed":
+      return copy.statuses.confirmed;
+
+    case "executing":
+      return copy.statuses.executing;
+
+    case "executed":
+      return copy.statuses.executed;
+
+    case "stale":
+      return copy.statuses.stale;
+
+    case "failed":
+      return copy.statuses.failed;
+
+    case "cancelled":
+      return copy.statuses.cancelled;
+  }
+}
 
 const LIFECYCLE_TONES:
   Record<
@@ -116,49 +154,53 @@ const LIFECYCLE_TONES:
   };
 
 function actionTypeLabel(
+  copy: ActionCenterCopy,
   actionType:
     ActionCenterItem["actionType"],
 ) {
   switch (actionType) {
     case "product.update_description":
-      return "Perbarui deskripsi produk";
+      return copy.actionTypes.updateDescription;
 
     case "product.update_name":
-      return "Perbarui nama produk";
+      return copy.actionTypes.updateName;
 
     case "product.update_status":
-      return "Perbarui status produk";
+      return copy.actionTypes.updateStatus;
 
     case "product.update_price":
-      return "Perbarui harga produk";
+      return copy.actionTypes.updatePrice;
   }
 }
 
 function mutationFieldLabel(
+  copy: ActionCenterCopy,
   field:
     ActionCenterItem["mutation"]["field"],
 ) {
   switch (field) {
     case "description":
-      return "Deskripsi";
+      return copy.fields.description;
 
     case "name":
-      return "Nama";
+      return copy.fields.name;
 
     case "status":
-      return "Status";
+      return copy.fields.status;
 
     case "price":
-      return "Harga";
+      return copy.fields.price;
   }
 }
 
 function formatMutationValue(
+  copy: ActionCenterCopy,
+  localeTag: string,
   item: ActionCenterItem,
   value: string | null,
 ) {
   if (value === null) {
-    return "Kosong";
+    return copy.values.empty;
   }
 
   if (
@@ -173,7 +215,7 @@ function formatMutationValue(
       )
     ) {
       return new Intl.NumberFormat(
-        "id-ID",
+        localeTag,
         {
           style:
             "currency",
@@ -194,10 +236,11 @@ function formatMutationValue(
 }
 
 function formatDate(
+  localeTag: string,
   value: string | null,
 ) {
   if (!value) {
-    return "—";
+    return "\u2014";
   }
 
   const date =
@@ -212,7 +255,7 @@ function formatDate(
   }
 
   return new Intl.DateTimeFormat(
-    "id-ID",
+    localeTag,
     {
       dateStyle:
         "medium",
@@ -244,8 +287,10 @@ function ActionValue({
 }
 
 function LifecycleBadge({
+  copy,
   lifecycle,
 }: {
+  copy: ActionCenterCopy;
   lifecycle:
     ActionCenterLifecycleBucket;
 }) {
@@ -254,8 +299,10 @@ function LifecycleBadge({
       className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${LIFECYCLE_TONES[lifecycle]}`}
     >
       {
-        LIFECYCLE_LABELS[
-          lifecycle
+        copy.lifecycle[
+          LIFECYCLE_COPY_KEYS[
+            lifecycle
+          ]
         ]
       }
     </span>
@@ -263,18 +310,28 @@ function LifecycleBadge({
 }
 
 function ActionCard({
+  copy,
   item,
+  localeTag,
+  onChanged,
 }: {
+  copy: ActionCenterCopy;
   item: ActionCenterItem;
+  localeTag: string;
+  onChanged: () => Promise<void>;
 }) {
   const before =
     formatMutationValue(
+      copy,
+      localeTag,
       item,
       item.mutation.before,
     );
 
   const after =
     formatMutationValue(
+      copy,
+      localeTag,
       item,
       item.mutation.after,
     );
@@ -285,19 +342,21 @@ function ActionCard({
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <LifecycleBadge
+              copy={copy}
               lifecycle={
                 item.lifecycleBucket
               }
             />
 
             <span className="inline-flex rounded-full border px-2.5 py-1 text-xs font-medium text-muted-foreground">
-              {item.status}
+              {statusOptionLabel(copy, item.status)}
             </span>
           </div>
 
           <h2 className="mt-3 text-base font-semibold">
             {
               actionTypeLabel(
+                copy,
                 item.actionType,
               )
             }
@@ -306,22 +365,24 @@ function ActionCard({
           <p className="mt-1 text-sm text-muted-foreground">
             {
               mutationFieldLabel(
+                copy,
                 item.mutation.field,
               )
             }
-            {" · "}
-            Product
+            {" \u00b7 "}
+            {copy.preview.product}
           </p>
         </div>
 
         <div className="shrink-0 text-left sm:text-right">
           <p className="text-xs text-muted-foreground">
-            Dibuat
+            {copy.timeline.created}
           </p>
 
           <p className="mt-1 text-sm font-medium">
             {
               formatDate(
+                localeTag,
                 item.timestamps
                   .createdAt,
               )
@@ -333,31 +394,37 @@ function ActionCard({
       <div className="space-y-5 p-5">
         <div>
           <p className="mb-3 text-sm font-semibold">
-            Preview perubahan
+            {copy.preview.title}
           </p>
 
           <div className="grid gap-3 lg:grid-cols-2">
             <ActionValue
-              label="Sebelum"
+              label={copy.preview.before}
               value={before}
             />
 
             <ActionValue
-              label="Sesudah"
+              label={copy.preview.after}
               value={after}
             />
           </div>
         </div>
 
+        <ActionCenterLifecycleActions
+          item={item}
+          onChanged={onChanged}
+        />
+
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <div className="rounded-xl border p-3">
             <p className="text-xs text-muted-foreground">
-              Dikonfirmasi
+              {copy.timeline.confirmed}
             </p>
 
             <p className="mt-1 text-sm">
               {
                 formatDate(
+                  localeTag,
                   item.timestamps
                     .confirmedAt,
                 )
@@ -367,12 +434,13 @@ function ActionCard({
 
           <div className="rounded-xl border p-3">
             <p className="text-xs text-muted-foreground">
-              Mulai eksekusi
+              {copy.timeline.executionStarted}
             </p>
 
             <p className="mt-1 text-sm">
               {
                 formatDate(
+                  localeTag,
                   item.timestamps
                     .executionStartedAt,
                 )
@@ -382,12 +450,13 @@ function ActionCard({
 
           <div className="rounded-xl border p-3">
             <p className="text-xs text-muted-foreground">
-              Selesai
+              {copy.timeline.finalized}
             </p>
 
             <p className="mt-1 text-sm">
               {
                 formatDate(
+                  localeTag,
                   item.timestamps
                     .finalizedAt,
                 )
@@ -397,7 +466,7 @@ function ActionCard({
 
           <div className="rounded-xl border p-3">
             <p className="text-xs text-muted-foreground">
-              Contract
+              {copy.timeline.contract}
             </p>
 
             <p className="mt-1 text-sm">
@@ -409,7 +478,7 @@ function ActionCard({
         {item.errorMessage ? (
           <div className="rounded-xl border border-red-200 bg-red-50 p-4">
             <p className="text-xs font-semibold uppercase tracking-wide text-red-700">
-              Error
+              {copy.metadata.error}
             </p>
 
             <p className="mt-2 whitespace-pre-wrap break-words text-sm text-red-800">
@@ -421,36 +490,34 @@ function ActionCard({
         <div className="grid gap-3 lg:grid-cols-2">
           <div className="rounded-xl border p-4">
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Risk
+              {copy.metadata.risk}
             </p>
 
             <p className="mt-2 text-sm">
-              {item.risk ??
-                "Belum tersedia"}
+              {item.risk ?? copy.values.unavailable}
             </p>
           </div>
 
           <div className="rounded-xl border p-4">
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Rationale
+              {copy.metadata.rationale}
             </p>
 
             <p className="mt-2 text-sm text-muted-foreground">
-              {item.rationale ??
-                "Belum tersedia pada read model saat ini."}
+              {item.rationale ?? copy.values.rationaleUnavailable}
             </p>
           </div>
         </div>
 
         <details className="rounded-xl border bg-muted/20 p-4">
           <summary className="cursor-pointer text-sm font-medium">
-            Detail audit
+            {copy.metadata.auditDetail}
           </summary>
 
           <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
             <div>
               <dt className="text-muted-foreground">
-                Action ID
+                {copy.metadata.actionId}
               </dt>
 
               <dd className="mt-1 break-all font-mono text-xs">
@@ -460,7 +527,7 @@ function ActionCard({
 
             <div>
               <dt className="text-muted-foreground">
-                Target ID
+                {copy.metadata.targetId}
               </dt>
 
               <dd className="mt-1 break-all font-mono text-xs">
@@ -470,7 +537,7 @@ function ActionCard({
 
             <div>
               <dt className="text-muted-foreground">
-                Action type
+                {copy.metadata.actionType}
               </dt>
 
               <dd className="mt-1 break-all font-mono text-xs">
@@ -480,7 +547,7 @@ function ActionCard({
 
             <div>
               <dt className="text-muted-foreground">
-                Field
+                {copy.metadata.field}
               </dt>
 
               <dd className="mt-1 break-all font-mono text-xs">
@@ -521,6 +588,21 @@ function SummaryCard({
 }
 
 export default function ActionCenterWorkspace() {
+  const {
+    locale,
+  } =
+    useLanguage();
+
+  const copy =
+    getDictionary(
+      locale,
+    ).actionCenter;
+
+  const localeTag =
+    locale === "id"
+      ? "id-ID"
+      : "en-US";
+
   const [
     actions,
     setActions,
@@ -637,7 +719,7 @@ export default function ActionCenterWorkspace() {
                       error: string;
                     }
                   ).error
-                : "Action Center tidak dapat dimuat.";
+                : copy.messages.loadFailed;
 
             throw new Error(
               message,
@@ -665,7 +747,7 @@ export default function ActionCenterWorkspace() {
             )
           ) {
             throw new Error(
-              "Response Action Center tidak valid.",
+              copy.messages.invalidResponse,
             );
           }
 
@@ -700,7 +782,7 @@ export default function ActionCenterWorkspace() {
             caughtError instanceof
               Error
               ? caughtError.message
-              : "Action Center tidak dapat dimuat.",
+              : copy.messages.loadFailed,
           );
         } finally {
           if (
@@ -794,19 +876,16 @@ export default function ActionCenterWorkspace() {
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-2xl font-semibold tracking-tight">
-              AI Action Center
+              {copy.header.title}
             </h1>
 
             <span className="inline-flex rounded-full border bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground">
-              Read-only
+              {copy.header.badge}
             </span>
           </div>
 
           <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
-            Pantau controlled AI actions,
-            perubahan yang diusulkan,
-            lifecycle eksekusi, dan
-            hasil audit dari satu tempat.
+            {copy.header.description}
           </p>
         </div>
 
@@ -825,41 +904,36 @@ export default function ActionCenterWorkspace() {
       </div>
 
       <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
-        Action Center pada fase ini
-        hanya membaca audit controlled
-        actions. Konfirmasi dan eksekusi
-        tetap berada di workflow
-        terpisah dan tidak tersedia dari
-        halaman ini.
+        {copy.header.notice}
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <SummaryCard
-          label="Perlu Review"
+          label={copy.summary.needsReview}
           value={summary.review}
-          description="Pada halaman yang sedang dilihat"
+          description={copy.summary.needsReviewDescription}
         />
 
         <SummaryCard
-          label="Siap Dieksekusi"
+          label={copy.summary.ready}
           value={summary.ready}
-          description="Sudah dikonfirmasi"
+          description={copy.summary.readyDescription}
         />
 
         <SummaryCard
-          label="Perlu Perhatian"
+          label={copy.summary.attention}
           value={
             summary.attention
           }
-          description="Failed atau stale"
+          description={copy.summary.attentionDescription}
         />
 
         <SummaryCard
-          label="Selesai"
+          label={copy.summary.completed}
           value={
             summary.completed
           }
-          description="Eksekusi selesai"
+          description={copy.summary.completedDescription}
         />
       </div>
 
@@ -869,12 +943,11 @@ export default function ActionCenterWorkspace() {
             htmlFor="action-center-status"
             className="text-sm font-medium"
           >
-            Filter status
+            {copy.filter.label}
           </label>
 
           <p className="mt-1 text-xs text-muted-foreground">
-            Filter dikirim ke safe
-            Action Center read API.
+            {copy.filter.description}
           </p>
         </div>
 
@@ -905,7 +978,10 @@ export default function ActionCenterWorkspace() {
                 }
               >
                 {
-                  option.label
+                  statusOptionLabel(
+                    copy,
+                    option.value,
+                  )
                 }
               </option>
             ),
@@ -916,7 +992,7 @@ export default function ActionCenterWorkspace() {
       {error ? (
         <div className="rounded-2xl border border-red-200 bg-red-50 p-5">
           <p className="font-semibold text-red-800">
-            Gagal memuat Action Center
+            {copy.messages.loadFailedTitle}
           </p>
 
           <p className="mt-2 text-sm text-red-700">
@@ -930,7 +1006,7 @@ export default function ActionCenterWorkspace() {
             }}
             className="mt-4 inline-flex h-9 items-center justify-center rounded-lg border border-red-300 bg-white px-3 text-sm font-medium text-red-800"
           >
-            Coba lagi
+            {copy.messages.retry}
           </button>
         </div>
       ) : null}
@@ -959,7 +1035,7 @@ export default function ActionCenterWorkspace() {
       actions.length === 0 ? (
         <div className="rounded-2xl border bg-card px-6 py-14 text-center shadow-sm">
           <p className="font-semibold">
-            Belum ada controlled action
+            {copy.messages.emptyTitle}
           </p>
 
           <p className="mx-auto mt-2 max-w-xl text-sm text-muted-foreground">
@@ -976,7 +1052,12 @@ export default function ActionCenterWorkspace() {
             (item) => (
               <ActionCard
                 key={item.id}
+                copy={copy}
                 item={item}
+                localeTag={localeTag}
+                onChanged={() =>
+                  loadActions()
+                }
               />
             ),
           )}
@@ -988,8 +1069,9 @@ export default function ActionCenterWorkspace() {
         offset > 0) ? (
         <div className="flex flex-col gap-3 rounded-2xl border bg-card p-4 text-sm shadow-sm sm:flex-row sm:items-center sm:justify-between">
           <p className="text-muted-foreground">
-            Halaman {currentPage}
-            {" · "}
+            {copy.pagination.page}{" "}
+            {currentPage}
+            {" \u00b7 "}
             {returned} action
             ditampilkan
           </p>
@@ -1012,7 +1094,7 @@ export default function ActionCenterWorkspace() {
               }}
               className="inline-flex h-9 items-center justify-center rounded-lg border px-3 font-medium transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
             >
-              Sebelumnya
+              {copy.pagination.previous}
             </button>
 
             <button
@@ -1029,7 +1111,7 @@ export default function ActionCenterWorkspace() {
               }}
               className="inline-flex h-9 items-center justify-center rounded-lg border px-3 font-medium transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
             >
-              Berikutnya
+              {copy.pagination.next}
             </button>
           </div>
         </div>
