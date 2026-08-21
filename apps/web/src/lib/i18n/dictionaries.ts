@@ -1183,6 +1183,68 @@ const dictionaries = {
                 "Dibatalkan",
             },
           },
+
+          controlledStatus: {
+            title:
+              "Perubahan Status Terkontrol",
+            description:
+              "Siapkan perubahan status sebagai controlled action. Menonaktifkan produk dapat membuatnya tidak tersedia pada alur yang hanya menggunakan produk aktif.",
+            label:
+              "Calon status produk",
+            review:
+              "Tinjau perubahan",
+            reviewing:
+              "Menyiapkan...",
+            before:
+              "Sebelum",
+            after:
+              "Sesudah",
+            status:
+              "Status",
+            confirm:
+              "Konfirmasi",
+            confirming:
+              "Mengonfirmasi...",
+            execute:
+              "Jalankan perubahan",
+            executing:
+              "Menjalankan...",
+            previewReady:
+              "Pratinjau status siap. Periksa status sebelum dan sesudah sebelum mengonfirmasi.",
+            confirmedMessage:
+              "Perubahan status sudah dikonfirmasi. Jalankan hanya jika pratinjau sudah benar.",
+            executedMessage:
+              "Status produk berhasil diperbarui.",
+            staleMessage:
+              "Status produk berubah sejak pratinjau dibuat. Status yang lebih baru tidak ditimpa.",
+            prepareFailed:
+              "Pratinjau perubahan status tidak dapat dibuat.",
+            confirmFailed:
+              "Perubahan status tidak dapat dikonfirmasi.",
+            executeFailed:
+              "Perubahan status tidak dapat dijalankan.",
+            ownerAdminOnly:
+              "Controlled action status produk hanya tersedia untuk owner atau admin.",
+            sameStatus:
+              "Calon status sama dengan status produk saat ini.",
+
+            statuses: {
+              proposed:
+                "Menunggu konfirmasi",
+              confirmed:
+                "Terkonfirmasi",
+              executing:
+                "Sedang dijalankan",
+              executed:
+                "Selesai",
+              stale:
+                "Data berubah",
+              failed:
+                "Gagal",
+              cancelled:
+                "Dibatalkan",
+            },
+          },
         },
 
         fields: {
@@ -3462,6 +3524,68 @@ const dictionaries = {
               "Controlled product-name actions are available only to owners and admins.",
             sameName:
               "The proposed name is the same as the current product name.",
+
+            statuses: {
+              proposed:
+                "Awaiting confirmation",
+              confirmed:
+                "Confirmed",
+              executing:
+                "Executing",
+              executed:
+                "Completed",
+              stale:
+                "Data changed",
+              failed:
+                "Failed",
+              cancelled:
+                "Cancelled",
+            },
+          },
+
+          controlledStatus: {
+            title:
+              "Controlled Status Change",
+            description:
+              "Prepare a product-status change as a controlled action. Deactivating a product can make it unavailable in workflows that only use active products.",
+            label:
+              "Proposed product status",
+            review:
+              "Review change",
+            reviewing:
+              "Preparing...",
+            before:
+              "Before",
+            after:
+              "After",
+            status:
+              "Status",
+            confirm:
+              "Confirm",
+            confirming:
+              "Confirming...",
+            execute:
+              "Execute change",
+            executing:
+              "Executing...",
+            previewReady:
+              "The status preview is ready. Review the before and after status before confirming.",
+            confirmedMessage:
+              "The status change is confirmed. Execute only when the preview is correct.",
+            executedMessage:
+              "The product status was updated successfully.",
+            staleMessage:
+              "The product status changed after this preview was created. The newer status was not overwritten.",
+            prepareFailed:
+              "The product-status preview could not be created.",
+            confirmFailed:
+              "The product-status change could not be confirmed.",
+            executeFailed:
+              "The product-status change could not be executed.",
+            ownerAdminOnly:
+              "Controlled product-status actions are available only to owners and admins.",
+            sameStatus:
+              "The proposed status is the same as the current product status.",
 
             statuses: {
               proposed:

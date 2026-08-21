@@ -36,10 +36,12 @@ describe(
       "allowlists only the first controlled action",
       () => {
         expect(
-          CONTROLLED_ACTION_TYPES,
-        ).toEqual([
-          "product.update_description",
-        ]);
+      CONTROLLED_ACTION_TYPES,
+    ).toEqual([
+      "product.update_description",
+      "product.update_name",
+      "product.update_status",
+    ]);
 
         expect(
           CONTROLLED_ACTION_CONTRACT_VERSION,

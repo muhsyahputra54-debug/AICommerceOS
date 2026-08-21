@@ -3,6 +3,8 @@ export const CONTROLLED_ACTION_CONTRACT_VERSION =
 
 export const CONTROLLED_ACTION_TYPES = [
   "product.update_description",
+  "product.update_name",
+  "product.update_status",
 ] as const;
 
 export type ControlledActionType =

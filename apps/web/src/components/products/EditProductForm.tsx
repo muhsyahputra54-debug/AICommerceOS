@@ -49,6 +49,17 @@ type ControlledNameAction =
     }
   >;
 
+type ControlledStatusAction =
+  Extract<
+    ControlledActionApiRecord,
+    {
+      actionType: "product.update_status";
+    }
+  >;
+
+type ProductStatus =
+  "active" | "inactive";
+
 type ControlledActionResponse = {
   action?: ControlledActionApiRecord;
   error?: string;
@@ -100,7 +111,45 @@ export default function EditProductForm({
   ] =
     useState<string | null>(null);
 
+  const [
+    controlledStatus,
+    setControlledStatus,
+  ] =
+    useState<ProductStatus>(
+      product.status === "inactive"
+        ? "active"
+        : "inactive",
+    );
+
+  const [
+    controlledStatusAction,
+    setControlledStatusAction,
+  ] =
+    useState<ControlledStatusAction | null>(
+      null,
+    );
+
+  const [
+    controlledStatusBusy,
+    setControlledStatusBusy,
+  ] =
+    useState<
+      "propose" | "confirm" | "execute" | null
+    >(null);
+
+  const [
+    controlledStatusMessage,
+    setControlledStatusMessage,
+  ] =
+    useState<string | null>(null);
+
   const controlledNameProposalKey =
+    useRef<{
+      signature: string;
+      key: string;
+    } | null>(null);
+
+  const controlledStatusProposalKey =
     useRef<{
       signature: string;
       key: string;
@@ -140,6 +189,41 @@ export default function EditProductForm({
     return created.key;
   }
 
+  function getControlledStatusProposalKey(
+    expectedStatus: ProductStatus,
+    proposedStatus: ProductStatus,
+  ) {
+    const signature =
+      JSON.stringify([
+        expectedStatus,
+        proposedStatus,
+      ]);
+
+    const existing =
+      controlledStatusProposalKey.current;
+
+    if (
+      existing?.signature ===
+      signature
+    ) {
+      return existing.key;
+    }
+
+    const created = {
+      signature,
+      key: [
+        "product-status",
+        product.id,
+        crypto.randomUUID(),
+      ].join(":"),
+    };
+
+    controlledStatusProposalKey.current =
+      created;
+
+    return created.key;
+  }
+
   async function readControlledActionResponse(
     response: Response,
   ) {
@@ -158,6 +242,18 @@ export default function EditProductForm({
 
     return action?.actionType ===
       "product.update_name"
+      ? action
+      : null;
+  }
+
+  function statusActionFrom(
+    response: ControlledActionResponse,
+  ): ControlledStatusAction | null {
+    const action =
+      response.action;
+
+    return action?.actionType ===
+      "product.update_status"
       ? action
       : null;
   }
@@ -430,6 +526,278 @@ export default function EditProductForm({
     }
   }
 
+  async function handleReviewControlledStatus() {
+    if (!canUseControlledActions) {
+      setControlledStatusMessage(
+        copy.edit.controlledStatus
+          .ownerAdminOnly,
+      );
+      return;
+    }
+
+    const expectedStatus: ProductStatus =
+      product.status === "inactive"
+        ? "inactive"
+        : "active";
+
+    const proposedStatus =
+      controlledStatus;
+
+    if (
+      proposedStatus ===
+      expectedStatus
+    ) {
+      setControlledStatusMessage(
+        copy.edit.controlledStatus
+          .sameStatus,
+      );
+      return;
+    }
+
+    setControlledStatusMessage(null);
+    setControlledStatusBusy("propose");
+
+    const idempotencyKey =
+      getControlledStatusProposalKey(
+        expectedStatus,
+        proposedStatus,
+      );
+
+    try {
+      const response =
+        await fetch(
+          "/api/ai/controlled-actions",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
+            body: JSON.stringify({
+              actionType:
+                "product.update_status",
+              productId:
+                product.id,
+              expectedStatus,
+              proposedStatus,
+              idempotencyKey,
+            }),
+          },
+        );
+
+      const data =
+        await readControlledActionResponse(
+          response,
+        );
+
+      const action =
+        statusActionFrom(data);
+
+      if (!response.ok || !action) {
+        if (
+          response.status >= 400 &&
+          response.status < 500
+        ) {
+          controlledStatusProposalKey.current =
+            null;
+        }
+
+        setControlledStatusMessage(
+          response.status === 409
+            ? copy.edit
+                .controlledStatus
+                .staleMessage
+            : copy.edit
+                .controlledStatus
+                .prepareFailed,
+        );
+
+        if (response.status === 409) {
+          router.refresh();
+        }
+
+        return;
+      }
+
+      setControlledStatus(
+        action.proposedStatus,
+      );
+
+      setControlledStatusAction(
+        action,
+      );
+
+      setControlledStatusMessage(
+        copy.edit.controlledStatus
+          .previewReady,
+      );
+    } catch {
+      setControlledStatusMessage(
+        copy.edit.controlledStatus
+          .prepareFailed,
+      );
+    } finally {
+      setControlledStatusBusy(null);
+    }
+  }
+
+  async function handleConfirmControlledStatus() {
+    if (
+      !canUseControlledActions ||
+      !controlledStatusAction ||
+      controlledStatusAction.status !==
+        "proposed"
+    ) {
+      return;
+    }
+
+    setControlledStatusMessage(null);
+    setControlledStatusBusy("confirm");
+
+    try {
+      const response =
+        await fetch(
+          `/api/ai/controlled-actions/${controlledStatusAction.id}/confirm`,
+          {
+            method: "POST",
+          },
+        );
+
+      const data =
+        await readControlledActionResponse(
+          response,
+        );
+
+      const action =
+        statusActionFrom(data);
+
+      if (
+        !response.ok ||
+        !action ||
+        action.status !== "confirmed"
+      ) {
+        setControlledStatusMessage(
+          copy.edit.controlledStatus
+            .confirmFailed,
+        );
+        return;
+      }
+
+      setControlledStatusAction(
+        action,
+      );
+
+      setControlledStatusMessage(
+        copy.edit.controlledStatus
+          .confirmedMessage,
+      );
+    } catch {
+      setControlledStatusMessage(
+        copy.edit.controlledStatus
+          .confirmFailed,
+      );
+    } finally {
+      setControlledStatusBusy(null);
+    }
+  }
+
+  async function handleExecuteControlledStatus() {
+    if (
+      !canUseControlledActions ||
+      !controlledStatusAction ||
+      controlledStatusAction.status !==
+        "confirmed"
+    ) {
+      return;
+    }
+
+    setControlledStatusMessage(null);
+    setControlledStatusBusy("execute");
+
+    try {
+      const response =
+        await fetch(
+          `/api/ai/controlled-actions/${controlledStatusAction.id}/execute`,
+          {
+            method: "POST",
+          },
+        );
+
+      const data =
+        await readControlledActionResponse(
+          response,
+        );
+
+      const action =
+        statusActionFrom(data);
+
+      if (!action) {
+        setControlledStatusMessage(
+          copy.edit.controlledStatus
+            .executeFailed,
+        );
+        return;
+      }
+
+      setControlledStatusAction(
+        action,
+      );
+
+      if (
+        action.status ===
+        "executed"
+      ) {
+        controlledStatusProposalKey.current =
+          null;
+
+        setControlledStatusMessage(
+          copy.edit.controlledStatus
+            .executedMessage,
+        );
+
+        router.refresh();
+        return;
+      }
+
+      if (
+        action.status ===
+        "stale"
+      ) {
+        controlledStatusProposalKey.current =
+          null;
+
+        setControlledStatusMessage(
+          copy.edit.controlledStatus
+            .staleMessage,
+        );
+
+        router.refresh();
+        return;
+      }
+
+      if (
+        action.status ===
+          "failed" ||
+        !response.ok
+      ) {
+        controlledStatusProposalKey.current =
+          null;
+
+        setControlledStatusMessage(
+          copy.edit.controlledStatus
+            .executeFailed,
+        );
+      }
+    } catch {
+      setControlledStatusMessage(
+        copy.edit.controlledStatus
+          .executeFailed,
+      );
+    } finally {
+      setControlledStatusBusy(null);
+    }
+  }
+
   async function handleSubmit(
     event: FormEvent<HTMLFormElement>,
   ) {
@@ -588,6 +956,20 @@ export default function EditProductForm({
     controlledNameAction?.status ===
       "confirmed" ||
     controlledNameAction?.status ===
+      "executing";
+
+  const currentControlledStatus:
+    ProductStatus =
+      product.status === "inactive"
+        ? "inactive"
+        : "active";
+
+  const controlledStatusActive =
+    controlledStatusAction?.status ===
+      "proposed" ||
+    controlledStatusAction?.status ===
+      "confirmed" ||
+    controlledStatusAction?.status ===
       "executing";
 
   return (
@@ -999,6 +1381,229 @@ export default function EditProductForm({
         {controlledNameMessage ? (
           <p className="text-sm text-muted-foreground">
             {controlledNameMessage}
+          </p>
+        ) : null}
+      </div>
+
+      <div className="space-y-4 rounded-xl border bg-muted/20 p-4">
+        <div>
+          <h2 className="font-medium">
+            {
+              copy.edit.controlledStatus
+                .title
+            }
+          </h2>
+
+          <p className="mt-1 text-sm text-muted-foreground">
+            {
+              copy.edit.controlledStatus
+                .description
+            }
+          </p>
+        </div>
+
+        {!canUseControlledActions ? (
+          <p className="rounded-lg border border-dashed px-3 py-2 text-sm text-muted-foreground">
+            {
+              copy.edit.controlledStatus
+                .ownerAdminOnly
+            }
+          </p>
+        ) : (
+          <>
+            <div className="space-y-2">
+              <label
+                htmlFor="controlled_product_status"
+                className="text-sm font-medium"
+              >
+                {
+                  copy.edit.controlledStatus
+                    .label
+                }
+              </label>
+
+              <select
+                id="controlled_product_status"
+                value={controlledStatus}
+                disabled={
+                  controlledStatusBusy !==
+                    null ||
+                  controlledStatusActive
+                }
+                onChange={(event) => {
+                  const nextStatus =
+                    event.target.value;
+
+                  if (
+                    nextStatus !==
+                      "active" &&
+                    nextStatus !==
+                      "inactive"
+                  ) {
+                    return;
+                  }
+
+                  setControlledStatus(
+                    nextStatus,
+                  );
+
+                  setControlledStatusAction(
+                    null,
+                  );
+
+                  setControlledStatusMessage(
+                    null,
+                  );
+
+                  controlledStatusProposalKey.current =
+                    null;
+                }}
+                className="h-8 w-full rounded-lg border border-input bg-background px-2.5 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+              >
+                <option value="active">
+                  {copy.fields.active}
+                </option>
+
+                <option value="inactive">
+                  {copy.fields.inactive}
+                </option>
+              </select>
+            </div>
+
+            <div>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={
+                  controlledStatusBusy !==
+                    null ||
+                  controlledStatusActive ||
+                  controlledStatus ===
+                    currentControlledStatus
+                }
+                onClick={
+                  handleReviewControlledStatus
+                }
+              >
+                {controlledStatusBusy ===
+                "propose"
+                  ? copy.edit
+                      .controlledStatus
+                      .reviewing
+                  : copy.edit
+                      .controlledStatus
+                      .review}
+              </Button>
+            </div>
+          </>
+        )}
+
+        {controlledStatusAction ? (
+          <div className="space-y-4 rounded-xl border bg-background p-4">
+            <div className="text-xs text-muted-foreground">
+              {
+                copy.edit.controlledStatus
+                  .status
+              }
+              {": "}
+              {
+                copy.edit.controlledStatus
+                  .statuses[
+                    controlledStatusAction
+                      .status
+                  ]
+              }
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <div className="text-sm font-medium">
+                  {
+                    copy.edit
+                      .controlledStatus
+                      .before
+                  }
+                </div>
+
+                <div className="mt-2 rounded-lg border bg-muted/20 p-3 text-sm">
+                  {controlledStatusAction
+                    .expectedStatus ===
+                  "active"
+                    ? copy.fields.active
+                    : copy.fields.inactive}
+                </div>
+              </div>
+
+              <div>
+                <div className="text-sm font-medium">
+                  {
+                    copy.edit
+                      .controlledStatus
+                      .after
+                  }
+                </div>
+
+                <div className="mt-2 rounded-lg border bg-muted/20 p-3 text-sm">
+                  {controlledStatusAction
+                    .proposedStatus ===
+                  "active"
+                    ? copy.fields.active
+                    : copy.fields.inactive}
+                </div>
+              </div>
+            </div>
+
+            {controlledStatusAction.status ===
+            "proposed" ? (
+              <Button
+                type="button"
+                disabled={
+                  controlledStatusBusy !==
+                  null
+                }
+                onClick={
+                  handleConfirmControlledStatus
+                }
+              >
+                {controlledStatusBusy ===
+                "confirm"
+                  ? copy.edit
+                      .controlledStatus
+                      .confirming
+                  : copy.edit
+                      .controlledStatus
+                      .confirm}
+              </Button>
+            ) : null}
+
+            {controlledStatusAction.status ===
+            "confirmed" ? (
+              <Button
+                type="button"
+                disabled={
+                  controlledStatusBusy !==
+                  null
+                }
+                onClick={
+                  handleExecuteControlledStatus
+                }
+              >
+                {controlledStatusBusy ===
+                "execute"
+                  ? copy.edit
+                      .controlledStatus
+                      .executing
+                  : copy.edit
+                      .controlledStatus
+                      .execute}
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
+
+        {controlledStatusMessage ? (
+          <p className="text-sm text-muted-foreground">
+            {controlledStatusMessage}
           </p>
         ) : null}
       </div>

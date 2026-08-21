@@ -34,9 +34,18 @@ export type ControlledProductNameProposalInput = {
   idempotencyKey: string;
 };
 
+export type ControlledProductStatusProposalInput = {
+  actionType: "product.update_status";
+  productId: string;
+  expectedStatus: "active" | "inactive";
+  proposedStatus: "active" | "inactive";
+  idempotencyKey: string;
+};
+
 export type ControlledActionProposalInput =
   | ControlledProductDescriptionProposalInput
-  | ControlledProductNameProposalInput;
+  | ControlledProductNameProposalInput
+  | ControlledProductStatusProposalInput;
 
 type ControlledActionApiRecordBase = {
   id: string;
@@ -66,9 +75,18 @@ export type ControlledProductNameActionApiRecord =
     proposedName: string;
   };
 
+export type ControlledProductStatusActionApiRecord =
+  ControlledActionApiRecordBase & {
+    actionType: "product.update_status";
+    mutationField: "status";
+    expectedStatus: "active" | "inactive";
+    proposedStatus: "active" | "inactive";
+  };
+
 export type ControlledActionApiRecord =
   | ControlledProductDescriptionActionApiRecord
-  | ControlledProductNameActionApiRecord;
+  | ControlledProductNameActionApiRecord
+  | ControlledProductStatusActionApiRecord;
 
 type ProposalParseResult =
   | {
@@ -98,6 +116,15 @@ const PRODUCT_NAME_PROPOSAL_KEYS =
     "productId",
     "expectedName",
     "proposedName",
+    "idempotencyKey",
+  ]);
+
+const PRODUCT_STATUS_PROPOSAL_KEYS =
+  new Set([
+    "actionType",
+    "productId",
+    "expectedStatus",
+    "proposedStatus",
     "idempotencyKey",
   ]);
 
@@ -154,7 +181,9 @@ export function parseControlledActionProposalInput(
     actionType !==
       "product.update_description" &&
     actionType !==
-      "product.update_name"
+      "product.update_name" &&
+    actionType !==
+      "product.update_status"
   ) {
     return {
       ok: false,
@@ -167,10 +196,16 @@ export function parseControlledActionProposalInput(
     actionType ===
     "product.update_name";
 
+  const isProductStatusAction =
+    actionType ===
+    "product.update_status";
+
   const allowedKeys =
     isProductNameAction
       ? PRODUCT_NAME_PROPOSAL_KEYS
-      : DESCRIPTION_PROPOSAL_KEYS;
+      : isProductStatusAction
+        ? PRODUCT_STATUS_PROPOSAL_KEYS
+        : DESCRIPTION_PROPOSAL_KEYS;
 
   const unexpectedKey =
     Object.keys(value).find(
@@ -281,6 +316,64 @@ export function parseControlledActionProposalInput(
           value.expectedName,
 
         proposedName,
+
+        idempotencyKey,
+      },
+    };
+  }
+
+  if (isProductStatusAction) {
+    const expectedStatus =
+      value.expectedStatus;
+
+    const proposedStatus =
+      value.proposedStatus;
+
+    if (
+      expectedStatus !== "active" &&
+      expectedStatus !== "inactive"
+    ) {
+      return {
+        ok: false,
+        error:
+          "Expected product status tidak valid.",
+      };
+    }
+
+    if (
+      proposedStatus !== "active" &&
+      proposedStatus !== "inactive"
+    ) {
+      return {
+        ok: false,
+        error:
+          "Proposed product status tidak valid.",
+      };
+    }
+
+    if (
+      expectedStatus ===
+      proposedStatus
+    ) {
+      return {
+        ok: false,
+        error:
+          "Proposed product status harus berbeda dari status saat ini.",
+      };
+    }
+
+    return {
+      ok: true,
+      value: {
+        actionType:
+          "product.update_status",
+
+        productId:
+          value.productId,
+
+        expectedStatus,
+
+        proposedStatus,
 
         idempotencyKey,
       },
@@ -504,6 +597,52 @@ export function projectControlledActionRecord(
     };
   }
 
+  if (
+    value.action_type ===
+    "product.update_status"
+  ) {
+    if (
+      value.mutation_field !==
+        "status" ||
+      (
+        value.expected_value !==
+          "active" &&
+        value.expected_value !==
+          "inactive"
+      ) ||
+      (
+        value.proposed_value !==
+          "active" &&
+        value.proposed_value !==
+          "inactive"
+      ) ||
+      value.expected_value ===
+        value.proposed_value ||
+      value.expected_description !==
+        null ||
+      value.proposed_description !==
+        null
+    ) {
+      return null;
+    }
+
+    return {
+      ...base,
+
+      actionType:
+        "product.update_status",
+
+      mutationField:
+        "status",
+
+      expectedStatus:
+        value.expected_value,
+
+      proposedStatus:
+        value.proposed_value,
+    };
+  }
+
   return null;
 }
 
@@ -573,6 +712,12 @@ export function controlledActionRpcErrorStatus(
     ) ||
     normalized.includes(
       "does not change the current name",
+    ) ||
+    normalized.includes(
+      "product status changed",
+    ) ||
+    normalized.includes(
+      "does not change the current status",
     ) ||
     normalized.includes(
       "stale",

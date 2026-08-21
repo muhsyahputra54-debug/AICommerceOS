@@ -77,7 +77,28 @@ export async function POST(
               idempotencyKey,
           },
         )
-      : await supabase.rpc(
+      : parsed.value.actionType ===
+          "product.update_status"
+        ? await supabase.rpc(
+            "propose_ai_controlled_product_status_action",
+            {
+              p_organization_id:
+                organizationId,
+
+              p_product_id:
+                productId,
+
+              p_expected_status:
+                parsed.value.expectedStatus,
+
+              p_proposed_status:
+                parsed.value.proposedStatus,
+
+              p_idempotency_key:
+                idempotencyKey,
+            },
+          )
+        : await supabase.rpc(
           "propose_ai_controlled_product_description_action",
           {
             p_organization_id:
