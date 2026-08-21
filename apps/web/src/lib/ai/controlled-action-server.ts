@@ -1,5 +1,8 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 
+import type {
+  ActionCenterListQuery,
+} from "@/lib/ai/action-center-api";
 import {
   controlledActionRpcErrorStatus,
   projectControlledActionRecord,
@@ -178,5 +181,86 @@ export async function readControlledAction(
 
   return {
     action,
+  } as const;
+}
+
+export async function listControlledActions(
+  supabase: ServerSupabaseClient,
+  organizationId: string,
+  query: ActionCenterListQuery,
+) {
+  const {
+    data,
+    error,
+  } =
+    await supabase.rpc(
+      "get_ai_controlled_actions",
+      {
+        p_organization_id:
+          organizationId,
+
+        p_limit:
+          query.limit,
+
+        p_offset:
+          query.offset,
+
+        p_status:
+          query.status,
+      },
+    );
+
+  if (error) {
+    return {
+      error:
+        controlledActionRpcErrorResponse(
+          error.message,
+        ),
+    } as const;
+  }
+
+  if (!Array.isArray(data)) {
+    return {
+      error: NextResponse.json(
+        {
+          error:
+            "Controlled action list response tidak valid.",
+        },
+        {
+          status: 502,
+        },
+      ),
+    } as const;
+  }
+
+  const actions = [];
+
+  for (const row of data) {
+    const action =
+      projectControlledActionRecord(
+        row,
+      );
+
+    if (!action) {
+      return {
+        error: NextResponse.json(
+          {
+            error:
+              "Controlled action list response tidak valid.",
+          },
+          {
+            status: 502,
+          },
+        ),
+      } as const;
+    }
+
+    actions.push(
+      action,
+    );
+  }
+
+  return {
+    actions,
   } as const;
 }

@@ -1,15 +1,93 @@
 import { NextResponse } from "next/server";
 
 import {
+  parseActionCenterListQuery,
+} from "@/lib/ai/action-center-api";
+import {
+  projectActionCenterItem,
+} from "@/lib/ai/action-center-contract";
+import {
   extractControlledActionId,
   parseControlledActionProposalInput,
 } from "@/lib/ai/controlled-action-api";
 import {
   controlledActionRpcErrorResponse,
   getControlledActionRequestContext,
+  listControlledActions,
   readControlledAction,
 } from "@/lib/ai/controlled-action-server";
 
+export async function GET(
+  request: Request,
+) {
+  const context =
+    await getControlledActionRequestContext();
+
+  if ("error" in context) {
+    return context.error;
+  }
+
+  const {
+    supabase,
+    organizationId,
+  } = context;
+
+  const parsed =
+    parseActionCenterListQuery(
+      new URL(
+        request.url,
+      ).searchParams,
+    );
+
+  if (!parsed.ok) {
+    return NextResponse.json(
+      {
+        error:
+          parsed.error,
+      },
+      {
+        status: 400,
+      },
+    );
+  }
+
+  const loaded =
+    await listControlledActions(
+      supabase,
+      organizationId,
+      parsed.value,
+    );
+
+  if ("error" in loaded) {
+    return loaded.error;
+  }
+
+  const actions =
+    loaded.actions.map(
+      (action) =>
+        projectActionCenterItem(
+          action,
+        ),
+    );
+
+  return NextResponse.json({
+    actions,
+
+    pagination: {
+      limit:
+        parsed.value.limit,
+
+      offset:
+        parsed.value.offset,
+
+      status:
+        parsed.value.status,
+
+      returned:
+        actions.length,
+    },
+  });
+}
 export async function POST(
   request: Request,
 ) {

@@ -14,6 +14,9 @@ const mocks =
     readAction:
       vi.fn(),
 
+    listActions:
+      vi.fn(),
+
     rpc:
       vi.fn(),
 
@@ -41,12 +44,16 @@ vi.mock(
     readControlledAction:
       mocks.readAction,
 
+    listControlledActions:
+      mocks.listActions,
+
     controlledActionRpcErrorResponse:
       mocks.rpcErrorResponse,
   }),
 );
 
 import {
+  GET as listActionCenter,
   POST as proposeAction,
 } from "../../app/api/ai/controlled-actions/route";
 
@@ -186,6 +193,12 @@ describe(
             ACTION,
         });
 
+        mocks.listActions.mockResolvedValue({
+          actions: [
+            ACTION,
+          ],
+        });
+
         mocks.rpc.mockResolvedValue({
           data: {
             action_id:
@@ -198,6 +211,241 @@ describe(
       },
     );
 
+    it(
+      "lists Action Center items with safe defaults",
+      async () => {
+        const response =
+          await listActionCenter(
+            request(
+              "/api/ai/controlled-actions",
+            ),
+          );
+
+        expect(
+          response!.status,
+        ).toBe(200);
+
+        expect(
+          mocks.listActions,
+        ).toHaveBeenCalledTimes(
+          1,
+        );
+
+        expect(
+          mocks.listActions,
+        ).toHaveBeenCalledWith(
+          expect.any(Object),
+          ORGANIZATION_ID,
+          {
+            limit:
+              50,
+
+            offset:
+              0,
+
+            status:
+              null,
+          },
+        );
+
+        expect(
+          mocks.rpc,
+        ).not.toHaveBeenCalled();
+
+        await expect(
+          response!.json(),
+        ).resolves.toEqual({
+          actions: [
+            {
+              id:
+                ACTION_ID,
+
+              contractVersion:
+                1,
+
+              actionType:
+                "product.update_description",
+
+              status:
+                "proposed",
+
+              lifecycleBucket:
+                "needs_review",
+
+              target: {
+                resource:
+                  "product",
+
+                id:
+                  PRODUCT_ID,
+              },
+
+              mutation: {
+                field:
+                  "description",
+
+                before:
+                  "before",
+
+                after:
+                  "after",
+              },
+
+              timestamps: {
+                createdAt:
+                  "2026-08-20T00:00:00Z",
+
+                confirmedAt:
+                  null,
+
+                executionStartedAt:
+                  null,
+
+                finalizedAt:
+                  null,
+              },
+
+              errorMessage:
+                null,
+
+              risk:
+                null,
+
+              rationale:
+                null,
+            },
+          ],
+
+          pagination: {
+            limit:
+              50,
+
+            offset:
+              0,
+
+            status:
+              null,
+
+            returned:
+              1,
+          },
+        });
+      },
+    );
+
+    it(
+      "passes validated pagination and status to the list adapter",
+      async () => {
+        const response =
+          await listActionCenter(
+            request(
+              "/api/ai/controlled-actions?limit=25&offset=50&status=failed",
+            ),
+          );
+
+        expect(
+          response!.status,
+        ).toBe(200);
+
+        expect(
+          mocks.listActions,
+        ).toHaveBeenCalledWith(
+          expect.any(Object),
+          ORGANIZATION_ID,
+          {
+            limit:
+              25,
+
+            offset:
+              50,
+
+            status:
+              "failed",
+          },
+        );
+
+        const body =
+          await response!.json();
+
+        expect(
+          body.pagination,
+        ).toEqual({
+          limit:
+            25,
+
+          offset:
+            50,
+
+          status:
+            "failed",
+
+          returned:
+            1,
+        });
+      },
+    );
+
+    it(
+      "rejects unsupported list query parameters before list access",
+      async () => {
+        const response =
+          await listActionCenter(
+            request(
+              "/api/ai/controlled-actions?organizationId=aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+            ),
+          );
+
+        expect(
+          response!.status,
+        ).toBe(400);
+
+        expect(
+          mocks.listActions,
+        ).not.toHaveBeenCalled();
+
+        expect(
+          mocks.rpc,
+        ).not.toHaveBeenCalled();
+      },
+    );
+
+    it(
+      "propagates the authorization boundary before Action Center list access",
+      async () => {
+        mocks.getContext.mockResolvedValueOnce({
+          error:
+            Response.json(
+              {
+                error:
+                  "Forbidden",
+              },
+              {
+                status:
+                  403,
+              },
+            ),
+        });
+
+        const response =
+          await listActionCenter(
+            request(
+              "/api/ai/controlled-actions",
+            ),
+          );
+
+        expect(
+          response!.status,
+        ).toBe(403);
+
+        expect(
+          mocks.listActions,
+        ).not.toHaveBeenCalled();
+
+        expect(
+          mocks.rpc,
+        ).not.toHaveBeenCalled();
+      },
+    );
     it(
       "proposes only and then reloads the safe action",
       async () => {

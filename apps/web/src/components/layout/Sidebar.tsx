@@ -32,7 +32,9 @@ type NavigationItem = {
   icon: LucideIcon;
   href: string;
   children?: Array<{
-    key: NavigationItemKey;
+    key:
+      | NavigationItemKey
+      | "aiActionCenter";
     href: string;
   }>;
 };
@@ -55,6 +57,10 @@ const mainMenus = [
       {
         key: "aiAgents",
         href: "/agents",
+      },
+      {
+        key: "aiActionCenter",
+        href: "/ai/action-center",
       },
     ],
   },
@@ -179,9 +185,11 @@ export default function Sidebar() {
                   }`}
                 >
                   {
-                    dictionary.navigation.items[
-                      child.key
-                    ]
+                    child.key === "aiActionCenter"
+                              ? "Action Center"
+                              : dictionary.navigation.items[
+                                  child.key
+                                ]
                   }
                 </Link>
               );
