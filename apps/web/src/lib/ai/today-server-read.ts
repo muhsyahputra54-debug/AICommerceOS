@@ -32,7 +32,7 @@ type MarketplaceSyncLogRow = {
 export function todaySyncFailureWindowStart(
   generatedAt:
     string,
-  hours =
+  hours: number =
     TODAY_RECENT_SYNC_FAILURE_HOURS,
 ): string {
   const generatedAtMs =
