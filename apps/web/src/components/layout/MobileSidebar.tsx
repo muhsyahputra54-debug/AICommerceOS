@@ -7,6 +7,7 @@ import {
   BarChart3,
   Bot,
   LayoutDashboard,
+  Sun,
   Package,
   Search,
   Store,
@@ -47,6 +48,11 @@ type NavigationItem = {
 };
 
 const menus = [
+  {
+    key: "today",
+    icon: Sun,
+    href: "/today",
+  },
   {
     key: "dashboard",
     icon: LayoutDashboard,

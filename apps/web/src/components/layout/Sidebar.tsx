@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 
 import {
   LayoutDashboard,
+  Sun,
   Bot,
   ShoppingCart,
   Package,
@@ -40,6 +41,11 @@ type NavigationItem = {
 };
 
 const mainMenus = [
+  {
+    key: "today",
+    icon: Sun,
+    href: "/today",
+  },
   {
     key: "dashboard",
     icon: LayoutDashboard,

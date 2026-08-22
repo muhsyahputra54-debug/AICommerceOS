@@ -30,6 +30,7 @@ const dictionaries = {
       },
 
       items: {
+        today: "TODAY",
         dashboard: "Dasbor",
         lakuvoAi: "LAKUVO AI",
         aiAssistant: "Asisten AI",
@@ -642,6 +643,121 @@ const dictionaries = {
       continueWithGitHub: "Lanjutkan dengan GitHub",
     },
 
+    today: {
+      title: "TODAY",
+      subtitle:
+        "Apa yang perlu perhatian hari ini?",
+      snapshotUpdated:
+        "Snapshot diperbarui",
+      noOrganizationTitle:
+        "TODAY belum tersedia",
+      noOrganizationDescription:
+        "Organisasi aktif tidak ditemukan.",
+      noOrganizationHelp:
+        "Pilih atau siapkan organisasi aktif untuk melihat kondisi bisnis hari ini.",
+
+      dailyBrief: {
+        title:
+          "AI Daily Brief",
+        description:
+          "Ringkasan AI hanya menggunakan bukti TODAY yang sudah diverifikasi.",
+        notGenerated:
+          "Belum dibuat",
+        ready:
+          "Siap",
+        unavailable:
+          "Tidak tersedia",
+        notGeneratedDescription:
+          "Daily Brief AI hanya dibuat saat Anda memintanya. Membuka halaman TODAY tidak menggunakan kredit AI.",
+        generate:
+          "Buat Daily Brief",
+        generating:
+          "Sedang membuat...",
+        regenerate:
+          "Buat Ulang Daily Brief",
+        creditsNotice:
+          "Daily Brief hanya dijalankan setelah Anda menekan tombol ini. Permintaan dapat menggunakan kredit AI sesuai allowance organisasi.",
+        requestFailed:
+          "Daily Brief tidak dapat dibuat saat ini. Silakan coba lagi.",
+      },
+
+      commerce: {
+        title:
+          "Ringkasan Commerce",
+        description:
+          "Metrik terverifikasi dari pesanan yang sudah selesai.",
+        revenue:
+          "Pendapatan",
+        completedOrders:
+          "Pesanan Selesai",
+        grossProfit:
+          "Laba Kotor",
+        grossMargin:
+          "Margin Kotor",
+        completedSalesOnly:
+          "Hanya penjualan selesai",
+        verifiedCommerce:
+          "Data commerce terverifikasi",
+      },
+
+      inventory: {
+        title:
+          "Risiko Inventaris",
+        description:
+          "Sinyal stok produk dan varian dari data inventaris terverifikasi.",
+        productLowStock:
+          "Produk Stok Rendah",
+        productOutOfStock:
+          "Produk Stok Habis",
+        variantLowStock:
+          "Varian Stok Rendah",
+        variantOutOfStock:
+          "Varian Stok Habis",
+        alerts:
+          "Peringatan inventaris aktif",
+      },
+
+      urgentIssues: {
+        title:
+          "Masalah Mendesak",
+        description:
+          "Masalah yang diturunkan secara deterministik dari bukti TODAY.",
+        empty:
+          "Tidak ada masalah mendesak dari bukti TODAY yang tersedia.",
+      },
+
+      marketplace: {
+        title:
+          "Kesehatan Marketplace",
+        description:
+          "Status kanal dan sinyal operasional marketplace organisasi aktif.",
+        connected:
+          "Marketplace Terhubung",
+        attention:
+          "Perlu Perhatian",
+        noChannels:
+          "Belum ada kanal marketplace pada snapshot TODAY.",
+        status:
+          "Status",
+        lastSynced:
+          "Sinkronisasi terakhir",
+        neverSynced:
+          "Belum pernah tersinkron",
+      },
+
+      recommendations: {
+        title:
+          "Rekomendasi Prioritas",
+        description:
+          "Maksimal tiga rekomendasi yang diranking dari masalah TODAY yang terverifikasi.",
+        empty:
+          "Tidak ada rekomendasi yang perlu ditampilkan saat ini.",
+        priority:
+          "Prioritas",
+        expectedImpact:
+          "Dampak yang diharapkan",
+      },
+    },
     dashboard: {
       title: "Dasbor",
       subtitle: "Ringkasan kinerja commerce organisasi aktif.",
@@ -2463,6 +2579,7 @@ const dictionaries = {
       },
 
       items: {
+        today: "TODAY",
         dashboard: "Dashboard",
         lakuvoAi: "LAKUVO AI",
         aiAssistant: "AI Assistant",
@@ -3075,6 +3192,121 @@ const dictionaries = {
       continueWithGitHub: "Continue with GitHub",
     },
 
+    today: {
+      title: "TODAY",
+      subtitle:
+        "What needs attention today?",
+      snapshotUpdated:
+        "Snapshot updated",
+      noOrganizationTitle:
+        "TODAY is not available yet",
+      noOrganizationDescription:
+        "No active organization was found.",
+      noOrganizationHelp:
+        "Select or set up an active organization to view today's business condition.",
+
+      dailyBrief: {
+        title:
+          "AI Daily Brief",
+        description:
+          "AI synthesis uses only verified TODAY evidence.",
+        notGenerated:
+          "Not generated",
+        ready:
+          "Ready",
+        unavailable:
+          "Unavailable",
+        notGeneratedDescription:
+          "The AI Daily Brief is created only when you request it. Opening TODAY does not consume AI credits.",
+        generate:
+          "Generate Daily Brief",
+        generating:
+          "Generating...",
+        regenerate:
+          "Regenerate Daily Brief",
+        creditsNotice:
+          "The Daily Brief runs only after you press this button. The request may use AI credits according to your organization's allowance.",
+        requestFailed:
+          "The Daily Brief could not be generated right now. Please try again.",
+      },
+
+      commerce: {
+        title:
+          "Commerce Snapshot",
+        description:
+          "Verified metrics from completed orders.",
+        revenue:
+          "Revenue",
+        completedOrders:
+          "Completed Orders",
+        grossProfit:
+          "Gross Profit",
+        grossMargin:
+          "Gross Margin",
+        completedSalesOnly:
+          "Completed sales only",
+        verifiedCommerce:
+          "Verified commerce data",
+      },
+
+      inventory: {
+        title:
+          "Inventory Risk",
+        description:
+          "Product and variant stock signals from verified inventory data.",
+        productLowStock:
+          "Low-stock Products",
+        productOutOfStock:
+          "Out-of-stock Products",
+        variantLowStock:
+          "Low-stock Variants",
+        variantOutOfStock:
+          "Out-of-stock Variants",
+        alerts:
+          "Active inventory alerts",
+      },
+
+      urgentIssues: {
+        title:
+          "Urgent Issues",
+        description:
+          "Issues deterministically derived from verified TODAY evidence.",
+        empty:
+          "No urgent issues were found in the available TODAY evidence.",
+      },
+
+      marketplace: {
+        title:
+          "Marketplace Health",
+        description:
+          "Channel status and operational signals for the active organization.",
+        connected:
+          "Connected Marketplaces",
+        attention:
+          "Needs Attention",
+        noChannels:
+          "No marketplace channels are present in the TODAY snapshot.",
+        status:
+          "Status",
+        lastSynced:
+          "Last synced",
+        neverSynced:
+          "Never synced",
+      },
+
+      recommendations: {
+        title:
+          "Priority Recommendations",
+        description:
+          "Up to three ranked recommendations derived from verified TODAY issues.",
+        empty:
+          "There are no recommendations to display right now.",
+        priority:
+          "Priority",
+        expectedImpact:
+          "Expected impact",
+      },
+    },
     dashboard: {
       title: "Dashboard",
       subtitle: "Commerce performance summary for the active organization.",
