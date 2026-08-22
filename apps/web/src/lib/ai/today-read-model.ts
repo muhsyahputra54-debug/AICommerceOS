@@ -13,6 +13,8 @@ import {
   type TodayRecommendation,
 } from "./today-contract";
 
+import { buildTodayMarketplaceChannelHealth as marketplaceChannelHealth } from "./today-marketplace-health";
+
 import { buildTodayInventoryRiskSummary } from "./today-inventory-risk";
 
 import {
@@ -383,119 +385,6 @@ export function buildTodayInventorySummary(
       buildTodayInventoryRiskSummary(
         alerts,
       ),
-  };
-}
-
-function marketplaceChannelHealth({
-  account,
-  generatedAt,
-  maxAgeHours,
-}: {
-  account:
-    TodayMarketplaceAccountInput;
-
-  generatedAt:
-    string;
-
-  maxAgeHours:
-    number;
-}): Pick<
-  TodayMarketplaceChannel,
-  "health" | "reasons"
-> {
-  const reasons:
-    string[] = [];
-
-  if (
-    account.status !== "active"
-  ) {
-    reasons.push(
-      "marketplace_account_not_active",
-    );
-  }
-
-  const failedSyncCount =
-    numericValue(
-      account.recent_failed_sync_count,
-    );
-
-  if (
-    failedSyncCount !== null &&
-    failedSyncCount > 0
-  ) {
-    reasons.push(
-      "recent_sync_failures",
-    );
-  }
-
-  if (
-    account.last_synced_at === null
-  ) {
-    reasons.push(
-      "never_synced",
-    );
-
-    return {
-      health:
-        "attention",
-
-      reasons,
-    };
-  }
-
-  const generatedAtMs =
-    Date.parse(
-      generatedAt,
-    );
-
-  const lastSyncedAtMs =
-    Date.parse(
-      account.last_synced_at,
-    );
-
-  if (
-    !Number.isFinite(
-      generatedAtMs,
-    ) ||
-    !Number.isFinite(
-      lastSyncedAtMs,
-    )
-  ) {
-    return {
-      health:
-        "unavailable",
-
-      reasons: [
-        ...reasons,
-        "sync_timestamp_unavailable",
-      ],
-    };
-  }
-
-  const ageHours =
-    Math.max(
-      0,
-      generatedAtMs -
-        lastSyncedAtMs,
-    ) /
-    3_600_000;
-
-  if (
-    ageHours >
-    maxAgeHours
-  ) {
-    reasons.push(
-      "sync_stale",
-    );
-  }
-
-  return {
-    health:
-      reasons.length === 0
-        ? "healthy"
-        : "attention",
-
-    reasons,
   };
 }
 
