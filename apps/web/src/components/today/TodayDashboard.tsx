@@ -1,3 +1,6 @@
+import Link from "next/link";
+
+import { buildTodayActionCenterHandoffUrl } from "@/lib/ai/today-action-center-handoff";
 import type {
   ReactNode,
 } from "react";
@@ -307,6 +310,32 @@ function healthClass(
   return "bg-muted text-muted-foreground";
 }
 
+function TodayActionCenterHandoffLink({
+  recommendationId,
+}: {
+  recommendationId: string;
+}) {
+  const href =
+    buildTodayActionCenterHandoffUrl(
+      recommendationId,
+    );
+
+  if (!href) {
+    return null;
+  }
+
+  return (
+    <Link
+      href={href}
+      className="mt-4 inline-flex h-9 items-center justify-center gap-2 rounded-lg border bg-background px-3 text-sm font-medium transition-colors hover:bg-muted"
+    >
+      Action Center
+      <span aria-hidden="true">
+        →
+      </span>
+    </Link>
+  );
+}
 export default function TodayDashboard({
   snapshot,
   locale,
@@ -1010,6 +1039,11 @@ export default function TodayDashboard({
                                     }
                                   </span>
                                 </div>
+                                                              <TodayActionCenterHandoffLink
+                                  recommendationId={
+                                    recommendation.id
+                                  }
+                                />
                               </article>
                             ),
                           )
