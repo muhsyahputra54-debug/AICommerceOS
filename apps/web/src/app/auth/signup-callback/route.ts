@@ -5,9 +5,6 @@ import {
   logServerError,
 } from "@/lib/observability/server-logger";
 import {
-  ensureOrganization,
-} from "@/lib/supabase/organization";
-import {
   createClient,
 } from "@/lib/supabase/server";
 import {
@@ -40,7 +37,7 @@ export async function GET(
 
   if (!code) {
     return NextResponse.redirect(
-      `${origin}/login?error=missing_code`,
+      `${origin}/login?error=missing_signup_code`,
     );
   }
 
@@ -58,10 +55,10 @@ export async function GET(
   if (error) {
     logServerError({
       event:
-        "auth_callback_exchange_failed",
+        "signup_callback_exchange_failed",
       requestId,
       route:
-        "/auth/callback",
+        "/auth/signup-callback",
       method: "GET",
       provider:
         "supabase",
@@ -71,29 +68,7 @@ export async function GET(
     });
 
     return NextResponse.redirect(
-      `${origin}/login?error=auth_callback_failed`,
-    );
-  }
-
-  try {
-    await ensureOrganization();
-  } catch (error) {
-    logServerError({
-      event:
-        "auth_callback_organization_setup_failed",
-      requestId,
-      route:
-        "/auth/callback",
-      method: "GET",
-      provider:
-        "supabase",
-      operation:
-        "ensure_organization",
-      error,
-    });
-
-    return NextResponse.redirect(
-      `${origin}/?error=organization_setup_failed`,
+      `${origin}/login?error=signup_callback_failed`,
     );
   }
 
