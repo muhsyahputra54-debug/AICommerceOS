@@ -1,6 +1,12 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+import {
+  isGuestOnlyAuthPath,
+  isPublicAuthPath,
+  resolveSafePostAuthPath,
+} from "@/lib/auth/auth-routing";
+
 const requestIdPattern =
   /^[A-Za-z0-9._-]{8,128}$/;
 
@@ -124,39 +130,60 @@ export async function proxy(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const isLoginPage =
-    pathname === "/login";
-
-  const isAuthCallback =
-    pathname.startsWith("/auth");
+  const publicAuthPath =
+    isPublicAuthPath(pathname);
 
   if (
     !user &&
-    !isLoginPage &&
-    !isAuthCallback
+    !publicAuthPath
   ) {
     const url =
       request.nextUrl.clone();
 
+    const redirectedFrom =
+      pathname +
+      request.nextUrl.search;
+
     url.pathname = "/login";
+
+    url.search = "";
 
     url.searchParams.set(
       "redirectedFrom",
-      pathname,
+      redirectedFrom,
     );
 
     return redirectResponse(url);
   }
 
-  if (user && isLoginPage) {
+  if (
+    user &&
+    isGuestOnlyAuthPath(pathname)
+  ) {
     const url =
       request.nextUrl.clone();
 
-    url.pathname = "/";
+    const destination =
+      resolveSafePostAuthPath(
+        request.nextUrl.searchParams.get(
+          "redirectedFrom",
+        ),
+      );
+
+    const parsedDestination =
+      new URL(
+        destination,
+        request.nextUrl.origin,
+      );
+
+    url.pathname =
+      parsedDestination.pathname;
+
+    url.search =
+      parsedDestination.search;
 
     return redirectResponse(url);
   }
-
   return response;
 }
 
