@@ -211,9 +211,18 @@ describe(
                     completed_orders:
                       8,
 
+
+                    units_sold:
+                      11,
+
+                    products_sold:
+                      4,
                     revenue:
                       "800000.00",
 
+
+                    cost:
+                      "600000.00",
                     profit:
                       "200000.00",
 
@@ -500,6 +509,35 @@ describe(
 
           value:
             "800000.00",
+        });
+        expect(
+          snapshot?.commerce.unitsSold,
+        ).toEqual({
+          status:
+            "available",
+
+          value:
+            11,
+        });
+
+        expect(
+          snapshot?.commerce.productsSold,
+        ).toEqual({
+          status:
+            "available",
+
+          value:
+            4,
+        });
+
+        expect(
+          snapshot?.commerce.cost,
+        ).toEqual({
+          status:
+            "available",
+
+          value:
+            "600000.00",
         });
 
         expect(

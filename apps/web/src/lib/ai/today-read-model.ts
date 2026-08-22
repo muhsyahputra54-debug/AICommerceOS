@@ -26,7 +26,16 @@ export type TodaySalesSummaryInput = {
   completed_orders:
     CanonicalNumeric;
 
+  units_sold?:
+    CanonicalNumeric;
+
+  products_sold?:
+    CanonicalNumeric;
+
   revenue:
+    CanonicalNumeric;
+
+  cost?:
     CanonicalNumeric;
 
   profit:
@@ -197,7 +206,22 @@ export function buildTodayCommerceSummary(
           reason,
         ),
 
+      unitsSold:
+        unavailableTodayMetric(
+          reason,
+        ),
+
+      productsSold:
+        unavailableTodayMetric(
+          reason,
+        ),
+
       revenue:
+        unavailableTodayMetric(
+          reason,
+        ),
+
+      cost:
         unavailableTodayMetric(
           reason,
         ),
@@ -232,10 +256,28 @@ export function buildTodayCommerceSummary(
         "Completed order count unavailable.",
       ),
 
+    unitsSold:
+      countMetric(
+        summary.units_sold,
+        "Units sold unavailable.",
+      ),
+
+    productsSold:
+      countMetric(
+        summary.products_sold,
+        "Products sold unavailable.",
+      ),
+
     revenue:
       canonicalMetric(
         summary.revenue,
         "Revenue unavailable.",
+      ),
+
+    cost:
+      canonicalMetric(
+        summary.cost,
+        "Cost unavailable.",
       ),
 
     grossProfit:

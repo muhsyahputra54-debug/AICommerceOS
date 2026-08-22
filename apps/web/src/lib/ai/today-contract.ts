@@ -50,7 +50,16 @@ export type TodayCommerceSummary = {
   completedOrders:
     TodayMetric<TodayMetricValue>;
 
+  unitsSold:
+    TodayMetric<TodayMetricValue>;
+
+  productsSold:
+    TodayMetric<TodayMetricValue>;
+
   revenue:
+    TodayMetric<TodayMetricValue>;
+
+  cost:
     TodayMetric<TodayMetricValue>;
 
   grossProfit:

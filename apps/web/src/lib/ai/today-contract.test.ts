@@ -31,8 +31,17 @@ function commerce():
     completedOrders:
       availableTodayMetric(12),
 
+    unitsSold:
+      availableTodayMetric(18),
+
+    productsSold:
+      availableTodayMetric(5),
+
     revenue:
       availableTodayMetric(1500000),
+
+    cost:
+      availableTodayMetric(1100000),
 
     grossProfit:
       availableTodayMetric(400000),
