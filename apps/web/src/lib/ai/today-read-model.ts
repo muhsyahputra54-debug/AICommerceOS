@@ -13,6 +13,8 @@ import {
   type TodayRecommendation,
 } from "./today-contract";
 
+import { buildTodayInventoryRiskSummary } from "./today-inventory-risk";
+
 import {
   buildTodayIssues,
 } from "./today-urgent-issues";
@@ -376,6 +378,11 @@ export function buildTodayInventorySummary(
         : unavailableTodayMetric(
             "Inventory alerts unavailable.",
           ),
+
+    risk:
+      buildTodayInventoryRiskSummary(
+        alerts,
+      ),
   };
 }
 

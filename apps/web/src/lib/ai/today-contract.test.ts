@@ -81,6 +81,29 @@ function inventory():
 
     alertCount:
       availableTodayMetric(6),
+
+    risk: {
+      source:
+        "get_inventory_alerts",
+
+      semantics:
+        "current_threshold_alert_sample",
+
+      status:
+        "available",
+
+      returnedAlertCount:
+        0,
+
+      normalizedAlertCount:
+        0,
+
+      items:
+        [],
+
+      reason:
+        null,
+    },
   };
 }
 

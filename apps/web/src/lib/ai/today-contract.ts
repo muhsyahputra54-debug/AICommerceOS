@@ -1,3 +1,5 @@
+import type { TodayInventoryRiskSummary } from "./today-inventory-risk";
+
 export const LAKUVO_TODAY_CONTRACT_VERSION =
   1 as const;
 
@@ -97,6 +99,8 @@ export type TodayInventorySummary = {
 
   alertCount:
     TodayMetric<number>;
+  risk:
+    TodayInventoryRiskSummary;
 };
 
 export type TodayMarketplaceHealth =
