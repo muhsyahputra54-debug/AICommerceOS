@@ -2,76 +2,32 @@ import {
   cookies,
 } from "next/headers";
 
-export const ACTIVE_ORGANIZATION_COOKIE =
-  "lakuvo_active_organization_id";
+import {
+  ACTIVE_ORGANIZATION_COOKIE,
+  ACTIVE_ORGANIZATION_COOKIE_OPTIONS,
+  normalizeActiveOrganizationId,
+} from "@/lib/organization/active-organization-contract";
 
-export const ACTIVE_ORGANIZATION_COOKIE_OPTIONS = {
-  httpOnly:
-    true,
-  sameSite:
-    "lax" as const,
-  secure:
-    process.env.NODE_ENV ===
-    "production",
-  path:
-    "/",
+export {
+  ACTIVE_ORGANIZATION_COOKIE,
+  ACTIVE_ORGANIZATION_COOKIE_OPTIONS,
+  normalizeActiveOrganizationId,
 };
 
-const ORGANIZATION_ID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
-
 export type OrganizationSummary = {
-  id:
-    string;
-
-  name:
-    string;
+  id: string;
+  name: string;
 };
 
 export type OrganizationMembership = {
-  organizationId:
-    string;
-
-  role:
-    string;
-
-  createdAt:
-    string;
-
-  organization:
-    OrganizationSummary | null;
+  organizationId: string;
+  role: string;
+  createdAt: string;
+  organization: OrganizationSummary | null;
 };
 
-export function normalizeActiveOrganizationId(
-  value:
-    unknown,
-): string | null {
-  if (
-    typeof value !==
-    "string"
-  ) {
-    return null;
-  }
-
-  const normalized =
-    value
-      .trim()
-      .toLowerCase();
-
-  if (
-    !ORGANIZATION_ID_PATTERN.test(
-      normalized,
-    )
-  ) {
-    return null;
-  }
-
-  return normalized;
-}
-
 export function orderOrganizationMemberships(
-  memberships:
-    readonly OrganizationMembership[],
+  memberships: readonly OrganizationMembership[],
 ): OrganizationMembership[] {
   return [
     ...memberships,
@@ -85,10 +41,7 @@ export function orderOrganizationMemberships(
           right.createdAt,
         );
 
-      if (
-        createdAtOrder !==
-        0
-      ) {
+      if (createdAtOrder !== 0) {
         return createdAtOrder;
       }
 
@@ -100,27 +53,19 @@ export function orderOrganizationMemberships(
 }
 
 export function resolveActiveOrganizationMembership(
-  memberships:
-    readonly OrganizationMembership[],
-  persistedOrganizationId:
-    unknown,
+  memberships: readonly OrganizationMembership[],
+  persistedOrganizationId: unknown,
 ): OrganizationMembership | null {
   const orderedMemberships =
     orderOrganizationMemberships(
       memberships,
     );
 
-  if (
-    orderedMemberships.length ===
-    0
-  ) {
+  if (orderedMemberships.length === 0) {
     return null;
   }
 
-  if (
-    orderedMemberships.length ===
-    1
-  ) {
+  if (orderedMemberships.length === 1) {
     return (
       orderedMemberships[0] ??
       null
@@ -132,9 +77,7 @@ export function resolveActiveOrganizationMembership(
       persistedOrganizationId,
     );
 
-  if (
-    !normalizedOrganizationId
-  ) {
+  if (!normalizedOrganizationId) {
     return null;
   }
 

@@ -1,26 +1,46 @@
-import { createServerClient } from "@supabase/ssr";
-import { NextResponse, type NextRequest } from "next/server";
+import {
+  createServerClient,
+} from "@supabase/ssr";
+import {
+  NextResponse,
+  type NextRequest,
+} from "next/server";
 
 import {
   isGuestOnlyAuthPath,
   isPublicAuthPath,
   resolveSafePostAuthPath,
 } from "@/lib/auth/auth-routing";
+import {
+  ACTIVE_ORGANIZATION_COOKIE,
+} from "@/lib/organization/active-organization-contract";
+import {
+  resolveOrganizationPageDestination,
+} from "@/lib/organization/organization-access";
 
 const requestIdPattern =
   /^[A-Za-z0-9._-]{8,128}$/;
+
+type OrganizationMembershipRow = {
+  organization_id: string;
+  created_at: string;
+};
 
 function resolveRequestId(
   request: NextRequest,
 ) {
   const incoming =
     request.headers
-      .get("x-request-id")
+      .get(
+        "x-request-id",
+      )
       ?.trim();
 
   if (
     incoming &&
-    requestIdPattern.test(incoming)
+    requestIdPattern.test(
+      incoming,
+    )
   ) {
     return incoming;
   }
@@ -28,25 +48,35 @@ function resolveRequestId(
   return crypto.randomUUID();
 }
 
-export async function proxy(request: NextRequest) {
-  const pathname = request.nextUrl.pathname;
+export async function proxy(
+  request: NextRequest,
+) {
+  const pathname =
+    request.nextUrl.pathname;
+
   const requestId =
-    resolveRequestId(request);
+    resolveRequestId(
+      request,
+    );
 
   function nextResponse() {
     const requestHeaders =
-      new Headers(request.headers);
+      new Headers(
+        request.headers,
+      );
 
     requestHeaders.set(
       "x-request-id",
       requestId,
     );
 
-    const response = NextResponse.next({
-      request: {
-        headers: requestHeaders,
-      },
-    });
+    const response =
+      NextResponse.next({
+        request: {
+          headers:
+            requestHeaders,
+        },
+      });
 
     response.headers.set(
       "x-request-id",
@@ -56,18 +86,71 @@ export async function proxy(request: NextRequest) {
     return response;
   }
 
-  function redirectResponse(
-    url: URL,
+  function copyResponseCookies(
+    source:
+      NextResponse,
+    target:
+      NextResponse,
   ) {
-    const response =
-      NextResponse.redirect(url);
+    source.cookies
+      .getAll()
+      .forEach(
+        (cookie) => {
+          target.cookies.set(
+            cookie,
+          );
+        },
+      );
+  }
 
-    response.headers.set(
+  function redirectResponse(
+    url:
+      URL,
+    cookieSourceResponse:
+      NextResponse,
+  ) {
+    const redirect =
+      NextResponse.redirect(
+        url,
+      );
+
+    copyResponseCookies(
+      cookieSourceResponse,
+      redirect,
+    );
+
+    redirect.headers.set(
       "x-request-id",
       requestId,
     );
 
-    return response;
+    return redirect;
+  }
+
+  function organizationUnavailableResponse(
+    cookieSourceResponse:
+      NextResponse,
+  ) {
+    const unavailable =
+      new NextResponse(
+        "Organization access is temporarily unavailable.",
+        {
+          status:
+            503,
+        },
+      );
+
+    copyResponseCookies(
+      cookieSourceResponse,
+      unavailable,
+    );
+
+    unavailable.headers.set(
+      "x-request-id",
+      requestId,
+    );
+
+    return unavailable;
   }
 
   const isMarketplaceWebhook =
@@ -75,8 +158,10 @@ export async function proxy(request: NextRequest) {
     "/api/marketplaces/tiktok-shop/webhook";
 
   const isOperationalEndpoint =
-    pathname === "/api/health" ||
-    pathname === "/api/readiness";
+    pathname ===
+      "/api/health" ||
+    pathname ===
+      "/api/readiness";
 
   if (
     isMarketplaceWebhook ||
@@ -85,53 +170,70 @@ export async function proxy(request: NextRequest) {
     return nextResponse();
   }
 
-  let response = nextResponse();
+  let response =
+    nextResponse();
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env
-      .NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(
-            ({ name, value }) => {
-              request.cookies.set(
+  const supabase =
+    createServerClient(
+      process.env
+        .NEXT_PUBLIC_SUPABASE_URL!,
+      process.env
+        .NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return request.cookies
+              .getAll();
+          },
+
+          setAll(
+            cookiesToSet,
+          ) {
+            cookiesToSet.forEach(
+              ({
                 name,
                 value,
-              );
-            },
-          );
+              }) => {
+                request.cookies.set(
+                  name,
+                  value,
+                );
+              },
+            );
 
-          response = nextResponse();
+            response =
+              nextResponse();
 
-          cookiesToSet.forEach(
-            ({
-              name,
-              value,
-              options,
-            }) => {
-              response.cookies.set(
+            cookiesToSet.forEach(
+              ({
                 name,
                 value,
                 options,
-              );
-            },
-          );
+              }) => {
+                response.cookies.set(
+                  name,
+                  value,
+                  options,
+                );
+              },
+            );
+          },
         },
       },
-    },
-  );
+    );
 
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    data: {
+      user,
+    },
+  } =
+    await supabase.auth
+      .getUser();
 
   const publicAuthPath =
-    isPublicAuthPath(pathname);
+    isPublicAuthPath(
+      pathname,
+    );
 
   if (
     !user &&
@@ -144,21 +246,28 @@ export async function proxy(request: NextRequest) {
       pathname +
       request.nextUrl.search;
 
-    url.pathname = "/login";
+    url.pathname =
+      "/login";
 
-    url.search = "";
+    url.search =
+      "";
 
     url.searchParams.set(
       "redirectedFrom",
       redirectedFrom,
     );
 
-    return redirectResponse(url);
+    return redirectResponse(
+      url,
+      response,
+    );
   }
 
   if (
     user &&
-    isGuestOnlyAuthPath(pathname)
+    isGuestOnlyAuthPath(
+      pathname,
+    )
   ) {
     const url =
       request.nextUrl.clone();
@@ -182,8 +291,97 @@ export async function proxy(request: NextRequest) {
     url.search =
       parsedDestination.search;
 
-    return redirectResponse(url);
+    return redirectResponse(
+      url,
+      response,
+    );
   }
+
+  const isApiPath =
+    pathname ===
+      "/api" ||
+    pathname.startsWith(
+      "/api/",
+    );
+
+  if (
+    user &&
+    !publicAuthPath &&
+    !isApiPath
+  ) {
+    const {
+      data,
+      error,
+    } =
+      await supabase
+        .from(
+          "organization_members",
+        )
+        .select(
+          "organization_id, created_at",
+        )
+        .eq(
+          "user_id",
+          user.id,
+        )
+        .order(
+          "created_at",
+          {
+            ascending:
+              true,
+          },
+        )
+        .order(
+          "organization_id",
+          {
+            ascending:
+              true,
+          },
+        );
+
+    if (error) {
+      return organizationUnavailableResponse(
+        response,
+      );
+    }
+
+    const memberships =
+      (
+        data ??
+        []
+      ) as OrganizationMembershipRow[];
+
+    const destination =
+      resolveOrganizationPageDestination(
+        pathname,
+        memberships.map(
+          (membership) => ({
+            organizationId:
+              membership.organization_id,
+          }),
+        ),
+        request.cookies.get(
+          ACTIVE_ORGANIZATION_COOKIE,
+        )?.value,
+      );
+
+    if (destination) {
+      const url =
+        request.nextUrl.clone();
+
+      url.pathname =
+        destination;
+
+      url.search =
+        "";
+
+      return redirectResponse(
+        url,
+        response,
+      );
+    }
+  }
+
   return response;
 }
 
