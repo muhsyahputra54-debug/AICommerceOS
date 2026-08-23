@@ -128,7 +128,7 @@ describe(
     );
 
     it(
-      "matches the root dashboard exactly",
+      "matches the dashboard route",
       () => {
         const dashboard =
           getSection(
@@ -145,10 +145,17 @@ describe(
 
         expect(
           isNavigationItemActive(
-            "/",
+            "/dashboard",
             dashboard!,
           ),
         ).toBe(true);
+
+        expect(
+          isNavigationItemActive(
+            "/",
+            dashboard!,
+          ),
+        ).toBe(false);
 
         expect(
           isNavigationItemActive(

@@ -59,7 +59,7 @@ export const navigationSections: NavigationSection[] = [
       {
         key: "dashboard",
         icon: LayoutDashboard,
-        href: "/",
+        href: "/dashboard",
       },
     ],
   },

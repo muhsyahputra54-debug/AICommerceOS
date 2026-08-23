@@ -17,6 +17,9 @@ import {
 import {
   resolveOrganizationPageDestination,
 } from "@/lib/organization/organization-access";
+import {
+  isPublicMarketingPath,
+} from "@/lib/routing/public-page";
 
 const requestIdPattern =
   /^[A-Za-z0-9._-]{8,128}$/;
@@ -235,9 +238,18 @@ export async function proxy(
       pathname,
     );
 
+  const publicMarketingPath =
+    isPublicMarketingPath(
+      pathname,
+    );
+
+  const publiclyAccessiblePage =
+    publicAuthPath ||
+    publicMarketingPath;
+
   if (
     !user &&
-    !publicAuthPath
+    !publiclyAccessiblePage
   ) {
     const url =
       request.nextUrl.clone();
@@ -306,7 +318,7 @@ export async function proxy(
 
   if (
     user &&
-    !publicAuthPath &&
+    !publiclyAccessiblePage &&
     !isApiPath
   ) {
     const {
