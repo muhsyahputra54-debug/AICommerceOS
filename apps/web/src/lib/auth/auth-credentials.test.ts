@@ -7,6 +7,7 @@ import {
 import {
   MIN_AUTH_PASSWORD_LENGTH,
   normalizeAuthEmail,
+  validateNewPassword,
   validateSignInCredentials,
   validateSignUpCredentials,
 } from "./auth-credentials";
@@ -133,5 +134,62 @@ describe(
         ).toBeNull();
       },
     );
-  },
+
+    it(
+      "rejects an empty new password",
+      () => {
+        expect(
+          validateNewPassword({
+            password: "",
+            confirmPassword: "",
+          }),
+        ).toBe(
+          "password_required",
+        );
+      },
+    );
+
+    it(
+      "rejects a short new password",
+      () => {
+        expect(
+          validateNewPassword({
+            password: "short",
+            confirmPassword: "short",
+          }),
+        ).toBe(
+          "password_too_short",
+        );
+      },
+    );
+
+    it(
+      "rejects mismatched new passwords",
+      () => {
+        expect(
+          validateNewPassword({
+            password:
+              "long-enough-password",
+            confirmPassword:
+              "different-password",
+          }),
+        ).toBe(
+          "password_mismatch",
+        );
+      },
+    );
+
+    it(
+      "accepts a valid new password",
+      () => {
+        expect(
+          validateNewPassword({
+            password:
+              "long-enough-password",
+            confirmPassword:
+              "long-enough-password",
+          }),
+        ).toBeNull();
+      },
+    );  },
 );

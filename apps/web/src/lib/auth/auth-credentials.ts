@@ -79,3 +79,34 @@ export function validateSignUpCredentials(
 
   return null;
 }
+export type NewPasswordValidationError =
+  | "password_required"
+  | "password_too_short"
+  | "password_mismatch";
+
+export function validateNewPassword(
+  input: {
+    password: string;
+    confirmPassword: string;
+  },
+): NewPasswordValidationError | null {
+  if (!input.password) {
+    return "password_required";
+  }
+
+  if (
+    input.password.length <
+    MIN_AUTH_PASSWORD_LENGTH
+  ) {
+    return "password_too_short";
+  }
+
+  if (
+    input.password !==
+    input.confirmPassword
+  ) {
+    return "password_mismatch";
+  }
+
+  return null;
+}
