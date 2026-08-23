@@ -31,6 +31,10 @@ import {
   LandingProductPreview,
 } from "./LandingProductPreview";
 
+import { LandingTodayStory } from "./LandingTodayStory";
+
+import { LandingAiActionStory } from "./LandingAiActionStory";
+
 export function LandingPage() {
   const {
     locale,
@@ -492,7 +496,7 @@ export function LandingPage() {
                 </Link>
 
                 <a
-                  href="#solutions"
+                  href="#today-story"
                   className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border bg-card px-6 text-sm font-semibold shadow-sm transition hover:bg-muted"
                 >
                   <Play className="h-4 w-4" />
@@ -573,6 +577,10 @@ export function LandingPage() {
           </div>
         </section>
 
+        <LandingTodayStory
+          locale={locale}
+        />
+
         <section
           id="workflow"
           className="mx-auto max-w-[1440px] px-5 py-20 sm:px-8 lg:px-12"
@@ -625,6 +633,10 @@ export function LandingPage() {
             )}
           </div>
         </section>
+
+        <LandingAiActionStory
+          locale={locale}
+        />
 
         <section
           id="pricing"

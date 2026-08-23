@@ -1,42 +1,102 @@
+"use client";
+
 import {
-  BarChart3,
-  Bot,
+  useEffect,
+  useRef,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
+import {
   Package,
-  Search,
   ShoppingCart,
   Sparkles,
   Store,
-  TrendingUp,
   Users,
 } from "lucide-react";
+
+import { LandingProductWorkspaceCycle } from "./LandingProductWorkspaceCycle";
 
 type LandingProductPreviewProps = {
   locale: string;
 };
 
+const resetPointerDepth = (
+  scene: HTMLDivElement,
+) => {
+  scene.style.setProperty(
+    "--depth-tilt-x",
+    "0deg",
+  );
+
+  scene.style.setProperty(
+    "--depth-tilt-y",
+    "0deg",
+  );
+
+  scene.style.setProperty(
+    "--depth-main-x",
+    "0px",
+  );
+
+  scene.style.setProperty(
+    "--depth-main-y",
+    "0px",
+  );
+
+  scene.style.setProperty(
+    "--depth-mid-x",
+    "0px",
+  );
+
+  scene.style.setProperty(
+    "--depth-mid-y",
+    "0px",
+  );
+
+  scene.style.setProperty(
+    "--depth-near-x",
+    "0px",
+  );
+
+  scene.style.setProperty(
+    "--depth-near-y",
+    "0px",
+  );
+
+  scene.style.setProperty(
+    "--depth-front-x",
+    "0px",
+  );
+
+  scene.style.setProperty(
+    "--depth-front-y",
+    "0px",
+  );
+
+  scene.style.setProperty(
+    "--depth-back-x",
+    "0px",
+  );
+
+  scene.style.setProperty(
+    "--depth-back-y",
+    "0px",
+  );
+};
+
 export function LandingProductPreview({
   locale,
 }: LandingProductPreviewProps) {
+  const sceneRef =
+    useRef<HTMLDivElement>(
+      null,
+    );
+
   const isId =
     locale === "id";
 
   const copy =
     isId
       ? {
-          attention:
-            "Apa yang perlu perhatian hari ini?",
-          brief:
-            "Ringkasan harian berdasarkan data terverifikasi.",
-          recommendation:
-            "Lihat Rekomendasi",
-          revenue:
-            "Pendapatan",
-          orders:
-            "Pesanan Selesai",
-          profit:
-            "Laba Kotor",
-          margin:
-            "Margin Kotor",
           topProducts:
             "Top Produk",
           channels:
@@ -45,24 +105,8 @@ export function LandingProductPreview({
             "AI Insight",
           insightText:
             "Permintaan kategori Fashion meningkat 18% minggu ini.",
-          demo:
-            "PREVIEW PRODUK",
         }
       : {
-          attention:
-            "What needs attention today?",
-          brief:
-            "Daily summary based on verified commerce data.",
-          recommendation:
-            "View Recommendation",
-          revenue:
-            "Revenue",
-          orders:
-            "Completed Orders",
-          profit:
-            "Gross Profit",
-          margin:
-            "Gross Margin",
           topProducts:
             "Top Products",
           channels:
@@ -71,219 +115,337 @@ export function LandingProductPreview({
             "AI Insight",
           insightText:
             "Fashion category demand increased 18% this week.",
-          demo:
-            "PRODUCT PREVIEW",
         };
 
+  useEffect(
+    () => {
+      const scene =
+        sceneRef.current;
+
+      if (!scene) {
+        return;
+      }
+
+      const desktopQuery =
+        window.matchMedia(
+          "(min-width: 1024px) and (pointer: fine)",
+        );
+
+      const reducedMotionQuery =
+        window.matchMedia(
+          "(prefers-reduced-motion: reduce)",
+        );
+
+      const syncBaseDepth =
+        () => {
+          if (
+            desktopQuery.matches
+          ) {
+            scene.style.setProperty(
+              "--depth-base-x",
+              "0.8deg",
+            );
+
+            scene.style.setProperty(
+              "--depth-base-y",
+              "-2deg",
+            );
+          }
+          else {
+            scene.style.setProperty(
+              "--depth-base-x",
+              "0deg",
+            );
+
+            scene.style.setProperty(
+              "--depth-base-y",
+              "0deg",
+            );
+          }
+
+          if (
+            reducedMotionQuery.matches
+          ) {
+            resetPointerDepth(
+              scene,
+            );
+          }
+        };
+
+      syncBaseDepth();
+
+      desktopQuery.addEventListener(
+        "change",
+        syncBaseDepth,
+      );
+
+      reducedMotionQuery.addEventListener(
+        "change",
+        syncBaseDepth,
+      );
+
+      return () => {
+        desktopQuery.removeEventListener(
+          "change",
+          syncBaseDepth,
+        );
+
+        reducedMotionQuery.removeEventListener(
+          "change",
+          syncBaseDepth,
+        );
+      };
+    },
+    [],
+  );
+
+  const handlePointerMove =
+    (
+      event: ReactPointerEvent<HTMLDivElement>,
+    ) => {
+      if (
+        event.pointerType !==
+        "mouse"
+      ) {
+        return;
+      }
+
+      if (
+        window.matchMedia(
+          "(prefers-reduced-motion: reduce)",
+        ).matches
+      ) {
+        return;
+      }
+
+      if (
+        !window.matchMedia(
+          "(min-width: 1024px) and (pointer: fine)",
+        ).matches
+      ) {
+        return;
+      }
+
+      const scene =
+        sceneRef.current;
+
+      if (!scene) {
+        return;
+      }
+
+      const bounds =
+        scene.getBoundingClientRect();
+
+      const normalizedX =
+        (
+          event.clientX -
+          bounds.left
+        ) /
+        bounds.width -
+        0.5;
+
+      const normalizedY =
+        (
+          event.clientY -
+          bounds.top
+        ) /
+        bounds.height -
+        0.5;
+
+      const tiltX =
+        normalizedY *
+        -5;
+
+      const tiltY =
+        normalizedX *
+        7;
+
+      scene.style.setProperty(
+        "--depth-tilt-x",
+        `${tiltX.toFixed(
+          2,
+        )}deg`,
+      );
+
+      scene.style.setProperty(
+        "--depth-tilt-y",
+        `${tiltY.toFixed(
+          2,
+        )}deg`,
+      );
+
+      scene.style.setProperty(
+        "--depth-main-x",
+        `${(
+          normalizedX *
+          2
+        ).toFixed(
+          2,
+        )}px`,
+      );
+
+      scene.style.setProperty(
+        "--depth-main-y",
+        `${(
+          normalizedY *
+          2
+        ).toFixed(
+          2,
+        )}px`,
+      );
+
+      scene.style.setProperty(
+        "--depth-mid-x",
+        `${(
+          normalizedX *
+          7
+        ).toFixed(
+          2,
+        )}px`,
+      );
+
+      scene.style.setProperty(
+        "--depth-mid-y",
+        `${(
+          normalizedY *
+          5
+        ).toFixed(
+          2,
+        )}px`,
+      );
+
+      scene.style.setProperty(
+        "--depth-near-x",
+        `${(
+          normalizedX *
+          10
+        ).toFixed(
+          2,
+        )}px`,
+      );
+
+      scene.style.setProperty(
+        "--depth-near-y",
+        `${(
+          normalizedY *
+          7
+        ).toFixed(
+          2,
+        )}px`,
+      );
+
+      scene.style.setProperty(
+        "--depth-front-x",
+        `${(
+          normalizedX *
+          13
+        ).toFixed(
+          2,
+        )}px`,
+      );
+
+      scene.style.setProperty(
+        "--depth-front-y",
+        `${(
+          normalizedY *
+          9
+        ).toFixed(
+          2,
+        )}px`,
+      );
+
+      scene.style.setProperty(
+        "--depth-back-x",
+        `${(
+          normalizedX *
+          -10
+        ).toFixed(
+          2,
+        )}px`,
+      );
+
+      scene.style.setProperty(
+        "--depth-back-y",
+        `${(
+          normalizedY *
+          -7
+        ).toFixed(
+          2,
+        )}px`,
+      );
+    };
+
+  const handlePointerLeave =
+    () => {
+      const scene =
+        sceneRef.current;
+
+      if (!scene) {
+        return;
+      }
+
+      resetPointerDepth(
+        scene,
+      );
+    };
+
   return (
-    <div className="relative mx-auto w-full max-w-[760px] py-4 sm:py-6 lg:py-5">
-      <div className="absolute inset-8 -z-10 rounded-full bg-primary/15 blur-3xl" />
+    <div
+      ref={sceneRef}
+      onPointerMove={
+        handlePointerMove
+      }
+      onPointerLeave={
+        handlePointerLeave
+      }
+      className="relative mx-auto w-full max-w-[760px] py-4 sm:py-6 lg:py-5"
+      style={{
+        perspective:
+          "1400px",
+        transformStyle:
+          "preserve-3d",
+      }}
+    >
+      <div
+        className="pointer-events-none absolute inset-8 -z-10 rounded-full bg-primary/15 blur-3xl transition-transform duration-500 ease-out motion-reduce:transform-none"
+        style={{
+          transform:
+            "translate3d(var(--depth-back-x, 0px), var(--depth-back-y, 0px), -80px) scale(1.08)",
+        }}
+        aria-hidden="true"
+      />
 
-      <div className="relative overflow-hidden rounded-[28px] border border-border/70 bg-card shadow-2xl shadow-primary/10">
-        <div className="flex min-h-[410px]">
-          <aside className="hidden w-[155px] shrink-0 bg-sidebar p-3 text-sidebar-foreground sm:block">
-            <div className="mb-5 flex items-center gap-2">
-              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                <Sparkles className="h-3.5 w-3.5" />
-              </span>
+      <div
+        className="relative overflow-hidden rounded-[28px] border border-border/70 bg-card shadow-2xl shadow-primary/10 transition-[transform,box-shadow] duration-300 ease-out will-change-transform motion-reduce:transform-none"
+        style={{
+          transformStyle:
+            "preserve-3d",
+          transformOrigin:
+            "50% 45%",
+          transform:
+            "translate3d(var(--depth-main-x, 0px), var(--depth-main-y, 0px), 0px) rotateX(calc(var(--depth-base-x, 0deg) + var(--depth-tilt-x, 0deg))) rotateY(calc(var(--depth-base-y, 0deg) + var(--depth-tilt-y, 0deg)))",
+        }}
+      >
+        <LandingProductWorkspaceCycle
+          locale={locale}
+        />
 
-              <div>
-                <div className="text-[10px] font-bold">
-                  LAKUVO
-                </div>
-
-                <div className="text-[7px] text-sidebar-foreground/55">
-                  Business Intelligence
-                </div>
-              </div>
-            </div>
-
-            <div className="mb-2 text-[7px] font-semibold text-sidebar-foreground/45">
-              UTAMA
-            </div>
-
-            <div className="space-y-1">
-              <div className="flex items-center gap-2 rounded-md bg-sidebar-primary px-2 py-1.5 text-[9px] text-sidebar-primary-foreground">
-                <Sparkles className="h-3 w-3" />
-                TODAY
-              </div>
-
-              <div className="flex items-center gap-2 px-2 py-1.5 text-[9px] text-sidebar-foreground/65">
-                <BarChart3 className="h-3 w-3" />
-                Dashboard
-              </div>
-            </div>
-
-            <div className="mb-2 mt-5 text-[7px] font-semibold text-sidebar-foreground/45">
-              AI & OTOMASI
-            </div>
-
-            <div className="space-y-1 text-[9px] text-sidebar-foreground/65">
-              <div className="flex items-center gap-2 px-2 py-1.5">
-                <Bot className="h-3 w-3" />
-                LAKUVO AI
-              </div>
-
-              <div className="pl-7">
-                Asisten AI
-              </div>
-
-              <div className="pl-7">
-                Agen AI
-              </div>
-
-              <div className="pl-7">
-                Action Center
-              </div>
-            </div>
-
-            <div className="mb-2 mt-5 text-[7px] font-semibold text-sidebar-foreground/45">
-              OPERASIONAL
-            </div>
-
-            <div className="space-y-1 text-[9px] text-sidebar-foreground/65">
-              <div className="flex items-center gap-2 px-2 py-1">
-                <Package className="h-3 w-3" />
-                Produk
-              </div>
-
-              <div className="flex items-center gap-2 px-2 py-1">
-                <Store className="h-3 w-3" />
-                Marketplace
-              </div>
-
-              <div className="flex items-center gap-2 px-2 py-1">
-                <Search className="h-3 w-3" />
-                Riset
-              </div>
-            </div>
-          </aside>
-
-          <div className="min-w-0 flex-1">
-            <div className="flex h-12 items-center justify-between border-b border-border/70 px-4">
-              <span className="rounded-full bg-primary/10 px-2 py-1 text-[8px] font-semibold text-primary">
-                {copy.demo}
-              </span>
-
-              <div className="flex items-center gap-2">
-                <span className="h-6 w-6 rounded-full bg-muted" />
-                <span className="hidden text-[8px] text-muted-foreground md:block">
-                  User
-                </span>
-              </div>
-            </div>
-
-            <div className="p-4 sm:p-5">
-              <div className="flex items-end justify-between gap-4">
-                <div>
-                  <div className="text-lg font-bold">
-                    TODAY
-                  </div>
-
-                  <div className="mt-1 text-[10px] text-muted-foreground">
-                    {copy.attention}
-                  </div>
-                </div>
-
-                <div className="hidden text-[8px] text-muted-foreground md:block">
-                  Snapshot terbaru
-                </div>
-              </div>
-
-              <div className="mt-5 rounded-2xl border border-primary/15 bg-primary/[0.035] p-4">
-                <div className="flex items-start gap-3">
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                    <Bot className="h-4 w-4" />
-                  </span>
-
-                  <div className="min-w-0 flex-1">
-                    <div className="text-[11px] font-semibold">
-                      AI Daily Brief
-                    </div>
-
-                    <p className="mt-1 text-[9px] leading-relaxed text-muted-foreground">
-                      {copy.brief}
-                    </p>
-                  </div>
-
-                  <span className="hidden rounded-full bg-emerald-500/10 px-2 py-1 text-[8px] font-medium text-emerald-600 md:inline">
-                    Ready
-                  </span>
-                </div>
-
-                <div className="mt-4 flex items-center justify-between gap-4 border-t border-border/60 pt-3">
-                  <p className="max-w-[340px] text-[9px] leading-relaxed text-muted-foreground">
-                    3 priorities detected across commerce operations.
-                  </p>
-
-                  <span className="shrink-0 rounded-lg bg-primary px-3 py-2 text-[8px] font-semibold text-primary-foreground">
-                    {copy.recommendation}
-                  </span>
-                </div>
-              </div>
-
-              <div className="mt-5">
-                <div className="text-[12px] font-semibold">
-                  Commerce Snapshot
-                </div>
-
-                <div className="mt-3 grid grid-cols-2 gap-2 lg:grid-cols-4">
-                  {[
-                    [
-                      copy.revenue,
-                      "Rp 125.430.000",
-                      "+12,5%",
-                    ],
-                    [
-                      copy.orders,
-                      "1.250",
-                      "+8,2%",
-                    ],
-                    [
-                      copy.profit,
-                      "Rp 48.210.000",
-                      "+9,1%",
-                    ],
-                    [
-                      copy.margin,
-                      "38,4%",
-                      "+1,3%",
-                    ],
-                  ].map(
-                    (metric) => (
-                      <div
-                        key={metric[0]}
-                        className="rounded-xl border bg-background/80 p-3"
-                      >
-                        <div className="text-[8px] text-muted-foreground">
-                          {metric[0]}
-                        </div>
-
-                        <div className="mt-2 whitespace-nowrap text-[11px] font-bold">
-                          {metric[1]}
-                        </div>
-
-                        <div className="mt-2 text-[8px] font-medium text-emerald-600">
-                          {metric[2]}
-                        </div>
-                      </div>
-                    ),
-                  )}
-                </div>
-              </div>
-
-              <div className="mt-4 flex items-center gap-2 text-[9px] text-muted-foreground">
-                <TrendingUp className="h-3.5 w-3.5 text-primary" />
-                Verified commerce metrics
-              </div>
-            </div>
-          </div>
-        </div>
+        <div
+          className="pointer-events-none absolute inset-0 bg-[linear-gradient(120deg,transparent_20%,color-mix(in_oklab,var(--primary)_4%,transparent)_52%,transparent_80%)] opacity-70"
+          aria-hidden="true"
+        />
       </div>
 
-      <div className="absolute -left-3 top-[190px] hidden w-36 rotate-[-2deg] rounded-2xl border bg-card p-3 shadow-xl shadow-black/5 md:block">
+      <div
+        className="pointer-events-none absolute -left-3 top-[190px] hidden w-36 rounded-2xl border bg-card p-3 shadow-xl shadow-black/10 transition-transform duration-300 ease-out will-change-transform md:block motion-reduce:transform-none"
+        style={{
+          transform:
+            "translate3d(var(--depth-mid-x, 0px), var(--depth-mid-y, 0px), 55px) rotateZ(-2deg)",
+        }}
+      >
         <div className="flex items-center gap-2">
           <Package className="h-3.5 w-3.5 text-primary" />
+
           <span className="text-[9px] font-semibold">
             {copy.topProducts}
           </span>
@@ -291,21 +453,30 @@ export function LandingProductPreview({
 
         <div className="mt-3 space-y-2 text-[8px]">
           <div className="flex justify-between">
-            <span>LAKUVO T-Shirt</span>
+            <span>
+              LAKUVO T-Shirt
+            </span>
+
             <span className="font-semibold">
               #1
             </span>
           </div>
 
           <div className="flex justify-between">
-            <span>LAKUVO Hoodie</span>
+            <span>
+              LAKUVO Hoodie
+            </span>
+
             <span className="font-semibold">
               #2
             </span>
           </div>
 
           <div className="flex justify-between">
-            <span>LAKUVO Mug</span>
+            <span>
+              LAKUVO Mug
+            </span>
+
             <span className="font-semibold">
               #3
             </span>
@@ -313,9 +484,16 @@ export function LandingProductPreview({
         </div>
       </div>
 
-      <div className="absolute -right-3 top-[180px] hidden w-40 rotate-[2deg] rounded-2xl border bg-card p-3 shadow-xl shadow-black/5 lg:block">
+      <div
+        className="pointer-events-none absolute -right-3 top-[180px] hidden w-40 rounded-2xl border bg-card p-3 shadow-xl shadow-black/10 transition-transform duration-300 ease-out will-change-transform lg:block motion-reduce:transform-none"
+        style={{
+          transform:
+            "translate3d(var(--depth-near-x, 0px), var(--depth-near-y, 0px), 70px) rotateZ(2deg)",
+        }}
+      >
         <div className="flex items-center gap-2">
           <Store className="h-3.5 w-3.5 text-primary" />
+
           <span className="text-[9px] font-semibold">
             {copy.channels}
           </span>
@@ -323,21 +501,30 @@ export function LandingProductPreview({
 
         <div className="mt-3 space-y-2 text-[8px]">
           <div className="flex justify-between">
-            <span>Marketplace A</span>
+            <span>
+              Marketplace A
+            </span>
+
             <span className="text-emerald-600">
               +12,4%
             </span>
           </div>
 
           <div className="flex justify-between">
-            <span>Marketplace B</span>
+            <span>
+              Marketplace B
+            </span>
+
             <span className="text-emerald-600">
               +8,7%
             </span>
           </div>
 
           <div className="flex justify-between">
-            <span>Marketplace C</span>
+            <span>
+              Marketplace C
+            </span>
+
             <span className="text-emerald-600">
               +4,1%
             </span>
@@ -345,7 +532,13 @@ export function LandingProductPreview({
         </div>
       </div>
 
-      <div className="absolute bottom-0 left-1/2 hidden w-[270px] -translate-x-1/2 rounded-2xl border bg-card p-3 shadow-xl shadow-black/5 sm:flex sm:items-center sm:gap-3">
+      <div
+        className="pointer-events-none absolute bottom-0 left-1/2 hidden w-[270px] rounded-2xl border bg-card p-3 shadow-xl shadow-black/10 transition-transform duration-300 ease-out will-change-transform md:flex md:items-center md:gap-3 motion-reduce:transform-none"
+        style={{
+          transform:
+            "translate3d(calc(-50% + var(--depth-front-x, 0px)), var(--depth-front-y, 0px), 95px)",
+        }}
+      >
         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
           <Sparkles className="h-4 w-4" />
         </span>
@@ -356,12 +549,21 @@ export function LandingProductPreview({
           </div>
 
           <div className="mt-0.5 text-[8px] leading-relaxed text-muted-foreground">
-            {copy.insightText}
+            {
+              copy.insightText
+            }
           </div>
         </div>
       </div>
 
-      <div className="pointer-events-none absolute -bottom-4 -right-2 -z-10 h-32 w-32 rounded-full bg-primary/10 blur-2xl" />
+      <div
+        className="pointer-events-none absolute -bottom-4 -right-2 -z-10 h-32 w-32 rounded-full bg-primary/10 blur-2xl transition-transform duration-500 ease-out"
+        style={{
+          transform:
+            "translate3d(var(--depth-back-x, 0px), var(--depth-back-y, 0px), -60px)",
+        }}
+        aria-hidden="true"
+      />
 
       <div className="sr-only">
         <ShoppingCart />
