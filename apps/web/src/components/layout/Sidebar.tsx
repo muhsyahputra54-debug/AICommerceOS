@@ -2,152 +2,55 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-
 import {
-  LayoutDashboard,
-  Sun,
-  Bot,
-  ShoppingCart,
-  Package,
-  Search,
-  Store,
-  Users,
-  Truck,
-  BarChart3,
-  Settings,
   Sparkles,
-  type LucideIcon,
 } from "lucide-react";
 
-import { useLanguage } from "@/components/i18n/LanguageProvider";
+import {
+  useLanguage,
+} from "@/components/i18n/LanguageProvider";
 import {
   getDictionary,
-  type Dictionary,
 } from "@/lib/i18n/dictionaries";
 
-type NavigationItemKey =
-  keyof Dictionary["navigation"]["items"];
-
-type NavigationItem = {
-  key: NavigationItemKey;
-  icon: LucideIcon;
-  href: string;
-  children?: Array<{
-    key:
-      | NavigationItemKey
-      | "aiActionCenter";
-    href: string;
-  }>;
-};
-
-const mainMenus = [
-  {
-    key: "today",
-    icon: Sun,
-    href: "/today",
-  },
-  {
-    key: "dashboard",
-    icon: LayoutDashboard,
-    href: "/",
-  },
-  {
-    key: "lakuvoAi",
-    icon: Bot,
-    href: "/ai",
-    children: [
-      {
-        key: "aiAssistant",
-        href: "/ai",
-      },
-      {
-        key: "aiAgents",
-        href: "/agents",
-      },
-      {
-        key: "aiActionCenter",
-        href: "/ai/action-center",
-      },
-    ],
-  },
-  {
-    key: "products",
-    icon: Package,
-    href: "/products",
-  },
-  {
-    key: "marketplaces",
-    icon: Store,
-    href: "/marketplaces",
-  },
-  {
-    key: "productResearch",
-    icon: Search,
-    href: "/research",
-  },
-  {
-    key: "orders",
-    icon: ShoppingCart,
-    href: "/orders",
-  },
-  {
-    key: "customers",
-    icon: Users,
-    href: "/customers",
-  },
-  {
-    key: "suppliers",
-    icon: Truck,
-    href: "/suppliers",
-  },
-  {
-    key: "analytics",
-    icon: BarChart3,
-    href: "/analytics",
-    children: [
-      {
-        key: "analyticsOverview",
-        href: "/analytics",
-      },
-      {
-        key: "analyticsIntelligence",
-        href: "/analytics/intelligence",
-      },
-    ],
-  },
-] satisfies NavigationItem[];
-
-const systemMenus = [
-  {
-    key: "settings",
-    icon: Settings,
-    href: "/settings",
-  },
-] satisfies NavigationItem[];
+import {
+  getNavigationChildLabel,
+  getNavigationSectionLabel,
+  isNavigationChildActive,
+  isNavigationItemActive,
+  navigationSections,
+  settingsNavigationItem,
+  type NavigationItem,
+} from "./navigation";
 
 export default function Sidebar() {
-  const pathname = usePathname();
+  const pathname =
+    usePathname();
 
-  const { locale } = useLanguage();
-  const dictionary = getDictionary(locale);
+  const {
+    locale,
+  } =
+    useLanguage();
+
+  const dictionary =
+    getDictionary(
+      locale,
+    );
+
+  const SettingsIcon =
+    settingsNavigationItem.icon;
 
   const renderMenu = (
-    item: NavigationItem
+    item: NavigationItem,
   ) => {
-    const Icon = item.icon;
+    const Icon =
+      item.icon;
 
     const isActive =
-      item.href === "/"
-        ? pathname === "/"
-        : item.children?.length
-          ? item.children.some(
-              (child) =>
-                pathname === child.href ||
-                pathname.startsWith(
-                  `${child.href}/`,
-                ),
-            )
-          : pathname.startsWith(item.href);
+      isNavigationItemActive(
+        pathname,
+        item,
+      );
 
     if (item.children?.length) {
       return (
@@ -157,7 +60,7 @@ export default function Sidebar() {
         >
           <Link
             href={item.href}
-            className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
+            className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
               isActive
                 ? "text-sidebar-foreground"
                 : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
@@ -166,40 +69,42 @@ export default function Sidebar() {
             <Icon className="h-5 w-5 shrink-0" />
 
             <span>
-              {dictionary.navigation.items[item.key]}
+              {
+                dictionary.navigation.items[
+                  item.key
+                ]
+              }
             </span>
           </Link>
 
           <div className="ml-5 space-y-1 border-l border-sidebar-border pl-3">
-            {item.children.map((child) => {
-              const childActive =
-                child.href === item.href
-                  ? pathname === child.href
-                  : pathname === child.href ||
-                    pathname.startsWith(
-                      `${child.href}/`,
-                    );
+            {item.children.map(
+              (child) => {
+                const childActive =
+                  isNavigationChildActive(
+                    pathname,
+                    item,
+                    child,
+                  );
 
-              return (
-                <Link
-                  key={child.key}
-                  href={child.href}
-                  className={`block rounded-lg px-3 py-2 text-sm transition-colors ${
-                    childActive
-                      ? "bg-sidebar-primary text-sidebar-primary-foreground"
-                      : "text-sidebar-foreground/65 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                  }`}
-                >
-                  {
-                    child.key === "aiActionCenter"
-                              ? "Action Center"
-                              : dictionary.navigation.items[
-                                  child.key
-                                ]
-                  }
-                </Link>
-              );
-            })}
+                return (
+                  <Link
+                    key={child.key}
+                    href={child.href}
+                    className={`block rounded-lg px-3 py-2 text-sm transition-colors ${
+                      childActive
+                        ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                        : "text-sidebar-foreground/65 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                    }`}
+                  >
+                    {getNavigationChildLabel(
+                      dictionary,
+                      child.key,
+                    )}
+                  </Link>
+                );
+              },
+            )}
           </div>
         </div>
       );
@@ -209,30 +114,42 @@ export default function Sidebar() {
       <Link
         key={item.key}
         href={item.href}
-        className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
+        className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
           isActive
-            ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-md shadow-black/10"
+            ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
             : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
         }`}
       >
         <Icon
           className={`h-5 w-5 shrink-0 transition-transform ${
-            isActive ? "" : "group-hover:scale-105"
+            isActive
+              ? ""
+              : "group-hover:scale-105"
           }`}
         />
 
         <span>
-          {dictionary.navigation.items[item.key]}
+          {
+            dictionary.navigation.items[
+              item.key
+            ]
+          }
         </span>
       </Link>
     );
   };
 
+  const settingsActive =
+    isNavigationItemActive(
+      pathname,
+      settingsNavigationItem,
+    );
+
   return (
     <aside className="hidden h-screen w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground md:flex">
-      <div className="flex h-16 items-center border-b px-5">
+      <div className="flex h-16 items-center border-b border-sidebar-border px-5">
         <Link
-          href="/"
+          href="/today"
           className="flex items-center gap-3"
         >
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-sidebar-primary text-sidebar-primary-foreground shadow-sm">
@@ -251,29 +168,57 @@ export default function Sidebar() {
         </Link>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-3 py-6">
-        <div>
-          <p className="mb-3 px-3 text-[11px] font-semibold uppercase tracking-wider text-sidebar-foreground/60">
-            {dictionary.navigation.sections.main}
-          </p>
+      <div className="flex-1 overflow-y-auto px-3 py-5">
+        {navigationSections.map(
+          (
+            section,
+            index,
+          ) => (
+            <section
+              key={section.key}
+              className={
+                index === 0
+                  ? ""
+                  : "mt-7"
+              }
+            >
+              <p className="mb-2.5 px-3 text-[11px] font-semibold uppercase tracking-wider text-sidebar-foreground/55">
+                {getNavigationSectionLabel(
+                  section.key,
+                  locale,
+                )}
+              </p>
 
-          <nav className="space-y-1">
-            {mainMenus.map(renderMenu)}
-          </nav>
-        </div>
-
-        <div className="mt-8">
-          <p className="mb-3 px-3 text-[11px] font-semibold uppercase tracking-wider text-sidebar-foreground/60">
-            {dictionary.navigation.sections.system}
-          </p>
-
-          <nav className="space-y-1">
-            {systemMenus.map(renderMenu)}
-          </nav>
-        </div>
+              <nav className="space-y-1">
+                {section.items.map(
+                  renderMenu,
+                )}
+              </nav>
+            </section>
+          ),
+        )}
       </div>
 
-      <div className="border-t p-4">
+      <div className="space-y-3 border-t border-sidebar-border p-3">
+        <Link
+          href={settingsNavigationItem.href}
+          className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
+            settingsActive
+              ? "bg-sidebar-primary text-sidebar-primary-foreground"
+              : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+          }`}
+        >
+          <SettingsIcon className="h-5 w-5 shrink-0" />
+
+          <span>
+            {
+              dictionary.navigation.items[
+                settingsNavigationItem.key
+              ]
+            }
+          </span>
+        </Link>
+
         <div className="rounded-xl bg-sidebar-accent/60 p-3">
           <p className="text-xs font-medium">
             LAKUVO

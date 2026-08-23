@@ -1,21 +1,46 @@
 "use client";
 
-import { useState } from "react";
-import { Bell, Menu, Search } from "lucide-react";
+import {
+  useState,
+} from "react";
+import {
+  Bell,
+  Menu,
+  Search,
+} from "lucide-react";
 
-import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
-import { useLanguage } from "@/components/i18n/LanguageProvider";
-import { getDictionary } from "@/lib/i18n/dictionaries";
+import {
+  LanguageSwitcher,
+} from "@/components/i18n/LanguageSwitcher";
+import {
+  useLanguage,
+} from "@/components/i18n/LanguageProvider";
+import {
+  ThemeSwitcher,
+} from "@/components/theme/ThemeSwitcher";
+import {
+  getDictionary,
+} from "@/lib/i18n/dictionaries";
 
 import MobileSidebar from "./MobileSidebar";
 import UserProfile from "./UserProfile";
 
 export default function Header() {
-  const [mobileMenuOpen, setMobileMenuOpen] =
+  const [
+    mobileMenuOpen,
+    setMobileMenuOpen,
+  ] =
     useState(false);
 
-  const { locale } = useLanguage();
-  const dictionary = getDictionary(locale);
+  const {
+    locale,
+  } =
+    useLanguage();
+
+  const dictionary =
+    getDictionary(
+      locale,
+    );
 
   return (
     <>
@@ -45,6 +70,8 @@ export default function Header() {
 
         <div className="ml-3 flex items-center gap-2 sm:gap-3">
           <LanguageSwitcher className="hidden sm:inline-flex" />
+
+          <ThemeSwitcher />
 
           <button
             type="button"
