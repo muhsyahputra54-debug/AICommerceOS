@@ -100,7 +100,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error:
-          "Provider account ini bukan Tokopedia & Shop connector.",
+          "Provider account ini bukan TikTok Shop connector.",
       },
       { status: 409 },
     );

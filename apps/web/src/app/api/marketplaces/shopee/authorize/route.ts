@@ -9,11 +9,16 @@ import { getCurrentOrganization } from "@/lib/supabase/current-organization";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import {
-  buildSellerAuthorizationUrl,
-  isTikTokShopProvider,
-  TIKTOK_SHOP_PROVIDER,
-} from "@/lib/marketplaces/tiktok-shop";
+  buildShopeeAuthorizationUrl,
+  isShopeeProvider,
+  SHOPEE_PROVIDER,
+} from "@/lib/marketplaces/shopee";
 
+const SHOPEE_OAUTH_COOKIE =
+  "lakuvo_shopee_oauth_state";
+
+const SHOPEE_OAUTH_MAX_AGE_SECONDS =
+  10 * 60;
 export async function GET(request: Request) {
   const currentOrganization =
     await getCurrentOrganization();
@@ -76,11 +81,11 @@ export async function GET(request: Request) {
     );
   }
 
-  if (!isTikTokShopProvider(account.provider)) {
+  if (!isShopeeProvider(account.provider)) {
     return NextResponse.json(
       {
         error:
-          "Provider account ini belum menggunakan connector TikTok Shop.",
+          "Provider account ini belum menggunakan connector Shopee.",
       },
       { status: 409 },
     );
@@ -115,7 +120,7 @@ export async function GET(request: Request) {
         currentOrganization.organizationId,
       p_marketplace_account_id: account.id,
       p_user_id: user.id,
-      p_provider: TIKTOK_SHOP_PROVIDER,
+      p_provider: SHOPEE_PROVIDER,
       p_state_hash: stateHash,
       p_expires_at: expiresAt,
     },
@@ -129,9 +134,38 @@ export async function GET(request: Request) {
   }
 
   try {
-    return NextResponse.redirect(
-      buildSellerAuthorizationUrl(state),
+    const callbackUrl = new URL(
+      "/api/marketplaces/shopee/callback",
+      request.url,
     );
+
+    callbackUrl.searchParams.set(
+      "state",
+      state,
+    );
+
+    const response =
+      NextResponse.redirect(
+        buildShopeeAuthorizationUrl(
+          callbackUrl.toString(),
+        ),
+      );
+
+    response.cookies.set(
+      SHOPEE_OAUTH_COOKIE,
+      state,
+      {
+        httpOnly: true,
+        secure: true,
+        sameSite: "lax",
+        path:
+          "/api/marketplaces/shopee/callback",
+        maxAge:
+          SHOPEE_OAUTH_MAX_AGE_SECONDS,
+      },
+    );
+
+    return response;
   } catch (error) {
     return NextResponse.json(
       {

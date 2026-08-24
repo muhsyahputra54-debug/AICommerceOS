@@ -212,13 +212,13 @@ function formatExternalAmountValue(
   locale: string,
 ) {
   if (value === null) {
-    return "—";
+    return "â€”";
   }
 
   const parsed = Number(value);
 
   if (!Number.isFinite(parsed)) {
-    return "—";
+    return "â€”";
   }
 
   if (!currency) {
@@ -320,7 +320,7 @@ export default function MarketplaceIntegrationManager({
   const variantNames = new Map(
     variants.map((variant) => [
       variant.id,
-      `${productNames.get(variant.product_id) ?? copy.common.product} — ${variant.name} (${variant.sku})`,
+      `${productNames.get(variant.product_id) ?? copy.common.product} â€” ${variant.name} (${variant.sku})`,
     ]),
   );
 
@@ -599,7 +599,7 @@ export default function MarketplaceIntegrationManager({
         `${copy.confirm.approveOrder} ${item.internal_order_id.slice(
           0,
           8,
-        )} ${copy.confirm.status} ${item.internal_status} → ${item.proposed_status} ${copy.confirm.basedOnMarketplaceStatus} ${item.external_status}?`,
+        )} ${copy.confirm.status} ${item.internal_status} â†’ ${item.proposed_status} ${copy.confirm.basedOnMarketplaceStatus} ${item.external_status}?`,
       )
     ) {
       return;
@@ -1035,15 +1035,15 @@ export default function MarketplaceIntegrationManager({
                         <div className="text-xs text-muted-foreground">
                           {shop.external_shop_id}
                           {shop.shop_code
-                            ? ` • ${shop.shop_code}`
+                            ? ` â€¢ ${shop.shop_code}`
                             : ""}
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        {shop.region ?? "—"}
+                        {shop.region ?? "â€”"}
                       </td>
                       <td className="px-4 py-3">
-                        {shop.seller_type ?? "—"}
+                        {shop.seller_type ?? "â€”"}
                       </td>
                       <td className="px-4 py-3 capitalize">
                         {shop.status}
@@ -1309,7 +1309,7 @@ export default function MarketplaceIntegrationManager({
                                   {Number(
                                     readiness?.ambiguous_items ?? 0,
                                   ) > 0
-                                    ? ` • ${Number(
+                                    ? ` â€¢ ${Number(
                                         readiness?.ambiguous_items ??
                                           0,
                                       )} ${copy.externalOrders.ambiguous}`
@@ -1485,7 +1485,7 @@ export default function MarketplaceIntegrationManager({
                               )
                             }
                           >
-                            {copy.reconciliation.approve} → {item.proposed_status}
+                            {copy.reconciliation.approve} â†’ {item.proposed_status}
                           </Button>
                         ) : (
                           <span className="text-xs text-muted-foreground">
@@ -1575,14 +1575,14 @@ export default function MarketplaceIntegrationManager({
                         {formatDate(event.received_at)}
                       </td>
                       <td className="px-6 py-4">
-                        {event.notification_type ?? "—"}
+                        {event.notification_type ?? "â€”"}
                       </td>
                       <td className="px-6 py-4">
                         {event.external_entity_id ??
                           event.external_shop_id}
                       </td>
                       <td className="px-6 py-4">
-                        {event.external_status ?? "—"}
+                        {event.external_status ?? "â€”"}
                       </td>
                       <td className="px-6 py-4">
                         <div className="capitalize">
@@ -1634,7 +1634,7 @@ export default function MarketplaceIntegrationManager({
                     key={`product-${product.id}`}
                     value={`product:${product.id}`}
                   >
-                    {copy.common.product} — {productNames.get(product.id)}
+                    {copy.common.product} â€” {productNames.get(product.id)}
                   </option>
                 ))}
               {variants
@@ -1644,7 +1644,7 @@ export default function MarketplaceIntegrationManager({
                     key={`variant-${variant.id}`}
                     value={`variant:${variant.id}`}
                   >
-                    {copy.common.variant} — {variantNames.get(variant.id)}
+                    {copy.common.variant} â€” {variantNames.get(variant.id)}
                   </option>
                 ))}
             </select>
@@ -1702,10 +1702,10 @@ export default function MarketplaceIntegrationManager({
                     {listingTargetName(item)}
                   </td>
                   <td className="px-6 py-4">
-                    {item.external_listing_id ?? "—"}
+                    {item.external_listing_id ?? "â€”"}
                   </td>
                   <td className="px-6 py-4">
-                    {item.external_sku ?? "—"}
+                    {item.external_sku ?? "â€”"}
                   </td>
                   <td className="px-6 py-4 capitalize">
                     {item.listing_status}
@@ -1811,7 +1811,7 @@ export default function MarketplaceIntegrationManager({
               <option value="" disabled>{copy.orderLink.selectInternalOrder}</option>
               {availableOrders.map((order) => (
                 <option key={order.id} value={order.id}>
-                  {order.id.slice(0, 8)} — {order.status} —{" "}
+                  {order.id.slice(0, 8)} â€” {order.status} â€”{" "}
                   {formatCurrency(order.total)}
                 </option>
               ))}
@@ -1870,7 +1870,7 @@ export default function MarketplaceIntegrationManager({
                       {order?.status ?? copy.common.unknown}
                     </td>
                     <td className="px-6 py-4">
-                      {item.external_status ?? "—"}
+                      {item.external_status ?? "â€”"}
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex gap-2">
@@ -1972,7 +1972,7 @@ export default function MarketplaceIntegrationManager({
                     <td className="px-6 py-4">{log.operation}</td>
                     <td className="px-6 py-4 capitalize">{log.status}</td>
                     <td className="px-6 py-4 text-muted-foreground">
-                      {log.message ?? "—"}
+                      {log.message ?? "â€”"}
                     </td>
                   </tr>
                 ))}

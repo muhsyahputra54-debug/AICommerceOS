@@ -306,8 +306,8 @@ export function isTikTokShopProvider(provider: string) {
     .trim();
 
   return (
-    normalized.includes("tokopedia") ||
-    normalized.includes("tiktok shop")
+    normalized === "tiktok shop" ||
+    normalized === "tiktokshop"
   );
 }
 
@@ -379,10 +379,7 @@ export async function exchangeAuthorizationCode(
     );
   }
 
-  if (
-    typeof userType === "number" &&
-    userType !== 0
-  ) {
+  if (userType !== 0) {
     throw new Error(
       "Authorization bukan seller authorization.",
     );

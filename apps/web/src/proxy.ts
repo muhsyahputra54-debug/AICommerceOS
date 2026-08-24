@@ -160,6 +160,12 @@ export async function proxy(
     pathname ===
     "/api/marketplaces/tiktok-shop/webhook";
 
+  const isMarketplaceCallback =
+    pathname ===
+      "/api/marketplaces/tiktok-shop/callback" ||
+    pathname ===
+      "/api/marketplaces/shopee/callback";
+
   const isOperationalEndpoint =
     pathname ===
       "/api/health" ||
@@ -168,6 +174,7 @@ export async function proxy(
 
   if (
     isMarketplaceWebhook ||
+    isMarketplaceCallback ||
     isOperationalEndpoint
   ) {
     return nextResponse();
