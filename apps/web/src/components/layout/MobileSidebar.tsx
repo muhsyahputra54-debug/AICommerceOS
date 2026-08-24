@@ -1,11 +1,9 @@
 "use client";
+import { LakuvoBrand } from "@/components/brand/LakuvoBrand";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  Sparkles,
-  X,
-} from "lucide-react";
+import { X } from "lucide-react";
 
 import {
   LanguageSwitcher,
@@ -174,19 +172,7 @@ export default function MobileSidebar({
             onClick={onClose}
             className="flex items-center gap-3"
           >
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-sidebar-primary text-sidebar-primary-foreground">
-              <Sparkles className="h-5 w-5" />
-            </div>
-
-            <div className="leading-tight">
-              <p className="text-sm font-bold">
-                LAKUVO
-              </p>
-
-              <p className="text-[11px] text-sidebar-foreground/60">
-                {dictionary.brand.tagline}
-              </p>
-            </div>
+            <LakuvoBrand size="sm" tone="inverse" />
           </Link>
 
           <button

@@ -1,4 +1,5 @@
 "use client";
+import { LakuvoBrand } from "@/components/brand/LakuvoBrand";
 
 import Link from "next/link";
 import {
@@ -263,18 +264,18 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-background px-6 py-10">
-      <div className="w-full max-w-md rounded-2xl border border-border/70 bg-card p-8 shadow-lg shadow-primary/5">
-        <div className="mb-6 flex justify-end">
+    <main className="flex min-h-screen items-center justify-center bg-background px-4 py-6 sm:px-6 sm:py-8">
+      <div className="w-full max-w-md rounded-2xl border border-border/70 bg-card p-6 shadow-lg shadow-primary/5 sm:p-7">
+        <div className="mb-4 flex justify-end">
           <LanguageSwitcher />
         </div>
 
         <div className="text-center">
-          <h1 className="text-3xl font-bold">
-            LAKUVO
-          </h1>
+          <div className="flex justify-center">
+            <LakuvoBrand size="md" />
+          </div>
 
-          <p className="mt-2 text-sm text-muted-foreground">
+          <p className="mt-3 text-sm text-muted-foreground">
             {
               dictionary.login
                 .subtitle
@@ -287,7 +288,7 @@ export default function LoginPage() {
             handleEmailLogin
           }
           noValidate
-          className="mt-8 space-y-4"
+          className="mt-6 space-y-4"
         >
           <div className="space-y-2">
             <label
@@ -374,7 +375,7 @@ export default function LoginPage() {
           </Button>
         </form>
 
-        <div className="my-6 flex items-center gap-3">
+        <div className="my-5 flex items-center gap-3">
           <div className="h-px flex-1 bg-border" />
 
           <span className="text-xs uppercase tracking-wide text-muted-foreground">
@@ -399,7 +400,7 @@ export default function LoginPage() {
           }
         </Button>
 
-        <p className="mt-6 text-center text-sm text-muted-foreground">
+        <p className="mt-5 text-center text-sm text-muted-foreground">
           {copy.noAccount}{" "}
 
           <Link

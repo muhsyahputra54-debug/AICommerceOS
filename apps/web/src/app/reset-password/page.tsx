@@ -1,4 +1,5 @@
 "use client";
+import { LakuvoBrand } from "@/components/brand/LakuvoBrand";
 
 import Link from "next/link";
 import {
@@ -222,9 +223,9 @@ export default function ResetPasswordPage() {
 
   if (completed) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-background px-6 py-10">
+      <main className="flex min-h-screen items-center justify-center bg-background px-4 py-6 sm:px-6 sm:py-8">
         <div className="w-full max-w-md rounded-2xl border border-border/70 bg-card p-8 text-center shadow-lg shadow-primary/5">
-          <div className="mb-6 flex justify-end">
+          <div className="mb-4 flex justify-end">
             <LanguageSwitcher />
           </div>
 
@@ -247,22 +248,22 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-background px-6 py-10">
-      <div className="w-full max-w-md rounded-2xl border border-border/70 bg-card p-8 shadow-lg shadow-primary/5">
-        <div className="mb-6 flex justify-end">
+    <main className="flex min-h-screen items-center justify-center bg-background px-4 py-6 sm:px-6 sm:py-8">
+      <div className="w-full max-w-md rounded-2xl border border-border/70 bg-card p-6 shadow-lg shadow-primary/5 sm:p-7">
+        <div className="mb-4 flex justify-end">
           <LanguageSwitcher />
         </div>
 
         <div className="text-center">
-          <h1 className="text-3xl font-bold">
-            LAKUVO
-          </h1>
+          <div className="flex justify-center">
+            <LakuvoBrand size="md" />
+          </div>
 
           <h2 className="mt-5 text-xl font-semibold">
             {copy.title}
           </h2>
 
-          <p className="mt-2 text-sm text-muted-foreground">
+          <p className="mt-3 text-sm text-muted-foreground">
             {copy.subtitle}
           </p>
         </div>
@@ -270,7 +271,7 @@ export default function ResetPasswordPage() {
         <form
           onSubmit={handleSubmit}
           noValidate
-          className="mt-8 space-y-4"
+          className="mt-6 space-y-4"
         >
           <div className="space-y-2">
             <label
@@ -354,7 +355,7 @@ export default function ResetPasswordPage() {
           </Button>
         </form>
 
-        <p className="mt-6 text-center text-sm text-muted-foreground">
+        <p className="mt-5 text-center text-sm text-muted-foreground">
           <Link
             href="/forgot-password"
             className="font-medium text-primary hover:underline"

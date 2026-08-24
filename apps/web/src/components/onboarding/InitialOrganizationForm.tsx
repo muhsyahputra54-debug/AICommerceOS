@@ -1,4 +1,5 @@
 "use client";
+import { LakuvoBrand } from "@/components/brand/LakuvoBrand";
 
 import {
   type FormEvent,
@@ -268,16 +269,16 @@ export function InitialOrganizationForm() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-background px-6 py-10">
-      <div className="w-full max-w-md rounded-2xl border border-border/70 bg-card p-8 shadow-lg shadow-primary/5">
-        <div className="mb-6 flex justify-end">
+    <main className="flex min-h-screen items-center justify-center bg-background px-4 py-6 sm:px-6 sm:py-8">
+      <div className="w-full max-w-md rounded-2xl border border-border/70 bg-card p-6 shadow-lg shadow-primary/5 sm:p-7">
+        <div className="mb-4 flex justify-end">
           <LanguageSwitcher />
         </div>
 
         <div className="text-center">
-          <h1 className="text-3xl font-bold">
-            LAKUVO
-          </h1>
+          <div className="flex justify-center">
+            <LakuvoBrand size="md" />
+          </div>
 
           <h2 className="mt-5 text-xl font-semibold">
             {copy.title}
@@ -293,7 +294,7 @@ export function InitialOrganizationForm() {
             handleSubmit
           }
           noValidate
-          className="mt-8 space-y-4"
+          className="mt-6 space-y-4"
         >
           <div className="space-y-2">
             <label
