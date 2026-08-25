@@ -178,8 +178,17 @@ function authoritativeAmount(
   return 4990000;
 }
 
-function checkoutPersistenceResult(
+type CheckoutClaimResult =
+  | "created_claimed"
+  | "reclaimed_stale"
+  | "in_progress"
+  | "reused_ready";
+
+function checkoutClaimResult(
   args: Record<string, unknown>,
+  claimResult:
+    CheckoutClaimResult =
+      "created_claimed",
 ) {
   const plan =
     String(
@@ -191,9 +200,16 @@ function checkoutPersistenceResult(
       args.p_billing_interval,
     );
 
+  const ready =
+    claimResult ===
+      "reused_ready";
+
   return {
     data: [
       {
+        claim_result:
+          claimResult,
+
         checkout_session_id:
           checkoutSessionId,
 
@@ -204,7 +220,7 @@ function checkoutPersistenceResult(
           "midtrans",
 
         reference_id:
-          args.p_reference_id,
+          "lkv_44444444444444444444444444444444",
 
         plan_id:
           "33333333-3333-4333-8333-333333333333",
@@ -225,7 +241,22 @@ function checkoutPersistenceResult(
           "IDR",
 
         status:
-          "created",
+          ready
+            ? "ready"
+            : "created",
+
+        external_session_id:
+          ready
+            ? "existing-sandbox-session"
+            : null,
+
+        checkout_url:
+          ready
+            ? "https://app.sandbox.midtrans.com/snap/v2/vtweb/existing-token"
+            : null,
+
+        expires_at:
+          null,
       },
     ],
 
@@ -244,9 +275,9 @@ function installDefaultRpc() {
       ) => {
         if (
           name ===
-          "create_billing_checkout_session"
+          "claim_billing_checkout_intent"
         ) {
-          return checkoutPersistenceResult(
+          return checkoutClaimResult(
             args,
           );
         }
@@ -650,25 +681,28 @@ describe(
             }),
           );
 
+        const body =
+          await response.json();
+
         expect(
           response.status,
         ).toBe(201);
 
-        const createRpcCall =
+        const claimRpcCall =
           mocks.adminRpc
             .mock.calls
             .find(
               (call) =>
                 call[0] ===
-                "create_billing_checkout_session",
+                "claim_billing_checkout_intent",
             );
 
         expect(
-          createRpcCall,
+          claimRpcCall,
         ).toBeTruthy();
 
         const rpcArgs =
-          createRpcCall?.[1] as
+          claimRpcCall?.[1] as
             Record<string, unknown>;
 
         expect(
@@ -684,17 +718,21 @@ describe(
         );
 
         expect(
-          rpcArgs.p_reference_id,
+          rpcArgs,
+        ).not.toHaveProperty(
+          "p_reference_id",
+        );
+
+        expect(
+          body.reference_id,
         ).not.toBe(
           "browser-controlled-order-id",
         );
 
         expect(
-          String(
-            rpcArgs.p_reference_id,
-          ),
-        ).toMatch(
-          /^lkv_[0-9a-f-]{36}$/i,
+          body.reference_id,
+        ).toBe(
+          "lkv_44444444444444444444444444444444",
         );
 
         const providerInput =
@@ -718,7 +756,7 @@ describe(
         expect(
           providerInput.referenceId,
         ).toBe(
-          rpcArgs.p_reference_id,
+          body.reference_id,
         );
 
         expect(
@@ -736,6 +774,121 @@ describe(
     );
 
     it(
+      "does not call Midtrans for an authoritative reused_ready checkout",
+      async () => {
+        mocks.adminRpc.mockReset();
+
+        mocks.adminRpc
+          .mockImplementation(
+            async (
+              name: string,
+              args:
+                Record<string, unknown> = {},
+            ) => {
+              if (
+                name ===
+                "claim_billing_checkout_intent"
+              ) {
+                return checkoutClaimResult(
+                  args,
+                  "reused_ready",
+                );
+              }
+
+              throw new Error(
+                `Unexpected RPC: ${name}`,
+              );
+            },
+          );
+
+        const response =
+          await POST(
+            jsonRequest({
+              plan:
+                "starter",
+
+              interval:
+                "monthly",
+            }),
+          );
+
+        expect(
+          response.status,
+        ).toBe(200);
+
+        expect(
+          mocks.createCheckoutSession,
+        ).not.toHaveBeenCalled();
+
+        expect(
+          mocks.adminRpc,
+        ).toHaveBeenCalledTimes(1);
+      },
+    );
+
+    it(
+      "does not call Midtrans while an authoritative checkout claim is in progress",
+      async () => {
+        mocks.adminRpc.mockReset();
+
+        mocks.adminRpc
+          .mockImplementation(
+            async (
+              name: string,
+              args:
+                Record<string, unknown> = {},
+            ) => {
+              if (
+                name ===
+                "claim_billing_checkout_intent"
+              ) {
+                return checkoutClaimResult(
+                  args,
+                  "in_progress",
+                );
+              }
+
+              throw new Error(
+                `Unexpected RPC: ${name}`,
+              );
+            },
+          );
+
+        const response =
+          await POST(
+            jsonRequest({
+              plan:
+                "starter",
+
+              interval:
+                "monthly",
+            }),
+          );
+
+        const body =
+          await response.json();
+
+        expect(
+          response.status,
+        ).toBe(409);
+
+        expect(
+          body.code,
+        ).toBe(
+          "BILLING_CHECKOUT_IN_PROGRESS",
+        );
+
+        expect(
+          mocks.createCheckoutSession,
+        ).not.toHaveBeenCalled();
+
+        expect(
+          mocks.adminRpc,
+        ).toHaveBeenCalledTimes(1);
+      },
+    );
+
+    it(
       "fails safely when provider-session persistence fails",
       async () => {
         mocks.adminRpc
@@ -747,9 +900,9 @@ describe(
             ) => {
               if (
                 name ===
-                "create_billing_checkout_session"
+                "claim_billing_checkout_intent"
               ) {
-                return checkoutPersistenceResult(
+                return checkoutClaimResult(
                   args,
                 );
               }
@@ -846,9 +999,9 @@ describe(
             ) => {
               if (
                 name ===
-                "create_billing_checkout_session"
+                "claim_billing_checkout_intent"
               ) {
-                return checkoutPersistenceResult(
+                return checkoutClaimResult(
                   args,
                 );
               }

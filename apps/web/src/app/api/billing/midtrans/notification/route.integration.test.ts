@@ -374,6 +374,19 @@ beforeEach(() => {
           };
         }
 
+        if (
+          name ===
+          "activate_billing_checkout_entitlement"
+        ) {
+          return {
+            data:
+              "activated",
+
+            error:
+              null,
+          };
+        }
+
         return {
           data:
             null,
@@ -584,6 +597,16 @@ describe(
               "forged-webhook-txn",
           }),
         );
+
+        expect(
+          mocks.adminRpc,
+        ).toHaveBeenCalledWith(
+          "activate_billing_checkout_entitlement",
+          {
+            p_checkout_session_id:
+              "checkout-d3e-001",
+          },
+        );
       },
     );
 
@@ -696,7 +719,20 @@ describe(
                 };
               }
 
-              return {
+              if (
+            name ===
+            "activate_billing_checkout_entitlement"
+          ) {
+            return {
+              data:
+                "already_applied",
+
+              error:
+                null,
+            };
+          }
+
+          return {
                 data:
                   null,
 
@@ -738,11 +774,170 @@ describe(
         );
 
         expect(
+          mocks.adminRpc,
+        ).toHaveBeenCalledWith(
+          "activate_billing_checkout_entitlement",
+          {
+            p_checkout_session_id:
+              "checkout-d3e-001",
+          },
+        );
+
+        expect(
           mocks.logServerError,
         ).not.toHaveBeenCalled();
       },
     );
 
+
+    it(
+      "does not activate entitlement for a non-completed authoritative payment",
+      async () => {
+        mocks
+          .getTransactionStatus
+          .mockResolvedValueOnce(
+            verifiedStatus({
+              statusCode:
+                "201",
+
+              transactionStatus:
+                "pending",
+
+              settlementTime:
+                null,
+            }),
+          );
+
+        const response =
+          await POST(
+            requestFor(
+              signedPayload(),
+            ),
+          );
+
+        expect(
+          response.status,
+        ).toBe(200);
+
+        expect(
+          mocks.adminRpc,
+        ).toHaveBeenCalledWith(
+          "process_billing_checkout_payment_event",
+          expect.objectContaining({
+            p_payment_outcome:
+              "pending",
+          }),
+        );
+
+        expect(
+          mocks.adminRpc,
+        ).not.toHaveBeenCalledWith(
+          "activate_billing_checkout_entitlement",
+          expect.any(
+            Object,
+          ),
+        );
+      },
+    );
+
+
+    it(
+      "fails closed so a completed payment can retry when entitlement persistence fails",
+      async () => {
+        mocks
+          .adminRpc
+          .mockImplementation(
+            async (
+              name: string,
+            ) => {
+
+              if (
+                name ===
+                "record_billing_webhook_event"
+              ) {
+                return {
+                  data:
+                    "recorded",
+
+                  error:
+                    null,
+                };
+              }
+
+              if (
+                name ===
+                "process_billing_checkout_payment_event"
+              ) {
+                return {
+                  data:
+                    "completed",
+
+                  error:
+                    null,
+                };
+              }
+
+              if (
+                name ===
+                "activate_billing_checkout_entitlement"
+              ) {
+                return {
+                  data:
+                    null,
+
+                  error: {
+                    message:
+                      "entitlement persistence failure",
+                  },
+                };
+              }
+
+              return {
+                data:
+                  null,
+
+                error: {
+                  message:
+                    "unexpected rpc",
+                },
+              };
+            },
+          );
+
+        const response =
+          await POST(
+            requestFor(
+              signedPayload(),
+            ),
+          );
+
+        expect(
+          response.status,
+        ).toBe(503);
+
+        expect(
+          mocks.adminRpc,
+        ).toHaveBeenCalledWith(
+          "activate_billing_checkout_entitlement",
+          {
+            p_checkout_session_id:
+              "checkout-d3e-001",
+          },
+        );
+
+        expect(
+          mocks.logServerError,
+        ).toHaveBeenCalledWith(
+          expect.objectContaining({
+            event:
+              "billing_midtrans_notification_failed",
+
+            operation:
+              "notification_server_configuration_or_database",
+          }),
+        );
+      },
+    );
 
     it(
       "logs and acknowledges a permanent authoritative amount mismatch without retry loop",

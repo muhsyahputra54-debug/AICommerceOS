@@ -164,7 +164,101 @@ function authoritativeAmount(
   return 4990000;
 }
 
-function installDefaultRpcMock() {
+type CheckoutClaimResult =
+  | "created_claimed"
+  | "reclaimed_stale"
+  | "in_progress"
+  | "reused_ready";
+
+function checkoutClaimResult(
+  args: Record<string, unknown>,
+  claimResult:
+    CheckoutClaimResult =
+      "created_claimed",
+) {
+  const plan =
+    String(
+      args
+        .p_plan_slug,
+    );
+
+  const interval =
+    String(
+      args
+        .p_billing_interval,
+    );
+
+  const ready =
+    claimResult ===
+      "reused_ready";
+
+  return {
+    data: [
+      {
+        claim_result:
+          claimResult,
+
+        checkout_session_id:
+          "22222222-2222-4222-8222-222222222222",
+
+        organization_id:
+          args
+            .p_organization_id,
+
+        provider:
+          "midtrans",
+
+        reference_id:
+          "lkv_44444444444444444444444444444444",
+
+        plan_id:
+          "33333333-3333-4333-8333-333333333333",
+
+        plan_slug:
+          plan,
+
+        billing_interval:
+          interval,
+
+        amount:
+          authoritativeAmount(
+            plan,
+            interval,
+          ),
+
+        currency:
+          "IDR",
+
+        status:
+          ready
+            ? "ready"
+            : "created",
+
+        external_session_id:
+          ready
+            ? "existing-sandbox-session"
+            : null,
+
+        checkout_url:
+          ready
+            ? "https://app.sandbox.midtrans.com/snap/v2/vtweb/existing-token"
+            : null,
+
+        expires_at:
+          null,
+      },
+    ],
+
+    error:
+      null,
+  };
+}
+
+function installDefaultRpcMock(
+  claimResult:
+    CheckoutClaimResult =
+      "created_claimed",
+) {
   mocks.adminRpc
     .mockImplementation(
       async (
@@ -177,63 +271,12 @@ function installDefaultRpcMock() {
       ) => {
         if (
           name ===
-          "create_billing_checkout_session"
+          "claim_billing_checkout_intent"
         ) {
-          const plan =
-            String(
-              args
-                .p_plan_slug,
-            );
-
-          const interval =
-            String(
-              args
-                .p_billing_interval,
-            );
-
-          return {
-            data: [
-              {
-                checkout_session_id:
-                  "22222222-2222-4222-8222-222222222222",
-
-                organization_id:
-                  args
-                    .p_organization_id,
-
-                provider:
-                  "midtrans",
-
-                reference_id:
-                  args
-                    .p_reference_id,
-
-                plan_id:
-                  "33333333-3333-4333-8333-333333333333",
-
-                plan_slug:
-                  plan,
-
-                billing_interval:
-                  interval,
-
-                amount:
-                  authoritativeAmount(
-                    plan,
-                    interval,
-                  ),
-
-                currency:
-                  "IDR",
-
-                status:
-                  "created",
-              },
-            ],
-
-            error:
-              null,
-          };
+          return checkoutClaimResult(
+            args,
+            claimResult,
+          );
         }
 
         if (
@@ -513,7 +556,7 @@ describe(
     );
 
     it(
-      "uses authoritative database pricing and server-generated reference",
+      "uses authoritative database pricing and database-generated reference",
       async () => {
         const response =
           await POST(
@@ -553,9 +596,19 @@ describe(
 
         expect(
           body.reference_id,
-        ).toMatch(
-          /^lkv_[0-9a-f-]{36}$/i,
+        ).toBe(
+          "lkv_44444444444444444444444444444444",
         );
+
+        expect(
+          body.checkout_state,
+        ).toBe(
+          "created_claimed",
+        );
+
+        expect(
+          body.reused,
+        ).toBe(false);
 
         expect(
           body.checkout_url,
@@ -563,7 +616,7 @@ describe(
           "https://app.sandbox.midtrans.com/snap/v2/vtweb/test-token",
         );
 
-        const createCall =
+        const claimCall =
           mocks
             .adminRpc
             .mock
@@ -571,15 +624,15 @@ describe(
             .find(
               (call) =>
                 call[0] ===
-                "create_billing_checkout_session",
+                "claim_billing_checkout_intent",
             );
 
         expect(
-          createCall,
+          claimCall,
         ).toBeTruthy();
 
         const rpcArgs =
-          createCall?.[1] as
+          claimCall?.[1] as
             Record<
               string,
               unknown
@@ -600,10 +653,9 @@ describe(
         );
 
         expect(
-          rpcArgs
-            .p_reference_id,
-        ).toMatch(
-          /^lkv_[0-9a-f-]{36}$/i,
+          rpcArgs,
+        ).not.toHaveProperty(
+          "p_reference_id",
         );
 
         expect(
@@ -639,8 +691,7 @@ describe(
           providerInput
             .referenceId,
         ).toBe(
-          rpcArgs
-            .p_reference_id,
+          body.reference_id,
         );
 
         expect(
@@ -678,6 +729,160 @@ describe(
         expect(
           attachCall,
         ).toBeTruthy();
+      },
+    );
+
+    it(
+      "reuses an existing ready checkout without calling Midtrans",
+      async () => {
+        mocks.adminRpc.mockReset();
+        installDefaultRpcMock(
+          "reused_ready",
+        );
+
+        const response =
+          await POST(
+            checkoutRequest({
+              plan:
+                "starter",
+
+              interval:
+                "monthly",
+            }),
+          );
+
+        const body =
+          await response.json();
+
+        expect(
+          response.status,
+        ).toBe(200);
+
+        expect(
+          body.checkout_state,
+        ).toBe(
+          "reused_ready",
+        );
+
+        expect(
+          body.reused,
+        ).toBe(true);
+
+        expect(
+          body.checkout_url,
+        ).toBe(
+          "https://app.sandbox.midtrans.com/snap/v2/vtweb/existing-token",
+        );
+
+        expect(
+          mocks
+            .createCheckoutSession,
+        ).not.toHaveBeenCalled();
+
+        const attachCall =
+          mocks.adminRpc
+            .mock.calls
+            .find(
+              (call) =>
+                call[0] ===
+                "attach_billing_checkout_provider_session",
+            );
+
+        expect(
+          attachCall,
+        ).toBeUndefined();
+      },
+    );
+
+    it(
+      "returns retryable conflict while checkout creation is already in progress",
+      async () => {
+        mocks.adminRpc.mockReset();
+        installDefaultRpcMock(
+          "in_progress",
+        );
+
+        const response =
+          await POST(
+            checkoutRequest({
+              plan:
+                "starter",
+
+              interval:
+                "monthly",
+            }),
+          );
+
+        const body =
+          await response.json();
+
+        expect(
+          response.status,
+        ).toBe(409);
+
+        expect(
+          response.headers.get(
+            "Retry-After",
+          ),
+        ).toBe("2");
+
+        expect(
+          body.code,
+        ).toBe(
+          "BILLING_CHECKOUT_IN_PROGRESS",
+        );
+
+        expect(
+          body.retryable,
+        ).toBe(true);
+
+        expect(
+          mocks
+            .createCheckoutSession,
+        ).not.toHaveBeenCalled();
+
+        expect(
+          mocks.adminRpc,
+        ).toHaveBeenCalledTimes(1);
+      },
+    );
+
+    it(
+      "allows a reclaimed stale checkout owner to create the provider session exactly once",
+      async () => {
+        mocks.adminRpc.mockReset();
+        installDefaultRpcMock(
+          "reclaimed_stale",
+        );
+
+        const response =
+          await POST(
+            checkoutRequest({
+              plan:
+                "starter",
+
+              interval:
+                "monthly",
+            }),
+          );
+
+        const body =
+          await response.json();
+
+        expect(
+          response.status,
+        ).toBe(201);
+
+        expect(
+          body.checkout_state,
+        ).toBe(
+          "reclaimed_stale",
+        );
+
+        expect(
+          mocks
+            .createCheckoutSession,
+        ).toHaveBeenCalledTimes(1);
       },
     );
 

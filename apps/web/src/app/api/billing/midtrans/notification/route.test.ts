@@ -270,6 +270,19 @@ beforeEach(() => {
           };
         }
 
+        if (
+          name ===
+          "activate_billing_checkout_entitlement"
+        ) {
+          return {
+            data:
+              "activated",
+
+            error:
+              null,
+          };
+        }
+
         return {
           data:
             null,

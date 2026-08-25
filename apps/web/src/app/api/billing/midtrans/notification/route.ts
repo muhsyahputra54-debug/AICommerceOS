@@ -691,6 +691,58 @@ export async function POST(
   }
 
 
+
+// ==========================================================
+// 8. COMPLETED CHECKOUT ENTITLEMENT ADAPTER
+//
+// Only the authoritative checkout UUID crosses this boundary.
+// Plan, amount, currency and entitlement period remain DB-owned.
+// ==========================================================
+
+  async function activateCheckoutEntitlement(
+    checkoutSessionId: string,
+  ) {
+    const client =
+      getAdmin();
+
+    let result;
+
+    try {
+      result =
+        await client.rpc(
+          "activate_billing_checkout_entitlement",
+          {
+            p_checkout_session_id:
+              checkoutSessionId,
+          },
+        );
+    } catch {
+      throw new BillingNotificationDatabaseError(
+        "Checkout entitlement tidak dapat diaktifkan.",
+      );
+    }
+
+    if (result.error) {
+      throw new BillingNotificationDatabaseError(
+        "Checkout entitlement tidak dapat diaktifkan.",
+      );
+    }
+
+    const entitlementResult =
+      typeof result.data ===
+      "string"
+        ? result.data.trim()
+        : "";
+
+    if (!entitlementResult) {
+      throw new BillingNotificationDatabaseError(
+        "Checkout entitlement menghasilkan status kosong.",
+      );
+    }
+
+    return entitlementResult;
+  }
+
   // ==========================================================
   // 8. VERIFIED MIDTRANS ORCHESTRATION
   // ==========================================================
@@ -722,6 +774,69 @@ export async function POST(
       return acknowledge();
     }
 
+
+    // ========================================================
+    // COMPLETED PAYMENT -> PAID ENTITLEMENT
+    //
+    // Reconciliation also runs for already_processed because
+    // a prior webhook attempt may have completed payment state
+    // but failed before entitlement activation.
+    // ========================================================
+
+    if (
+      result.paymentOutcome ===
+        "completed" &&
+      (
+        result.processResult ===
+          "completed" ||
+        result.processResult ===
+          "already_processed"
+      )
+    ) {
+      const entitlementCheckout =
+        await findCheckoutByReference(
+          result.orderId,
+        );
+
+      if (!entitlementCheckout) {
+        throw new BillingNotificationDatabaseError(
+          "Checkout entitlement tidak dapat menemukan checkout authoritative.",
+        );
+      }
+
+      const entitlementResult =
+        await activateCheckoutEntitlement(
+          entitlementCheckout
+            .checkoutSessionId,
+        );
+
+      if (
+        entitlementResult ===
+          "active_paid_plan_change_requires_policy"
+      ) {
+        console.warn(
+          JSON.stringify({
+            event:
+              "billing_checkout_entitlement_policy_hold",
+            request_id:
+              requestId,
+            entitlement_result:
+              entitlementResult,
+          }),
+        );
+      } else if (
+        entitlementResult !==
+          "activated" &&
+        entitlementResult !==
+          "renewed" &&
+        entitlementResult !==
+          "already_applied"
+      ) {
+        throw new BillingNotificationDatabaseError(
+          "Checkout entitlement menghasilkan status yang tidak dapat diterima.",
+        );
+      }
+    }
 
     // ========================================================
     // Temporary/race failures should be retried by provider.

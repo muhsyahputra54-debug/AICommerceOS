@@ -23,7 +23,14 @@ type CheckoutRequestBody = {
   interval?: unknown;
 };
 
+type CheckoutClaimResult =
+  | "created_claimed"
+  | "reclaimed_stale"
+  | "in_progress"
+  | "reused_ready";
+
 type CheckoutPersistenceRow = {
+  claimResult: CheckoutClaimResult;
   checkoutSessionId: string;
   organizationId: string;
   provider: string;
@@ -32,12 +39,14 @@ type CheckoutPersistenceRow = {
   interval: BillingInterval;
   amount: number;
   currency: string;
-  status: string;
+  status: "created" | "ready";
+  externalSessionId: string | null;
+  checkoutUrl: string | null;
+  expiresAt: string | null;
 };
 
 type CheckoutExpectation = {
   organizationId: string;
-  referenceId: string;
   plan: CommercialPlanSlug;
   interval: BillingInterval;
 };
@@ -103,6 +112,11 @@ function parseCheckoutPersistenceRow(
   const row =
     candidate as Record<string, unknown>;
 
+  const claimResult =
+    nonBlankString(
+      row.claim_result,
+    );
+
   const checkoutSessionId =
     nonBlankString(
       row.checkout_session_id,
@@ -148,26 +162,78 @@ function parseCheckoutPersistenceRow(
       row.status,
     );
 
+  const externalSessionId =
+    row.external_session_id == null
+      ? null
+      : nonBlankString(
+          row.external_session_id,
+        );
+
+  const checkoutUrl =
+    row.checkout_url == null
+      ? null
+      : nonBlankString(
+          row.checkout_url,
+        );
+
+  const expiresAt =
+    row.expires_at == null
+      ? null
+      : nonBlankString(
+          row.expires_at,
+        );
+
+  if (
+    claimResult !== "created_claimed" &&
+    claimResult !== "reclaimed_stale" &&
+    claimResult !== "in_progress" &&
+    claimResult !== "reused_ready"
+  ) {
+    return null;
+  }
+
+  const expectedStatus =
+    claimResult === "reused_ready"
+      ? "ready"
+      : "created";
+
   if (
     !checkoutSessionId ||
     organizationId !==
       expected.organizationId ||
     provider !==
       MIDTRANS_PROVIDER ||
-    referenceId !==
-      expected.referenceId ||
+    !referenceId ||
     planSlug !==
       expected.plan ||
     interval !==
       expected.interval ||
     amount === null ||
     !currency ||
-    status !== "created"
+    status !==
+      expectedStatus
+  ) {
+    return null;
+  }
+
+  if (
+    claimResult === "reused_ready"
+  ) {
+    if (
+      !externalSessionId ||
+      !checkoutUrl
+    ) {
+      return null;
+    }
+  } else if (
+    row.external_session_id != null ||
+    row.checkout_url != null
   ) {
     return null;
   }
 
   return {
+    claimResult,
     checkoutSessionId,
     organizationId,
     provider,
@@ -179,7 +245,11 @@ function parseCheckoutPersistenceRow(
     amount,
     currency:
       currency.toUpperCase(),
-    status,
+    status:
+      expectedStatus,
+    externalSessionId,
+    checkoutUrl,
+    expiresAt,
   };
 }
 
@@ -238,13 +308,6 @@ function buildBillingReturnUrl(
   );
 
   return url.toString();
-}
-
-function createCheckoutReference() {
-  return (
-    "lkv_" +
-    crypto.randomUUID()
-  );
 }
 
 async function bestEffortFailCheckout(
@@ -490,9 +553,6 @@ export async function POST(
     );
   }
 
-  const referenceId =
-    createCheckoutReference();
-
   let persistence:
     CheckoutPersistenceRow | null =
       null;
@@ -503,15 +563,13 @@ export async function POST(
       error,
     } =
       await admin.rpc(
-        "create_billing_checkout_session",
+        "claim_billing_checkout_intent",
         {
           p_organization_id:
             currentOrganization
               .organizationId,
           p_provider:
             MIDTRANS_PROVIDER,
-          p_reference_id:
-            referenceId,
           p_plan_slug:
             plan,
           p_billing_interval:
@@ -544,7 +602,6 @@ export async function POST(
           organizationId:
             currentOrganization
               .organizationId,
-          referenceId,
           plan,
           interval,
         },
@@ -573,6 +630,71 @@ export async function POST(
       },
       {
         status: 500,
+      },
+    );
+  }
+
+  if (
+    persistence.claimResult ===
+      "reused_ready"
+  ) {
+    return NextResponse.json(
+      {
+        provider:
+          persistence.provider,
+
+        reference_id:
+          persistence.referenceId,
+
+        plan:
+          persistence.planSlug,
+
+        interval:
+          persistence.interval,
+
+        checkout_url:
+          persistence.checkoutUrl,
+
+        checkout_state:
+          persistence.claimResult,
+
+        reused:
+          true,
+      },
+      {
+        status: 200,
+      },
+    );
+  }
+
+  if (
+    persistence.claimResult ===
+      "in_progress"
+  ) {
+    return NextResponse.json(
+      {
+        error:
+          "Checkout billing sedang dipersiapkan. Silakan coba lagi sebentar.",
+        code:
+          "BILLING_CHECKOUT_IN_PROGRESS",
+        retryable:
+          true,
+
+        reference_id:
+          persistence.referenceId,
+
+        plan:
+          persistence.planSlug,
+
+        interval:
+          persistence.interval,
+      },
+      {
+        status: 409,
+        headers: {
+          "Retry-After":
+            "2",
+        },
       },
     );
   }
@@ -730,6 +852,12 @@ export async function POST(
 
       checkout_url:
         providerSession.checkoutUrl,
+
+      checkout_state:
+        persistence.claimResult,
+
+      reused:
+        false,
     },
     {
       status: 201,

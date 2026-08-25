@@ -225,11 +225,14 @@ describe(
       async () => {
         mocks
           .processVerifiedMidtransNotification
-          .mockResolvedValueOnce(
-            processedResult(
+          .mockResolvedValueOnce({
+            ...processedResult(
               "already_processed",
             ),
-          );
+
+            paymentOutcome:
+              "pending" as const,
+          });
 
         const response =
           await POST(
