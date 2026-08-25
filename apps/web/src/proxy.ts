@@ -166,6 +166,10 @@ export async function proxy(
     pathname ===
       "/api/marketplaces/shopee/callback";
 
+  const isBillingProviderWebhook =
+    pathname ===
+      "/api/billing/midtrans/notification";
+
   const isOperationalEndpoint =
     pathname ===
       "/api/health" ||
@@ -175,6 +179,7 @@ export async function proxy(
   if (
     isMarketplaceWebhook ||
     isMarketplaceCallback ||
+    isBillingProviderWebhook ||
     isOperationalEndpoint
   ) {
     return nextResponse();

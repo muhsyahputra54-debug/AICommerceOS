@@ -8,8 +8,11 @@ export type CommercialPlanSlug =
 
 export type BillingCheckoutInput = {
   organizationId: string;
+  referenceId: string;
   planSlug: CommercialPlanSlug;
   interval: BillingInterval;
+  amount: number;
+  currency: string;
   successUrl: string;
   cancelUrl: string;
   customerEmail?: string | null;
