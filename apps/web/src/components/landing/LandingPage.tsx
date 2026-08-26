@@ -35,6 +35,8 @@ import { LandingTodayStory } from "./LandingTodayStory";
 
 import { LandingAiActionStory } from "./LandingAiActionStory";
 
+import { LandingVisualShowcase } from "./LandingVisualShowcase";
+
 export function LandingPage() {
   const {
     locale,
@@ -576,6 +578,10 @@ export function LandingPage() {
             </div>
           </div>
         </section>
+
+        <LandingVisualShowcase
+          locale={locale}
+        />
 
         <LandingTodayStory
           locale={locale}
