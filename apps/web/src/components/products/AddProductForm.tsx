@@ -23,12 +23,16 @@ type AddProductFormProps = {
   organizationId: string;
   categories: ProductCategory[];
   copy: ProductWorkflowCopy;
+  successPath?: string;
+  cancelPath?: string;
 };
 
 export default function AddProductForm({
   organizationId,
   categories,
   copy,
+  successPath = "/products",
+  cancelPath = "/products",
 }: AddProductFormProps) {
   const router = useRouter();
 
@@ -172,7 +176,7 @@ export default function AddProductForm({
       return;
     }
 
-    router.push("/products");
+    router.push(successPath);
     router.refresh();
   }
 
@@ -369,7 +373,7 @@ export default function AddProductForm({
           type="button"
           variant="outline"
           onClick={() =>
-            router.push("/products")
+            router.push(cancelPath)
           }
           disabled={isSubmitting}
         >

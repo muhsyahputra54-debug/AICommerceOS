@@ -253,7 +253,7 @@ export function InitialOrganizationForm() {
       }
 
       router.replace(
-        "/today",
+        "/get-started",
       );
 
       router.refresh();
