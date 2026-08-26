@@ -11,30 +11,53 @@ import {
 describe(
   "public marketing routes",
   () => {
-    it(
-      "allows only the public landing root",
-      () => {
+    it.each([
+      "/",
+      "/pricing",
+      "/terms",
+      "/privacy",
+      "/refund-policy",
+      "/contact",
+    ])(
+      "allows public marketing path %s",
+      (pathname) => {
         expect(
           isPublicMarketingPath(
-            "/",
+            pathname,
           ),
         ).toBe(true);
+      },
+    );
 
+    it.each([
+      "/dashboard",
+      "/today",
+      "/products",
+      "/billing",
+      "/settings",
+      "/api/billing/checkout",
+    ])(
+      "keeps protected path %s private",
+      (pathname) => {
         expect(
           isPublicMarketingPath(
-            "/dashboard",
+            pathname,
           ),
         ).toBe(false);
+      },
+    );
 
+    it.each([
+      "/pricing/anything",
+      "/terms/anything",
+      "/contact/anything",
+      "/pricing-old",
+    ])(
+      "does not implicitly expose descendant or lookalike path %s",
+      (pathname) => {
         expect(
           isPublicMarketingPath(
-            "/today",
-          ),
-        ).toBe(false);
-
-        expect(
-          isPublicMarketingPath(
-            "/products",
+            pathname,
           ),
         ).toBe(false);
       },
