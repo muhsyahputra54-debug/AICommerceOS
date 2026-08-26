@@ -150,8 +150,11 @@ function createMocks() {
         Promise<
           MidtransCheckoutSnapshot |
           null
-        > =>
-        checkoutSnapshot(),
+        > => {
+        void _orderId;
+
+        return checkoutSnapshot();
+      },
     );
 
   const getTransactionStatus =
@@ -161,24 +164,33 @@ function createMocks() {
       ):
         Promise<
           MidtransTransactionStatus
-        > =>
-        verifiedStatus(),
+        > => {
+        void _orderId;
+
+        return verifiedStatus();
+      },
     );
 
   const recordBillingEvent =
     vi.fn(
       async (
         _input: unknown,
-      ) =>
-        "recorded",
+      ) => {
+        void _input;
+
+        return "recorded";
+      },
     );
 
   const processCheckoutPaymentEvent =
     vi.fn(
       async (
         _input: unknown,
-      ) =>
-        "completed",
+      ) => {
+        void _input;
+
+        return "completed";
+      },
     );
 
   return {

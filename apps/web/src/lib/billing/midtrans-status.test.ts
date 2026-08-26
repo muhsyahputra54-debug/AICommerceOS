@@ -118,10 +118,13 @@ describe(
           vi.fn(
             async (
               ..._args: Parameters<typeof fetch>
-            ) =>
-              response(
+            ) => {
+              void _args;
+
+              return response(
                 successfulStatus(),
-              ),
+              );
+            },
           );
 
         const client =
@@ -222,10 +225,13 @@ describe(
           vi.fn(
             async (
               ..._args: Parameters<typeof fetch>
-            ) =>
-              response(
+            ) => {
+              void _args;
+
+              return response(
                 successfulStatus(),
-              ),
+              );
+            },
           );
 
         const client =
