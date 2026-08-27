@@ -13,6 +13,10 @@ const navigation = [
     label: "Harga",
   },
   {
+    href: "/blog",
+    label: "Blog & Learn",
+  },
+  {
     href: "/contact",
     label: "Kontak",
   },
@@ -104,6 +108,13 @@ export function PublicSiteFooter() {
               className="text-muted-foreground hover:text-foreground"
             >
               Harga
+            </Link>
+
+            <Link
+              href="/blog"
+              className="text-muted-foreground hover:text-foreground"
+            >
+              Blog & Learn
             </Link>
 
             <Link

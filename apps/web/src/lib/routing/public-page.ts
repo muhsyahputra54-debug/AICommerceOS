@@ -9,12 +9,21 @@ const publicMarketingPaths =
     "/robots.txt",
     "/sitemap.xml",
     "/google26f071f25ac7bb17.html",
+    "/blog",
   ]);
 
 export function isPublicMarketingPath(
   pathname: string,
 ) {
-  return publicMarketingPaths.has(
-    pathname,
+  if (
+    publicMarketingPaths.has(
+      pathname,
+    )
+  ) {
+    return true;
+  }
+
+  return pathname.startsWith(
+    "/blog/",
   );
 }

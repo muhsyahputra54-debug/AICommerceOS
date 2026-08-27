@@ -438,6 +438,13 @@ export function LandingPage() {
             >
               {copy.nav.pricing}
             </a>
+
+            <Link
+              href="/blog"
+              className="transition-colors hover:text-foreground"
+            >
+              Blog
+            </Link>
           </nav>
 
           <div className="flex items-center gap-2">
@@ -829,6 +836,13 @@ export function LandingPage() {
             >
               {copy.nav.pricing}
             </a>
+
+            <Link
+              href="/blog"
+              className="hover:text-foreground"
+            >
+              Blog
+            </Link>
 
             <Link
               href="/login"
