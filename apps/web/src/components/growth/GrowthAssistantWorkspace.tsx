@@ -20,6 +20,15 @@ import {
 } from "react";
 
 import {
+  CONTROLLED_PUBLICATION_ACTION_TYPE,
+  CONTROLLED_PUBLICATION_MAX_CONTENT_LENGTH,
+  type ControlledPublicationRecord,
+} from "@/lib/ai/controlled-publication";
+import {
+  buildGrowthPublicationIdempotencyKey,
+  type ControlledPublicationDestination,
+} from "@/lib/ai/controlled-publication-ui";
+import {
   GROWTH_ASSISTANT_TASKS,
   buildGrowthAssistantPrompt,
   type GrowthAssistantTaskId,
@@ -30,12 +39,21 @@ import type {
 
 type GrowthAssistantWorkspaceProps = {
   locale: Locale;
+  publicationAllowed: boolean;
+  publicationDestinations:
+    ControlledPublicationDestination[];
 };
 
 type ChatResponse = {
   message?: string;
   error?: string;
   conversationId?: string | null;
+};
+
+type PublicationResponse = {
+  publication?:
+    ControlledPublicationRecord;
+  error?: string;
 };
 
 const taskIcons: Record<
@@ -58,6 +76,8 @@ const taskIcons: Record<
 
 export default function GrowthAssistantWorkspace({
   locale,
+  publicationAllowed,
+  publicationDestinations,
 }: GrowthAssistantWorkspaceProps) {
   const isId =
     locale === "id";
@@ -101,6 +121,36 @@ export default function GrowthAssistantWorkspace({
             "Kembali ke TODAY",
           clear:
             "Bersihkan hasil",
+          publicationPrepare:
+            "Siapkan draft publikasi",
+          publicationTitle:
+            "Draft publikasi terkontrol",
+          publicationDescription:
+            "Tinjau dan edit caption sebelum membuat proposal. Menyiapkan draft tidak mempublikasikan apa pun.",
+          publicationDestination:
+            "Tujuan publikasi",
+          publicationContent:
+            "Konten yang akan diajukan",
+          publicationSubmit:
+            "Buat proposal untuk ditinjau",
+          publicationSubmitting:
+            "Membuat proposal...",
+          publicationNoDestination:
+            "Belum ada Authorized Shop aktif yang dipilih. Pilih toko tujuan di Marketplace terlebih dahulu.",
+          publicationOwnerOnly:
+            "Proposal publikasi hanya tersedia untuk owner atau admin organisasi.",
+          publicationTooLong:
+            "Hasil caption melebihi batas 5.000 karakter. Ringkas hasil sebelum menyiapkan proposal.",
+          publicationError:
+            "Proposal publikasi tidak dapat dibuat. Tidak ada konten yang dipublikasikan.",
+          publicationSuccess:
+            "Proposal tersimpan di Action Center. Belum ada publikasi eksternal.",
+          publicationOpenActionCenter:
+            "Buka Action Center",
+          publicationReset:
+            "Batalkan draft",
+          publicationSafety:
+            "Konfirmasi proposal tidak mempublikasikan konten di SG4. Eksekusi channel tetap dinonaktifkan sampai foundation SG5 tersedia.",
           evidence:
             "Konteks data tetap mengikuti sumber terverifikasi LAKUVO. Jika data tidak tersedia, AI diarahkan untuk menyatakannya tanpa menebak.",
         }
@@ -141,6 +191,36 @@ export default function GrowthAssistantWorkspace({
             "Back to TODAY",
           clear:
             "Clear result",
+          publicationPrepare:
+            "Prepare publication draft",
+          publicationTitle:
+            "Controlled publication draft",
+          publicationDescription:
+            "Review and edit the caption before creating a proposal. Preparing a draft does not publish anything.",
+          publicationDestination:
+            "Publication destination",
+          publicationContent:
+            "Content to propose",
+          publicationSubmit:
+            "Create proposal for review",
+          publicationSubmitting:
+            "Creating proposal...",
+          publicationNoDestination:
+            "No active selected Authorized Shop is available. Select the destination shop in Marketplace first.",
+          publicationOwnerOnly:
+            "Publication proposals are available only to organization owners or admins.",
+          publicationTooLong:
+            "The caption result exceeds the 5,000 character limit. Shorten it before preparing a proposal.",
+          publicationError:
+            "The publication proposal could not be created. No content was published.",
+          publicationSuccess:
+            "The proposal is stored in Action Center. Nothing has been published externally.",
+          publicationOpenActionCenter:
+            "Open Action Center",
+          publicationReset:
+            "Discard draft",
+          publicationSafety:
+            "Confirming the proposal does not publish content in SG4. Channel execution remains disabled until the SG5 foundation is available.",
           evidence:
             "Data context continues to use verified LAKUVO sources. When data is unavailable, AI is instructed to say so instead of guessing.",
         };
@@ -181,6 +261,48 @@ export default function GrowthAssistantWorkspace({
   ] =
     useState(false);
 
+  const [
+    publicationDraft,
+    setPublicationDraft,
+  ] =
+    useState<string | null>(
+      null,
+    );
+
+  const [
+    publicationDestinationId,
+    setPublicationDestinationId,
+  ] =
+    useState(
+      publicationDestinations[0]
+        ?.id ??
+        "",
+    );
+
+  const [
+    publicationSubmitting,
+    setPublicationSubmitting,
+  ] =
+    useState(false);
+
+  const [
+    publicationError,
+    setPublicationError,
+  ] =
+    useState<string | null>(
+      null,
+    );
+
+  const [
+    createdPublication,
+    setCreatedPublication,
+  ] =
+    useState<
+      ControlledPublicationRecord | null
+    >(
+      null,
+    );
+
   const activeTask =
     useMemo(
       () =>
@@ -195,6 +317,22 @@ export default function GrowthAssistantWorkspace({
       ],
     );
 
+  const selectedPublicationDestination =
+    useMemo(
+      () =>
+        publicationDestinations.find(
+          (destination) =>
+            destination.id ===
+            publicationDestinationId,
+        ) ??
+        publicationDestinations[0] ??
+        null,
+      [
+        publicationDestinationId,
+        publicationDestinations,
+      ],
+    );
+
   async function generate() {
     if (loading) {
       return;
@@ -202,6 +340,9 @@ export default function GrowthAssistantWorkspace({
 
     setLoading(true);
     setError(null);
+    setPublicationDraft(null);
+    setPublicationError(null);
+    setCreatedPublication(null);
 
     try {
       const prompt =
@@ -289,7 +430,176 @@ export default function GrowthAssistantWorkspace({
       setLoading(false);
     }
   }
+  function resetPublicationDraft() {
+    setPublicationDraft(
+      null,
+    );
+    setPublicationError(
+      null,
+    );
+    setCreatedPublication(
+      null,
+    );
+  }
 
+  function preparePublication() {
+    if (
+      !result ||
+      selectedTask !==
+        "captions" ||
+      publicationSubmitting
+    ) {
+      return;
+    }
+
+    if (!publicationAllowed) {
+      setPublicationError(
+        copy.publicationOwnerOnly,
+      );
+      return;
+    }
+
+    if (
+      publicationDestinations.length ===
+        0
+    ) {
+      setPublicationError(
+        copy.publicationNoDestination,
+      );
+      return;
+    }
+
+    if (
+      result.length >
+        CONTROLLED_PUBLICATION_MAX_CONTENT_LENGTH
+    ) {
+      setPublicationError(
+        copy.publicationTooLong,
+      );
+      return;
+    }
+
+    setPublicationDraft(
+      result,
+    );
+    setPublicationDestinationId(
+      selectedPublicationDestination
+        ?.id ??
+        publicationDestinations[0]
+          ?.id ??
+        "",
+    );
+    setPublicationError(
+      null,
+    );
+    setCreatedPublication(
+      null,
+    );
+  }
+
+  async function submitPublication() {
+    if (
+      publicationSubmitting ||
+      !publicationDraft ||
+      !selectedPublicationDestination
+    ) {
+      return;
+    }
+
+    setPublicationSubmitting(
+      true,
+    );
+    setPublicationError(
+      null,
+    );
+
+    try {
+      const idempotencyKey =
+        await buildGrowthPublicationIdempotencyKey(
+          selectedPublicationDestination
+            .id,
+          publicationDraft,
+        );
+
+      if (!idempotencyKey) {
+        throw new Error(
+          copy.publicationError,
+        );
+      }
+
+      const response =
+        await fetch(
+          "/api/ai/controlled-publications",
+          {
+            method:
+              "POST",
+
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
+
+            body:
+              JSON.stringify({
+                actionType:
+                  CONTROLLED_PUBLICATION_ACTION_TYPE,
+
+                authorizedShopId:
+                  selectedPublicationDestination
+                    .id,
+
+                content:
+                  publicationDraft,
+
+                idempotencyKey,
+              }),
+          },
+        );
+
+      const body:
+        unknown =
+        await response
+          .json()
+          .catch(
+            () => null,
+          );
+
+      const data =
+        typeof body ===
+          "object" &&
+        body !==
+          null
+          ? body as
+              PublicationResponse
+          : {};
+
+      if (
+        !response.ok ||
+        !data.publication
+      ) {
+        throw new Error(
+          data.error?.trim() ||
+            copy.publicationError,
+        );
+      }
+
+      setCreatedPublication(
+        data.publication,
+      );
+    } catch (cause) {
+      setPublicationError(
+        cause instanceof
+          Error &&
+        cause.message.trim()
+          ? cause.message
+          : copy.publicationError,
+      );
+    } finally {
+      setPublicationSubmitting(
+        false,
+      );
+    }
+  }
   return (
     <div className="mx-auto w-full max-w-7xl space-y-8">
       <section className="overflow-hidden rounded-3xl border bg-card shadow-sm">
@@ -534,6 +844,7 @@ export default function GrowthAssistantWorkspace({
                           setError(
                             null,
                           );
+                          resetPublicationDraft();
                         }
                       }
                       className="inline-flex h-9 items-center rounded-lg border px-3 text-xs font-medium transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
@@ -592,6 +903,266 @@ export default function GrowthAssistantWorkspace({
             }
           </div>
 
+          {result &&
+          selectedTask ===
+            "captions" ? (
+            <div className="mt-5 rounded-2xl border border-primary/15 bg-primary/[0.025] p-4 md:p-5">
+              {!publicationDraft ? (
+                <div>
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <p className="font-semibold">
+                        {copy.publicationTitle}
+                      </p>
+
+                      <p className="mt-1 max-w-2xl text-xs leading-5 text-muted-foreground">
+                        {copy.publicationDescription}
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      disabled={
+                        loading ||
+                        publicationSubmitting ||
+                        !publicationAllowed ||
+                        publicationDestinations.length ===
+                          0 ||
+                        result.length >
+                          CONTROLLED_PUBLICATION_MAX_CONTENT_LENGTH
+                      }
+                      onClick={
+                        preparePublication
+                      }
+                      className="inline-flex h-10 shrink-0 items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {copy.publicationPrepare}
+                    </button>
+                  </div>
+
+                  {!publicationAllowed ? (
+                    <p className="mt-3 text-xs leading-5 text-amber-700">
+                      {copy.publicationOwnerOnly}
+                    </p>
+                  ) : publicationDestinations.length ===
+                    0 ? (
+                    <p className="mt-3 text-xs leading-5 text-amber-700">
+                      {copy.publicationNoDestination}{" "}
+                      <Link
+                        href="/marketplaces"
+                        className="font-semibold underline underline-offset-2"
+                      >
+                        Marketplace
+                      </Link>
+                    </p>
+                  ) : result.length >
+                    CONTROLLED_PUBLICATION_MAX_CONTENT_LENGTH ? (
+                    <p className="mt-3 text-xs leading-5 text-amber-700">
+                      {copy.publicationTooLong}
+                    </p>
+                  ) : null}
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <p className="font-semibold">
+                        {copy.publicationTitle}
+                      </p>
+
+                      <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                        {copy.publicationSafety}
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      disabled={
+                        publicationSubmitting
+                      }
+                      onClick={
+                        resetPublicationDraft
+                      }
+                      className="inline-flex h-9 shrink-0 items-center justify-center rounded-lg border px-3 text-xs font-medium transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {copy.publicationReset}
+                    </button>
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="growth-publication-destination"
+                      className="text-sm font-medium"
+                    >
+                      {copy.publicationDestination}
+                    </label>
+
+                    <select
+                      id="growth-publication-destination"
+                      value={
+                        selectedPublicationDestination
+                          ?.id ??
+                        ""
+                      }
+                      disabled={
+                        publicationSubmitting ||
+                        createdPublication !==
+                          null
+                      }
+                      onChange={
+                        (event) => {
+                          setPublicationDestinationId(
+                            event.target
+                              .value,
+                          );
+                          setPublicationError(
+                            null,
+                          );
+                          setCreatedPublication(
+                            null,
+                          );
+                        }
+                      }
+                      className="mt-2 h-11 w-full rounded-xl border bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {publicationDestinations.map(
+                        (
+                          destination,
+                        ) => (
+                          <option
+                            key={
+                              destination.id
+                            }
+                            value={
+                              destination.id
+                            }
+                          >
+                            {
+                              destination.name
+                            }{" "}
+                            Â·{" "}
+                            {
+                              destination.provider
+                            }{" "}
+                            Â·{" "}
+                            {
+                              destination.externalShopId
+                            }
+                          </option>
+                        ),
+                      )}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="growth-publication-content"
+                      className="text-sm font-medium"
+                    >
+                      {copy.publicationContent}
+                    </label>
+
+                    <textarea
+                      id="growth-publication-content"
+                      value={
+                        publicationDraft
+                      }
+                      disabled={
+                        publicationSubmitting ||
+                        createdPublication !==
+                          null
+                      }
+                      maxLength={
+                        CONTROLLED_PUBLICATION_MAX_CONTENT_LENGTH
+                      }
+                      rows={
+                        8
+                      }
+                      onChange={
+                        (event) => {
+                          setPublicationDraft(
+                            event.target
+                              .value,
+                          );
+                          setPublicationError(
+                            null,
+                          );
+                          setCreatedPublication(
+                            null,
+                          );
+                        }
+                      }
+                      className="mt-2 w-full resize-y rounded-xl border bg-background px-4 py-3 text-sm leading-6 outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
+                    />
+
+                    <p className="mt-2 text-right text-xs text-muted-foreground">
+                      {
+                        publicationDraft.length
+                      }/
+                      {
+                        CONTROLLED_PUBLICATION_MAX_CONTENT_LENGTH
+                      }
+                    </p>
+                  </div>
+
+                  {publicationError ? (
+                    <div
+                      role="alert"
+                      className="rounded-xl border border-destructive/25 bg-destructive/5 p-3 text-sm leading-6 text-destructive"
+                    >
+                      {publicationError}
+                    </div>
+                  ) : null}
+
+                  {createdPublication ? (
+                    <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
+                      <p className="font-semibold">
+                        {copy.publicationSuccess}
+                      </p>
+
+                      <p className="mt-1 break-all font-mono text-xs">
+                        {createdPublication.id}
+                      </p>
+
+                      <Link
+                        href="/ai/action-center"
+                        className="mt-3 inline-flex h-9 items-center rounded-lg border border-emerald-300 bg-white px-3 text-sm font-medium"
+                      >
+                        {copy.publicationOpenActionCenter}
+                      </Link>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={
+                        publicationSubmitting ||
+                        !publicationDraft.trim() ||
+                        !selectedPublicationDestination
+                      }
+                      onClick={
+                        () => {
+                          void submitPublication();
+                        }
+                      }
+                      className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+                    >
+                      {publicationSubmitting ? (
+                        <LoaderCircle className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <ShieldCheck className="h-4 w-4" />
+                      )}
+
+                      {
+                        publicationSubmitting
+                          ? copy.publicationSubmitting
+                          : copy.publicationSubmit
+                      }
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          ) : null}
           <p className="mt-4 text-xs leading-5 text-muted-foreground">
             {copy.evidence}
           </p>

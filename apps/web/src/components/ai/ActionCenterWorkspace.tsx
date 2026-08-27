@@ -18,6 +18,13 @@ import type {
   ActionCenterItem,
   ActionCenterLifecycleBucket,
 } from "@/lib/ai/action-center-contract";
+import type {
+  ControlledPublicationRecord,
+} from "@/lib/ai/controlled-publication";
+import {
+  controlledPublicationCanConfirm,
+  controlledPublicationCanExecuteInSg4,
+} from "@/lib/ai/controlled-publication-ui";
 
 const PAGE_LIMIT = 20;
 
@@ -32,6 +39,18 @@ type ActionCenterResponse = {
     offset: number;
     status:
       ActionCenterItem["status"] | null;
+    returned: number;
+  };
+};
+
+type ControlledPublicationResponse = {
+  publications:
+    ControlledPublicationRecord[];
+  pagination: {
+    limit: number;
+    offset: number;
+    status:
+      ControlledPublicationRecord["status"] | null;
     returned: number;
   };
 };
@@ -561,6 +580,426 @@ function ActionCard({
   );
 }
 
+function publicationStatusLabel(
+  locale: "id" | "en",
+  status:
+    ControlledPublicationRecord["status"],
+) {
+  switch (status) {
+    case "proposed":
+      return locale ===
+        "id"
+        ? "Menunggu konfirmasi"
+        : "Awaiting confirmation";
+
+    case "confirmed":
+      return locale ===
+        "id"
+        ? "Dikonfirmasi"
+        : "Confirmed";
+
+    case "stale":
+      return locale ===
+        "id"
+        ? "Tujuan berubah"
+        : "Destination changed";
+  }
+}
+
+function PublicationCard({
+  item,
+  locale,
+  localeTag,
+  onChanged,
+}: {
+  item:
+    ControlledPublicationRecord;
+  locale:
+    "id" | "en";
+  localeTag: string;
+  onChanged:
+    () => Promise<void>;
+}) {
+  const isId =
+    locale === "id";
+
+  const [
+    submitting,
+    setSubmitting,
+  ] =
+    useState(false);
+
+  const [
+    error,
+    setError,
+  ] =
+    useState<string | null>(
+      null,
+    );
+
+  const canConfirm =
+    controlledPublicationCanConfirm(
+      item.status,
+    );
+
+  const canExecute =
+    controlledPublicationCanExecuteInSg4(
+      item.status,
+    );
+
+  async function confirm() {
+    if (
+      !canConfirm ||
+      submitting
+    ) {
+      return;
+    }
+
+    setSubmitting(
+      true,
+    );
+    setError(
+      null,
+    );
+
+    try {
+      const response =
+        await fetch(
+          `/api/ai/controlled-publications/${item.id}/confirm`,
+          {
+            method:
+              "POST",
+          },
+        );
+
+      const body:
+        unknown =
+        await response
+          .json()
+          .catch(
+            () => null,
+          );
+
+      if (!response.ok) {
+        const message =
+          typeof body ===
+            "object" &&
+          body !==
+            null &&
+          "error" in
+            body &&
+          typeof (
+            body as {
+              error?: unknown;
+            }
+          ).error ===
+            "string"
+            ? (
+                body as {
+                  error: string;
+                }
+              ).error
+            : (
+                isId
+                  ? "Proposal publikasi tidak dapat dikonfirmasi."
+                  : "The publication proposal could not be confirmed."
+              );
+
+        throw new Error(
+          message,
+        );
+      }
+
+      await onChanged();
+    } catch (cause) {
+      setError(
+        cause instanceof
+          Error &&
+        cause.message.trim()
+          ? cause.message
+          : (
+              isId
+                ? "Proposal publikasi tidak dapat dikonfirmasi."
+                : "The publication proposal could not be confirmed."
+            ),
+      );
+    } finally {
+      setSubmitting(
+        false,
+      );
+    }
+  }
+
+  return (
+    <article className="rounded-2xl border border-primary/15 bg-card shadow-sm">
+      <div className="flex flex-col gap-4 border-b p-5 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex rounded-full border border-amber-300 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800">
+              {
+                item.status ===
+                  "proposed"
+                  ? (
+                      isId
+                        ? "Perlu review"
+                        : "Needs review"
+                    )
+                  : item.status ===
+                    "confirmed"
+                    ? (
+                        isId
+                          ? "Menunggu executor SG5"
+                          : "Awaiting SG5 executor"
+                      )
+                    : (
+                        isId
+                          ? "Perlu perhatian"
+                          : "Needs attention"
+                      )
+              }
+            </span>
+
+            <span className="inline-flex rounded-full border px-2.5 py-1 text-xs font-medium text-muted-foreground">
+              {
+                publicationStatusLabel(
+                  locale,
+                  item.status,
+                )
+              }
+            </span>
+
+            <span className="inline-flex rounded-full border border-red-200 bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700">
+              {
+                isId
+                  ? "Risiko tinggi"
+                  : "High risk"
+              }
+            </span>
+          </div>
+
+          <h2 className="mt-3 text-base font-semibold">
+            {
+              isId
+                ? "Publikasi konten"
+                : "Content publication"
+            }
+          </h2>
+
+          <p className="mt-1 text-sm text-muted-foreground">
+            {item.destination.name}
+            {" Â· "}
+            {item.destination.provider}
+            {" Â· "}
+            {item.destination.externalShopId}
+          </p>
+        </div>
+
+        <div className="shrink-0 text-left sm:text-right">
+          <p className="text-xs text-muted-foreground">
+            {
+              isId
+                ? "Dibuat"
+                : "Created"
+            }
+          </p>
+
+          <p className="mt-1 text-sm font-medium">
+            {
+              formatDate(
+                localeTag,
+                item.createdAt,
+              )
+            }
+          </p>
+        </div>
+      </div>
+
+      <div className="space-y-5 p-5">
+        <div>
+          <p className="mb-3 text-sm font-semibold">
+            {
+              isId
+                ? "Konten yang diajukan"
+                : "Proposed content"
+            }
+          </p>
+
+          <div className="rounded-xl border bg-background p-4">
+            <p className="whitespace-pre-wrap break-words text-sm leading-6">
+              {item.proposedValue}
+            </p>
+          </div>
+        </div>
+
+        {canConfirm ? (
+          <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+            <p className="text-sm font-semibold text-amber-900">
+              {
+                isId
+                  ? "Konfirmasi hanya mengunci intent publikasi."
+                  : "Confirmation only locks the publication intent."
+              }
+            </p>
+
+            <p className="mt-1 text-xs leading-5 text-amber-800">
+              {
+                isId
+                  ? "SG4 tidak memiliki executor channel. Tidak ada posting eksternal setelah konfirmasi."
+                  : "SG4 has no channel executor. No external post occurs after confirmation."
+              }
+            </p>
+
+            <button
+              type="button"
+              disabled={
+                submitting
+              }
+              onClick={
+                () => {
+                  void confirm();
+                }
+              }
+              className="mt-3 inline-flex h-10 items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {
+                submitting
+                  ? (
+                      isId
+                        ? "Mengonfirmasi..."
+                        : "Confirming..."
+                    )
+                  : (
+                      isId
+                        ? "Konfirmasi proposal"
+                        : "Confirm proposal"
+                    )
+              }
+            </button>
+          </div>
+        ) : item.status ===
+          "confirmed" ? (
+          <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
+            <p className="font-semibold">
+              {
+                isId
+                  ? "Proposal sudah dikonfirmasi."
+                  : "The proposal is confirmed."
+              }
+            </p>
+
+            <p className="mt-1 text-xs leading-5">
+              {
+                isId
+                  ? "Eksekusi channel tidak tersedia di SG4. Item ini tidak memiliki tombol execute."
+                  : "Channel execution is unavailable in SG4. This item has no execute action."
+              }
+            </p>
+          </div>
+        ) : (
+          <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+            {
+              isId
+                ? "Destination publikasi berubah atau tidak lagi valid. Buat proposal baru dari Growth Assistant."
+                : "The publication destination changed or is no longer valid. Create a new proposal from Growth Assistant."
+            }
+          </div>
+        )}
+
+        {error ? (
+          <div
+            role="alert"
+            className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800"
+          >
+            {error}
+          </div>
+        ) : null}
+
+        {canExecute ? (
+          <div className="hidden">
+            {
+              isId
+                ? "Eksekusi tidak tersedia."
+                : "Execution unavailable."
+            }
+          </div>
+        ) : null}
+
+        <details className="rounded-xl border bg-muted/20 p-4">
+          <summary className="cursor-pointer text-sm font-medium">
+            {
+              isId
+                ? "Detail audit publikasi"
+                : "Publication audit detail"
+            }
+          </summary>
+
+          <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
+            <div>
+              <dt className="text-muted-foreground">
+                {
+                  isId
+                    ? "Proposal ID"
+                    : "Proposal ID"
+                }
+              </dt>
+
+              <dd className="mt-1 break-all font-mono text-xs">
+                {item.id}
+              </dd>
+            </div>
+
+            <div>
+              <dt className="text-muted-foreground">
+                {
+                  isId
+                    ? "Authorized Shop ID"
+                    : "Authorized Shop ID"
+                }
+              </dt>
+
+              <dd className="mt-1 break-all font-mono text-xs">
+                {item.targetId}
+              </dd>
+            </div>
+
+            <div>
+              <dt className="text-muted-foreground">
+                {
+                  isId
+                    ? "Action type"
+                    : "Action type"
+                }
+              </dt>
+
+              <dd className="mt-1 break-all font-mono text-xs">
+                {item.actionType}
+              </dd>
+            </div>
+
+            <div>
+              <dt className="text-muted-foreground">
+                {
+                  isId
+                    ? "Dikonfirmasi"
+                    : "Confirmed"
+                }
+              </dt>
+
+              <dd className="mt-1 text-xs">
+                {
+                  formatDate(
+                    localeTag,
+                    item.confirmedAt,
+                  )
+                }
+              </dd>
+            </div>
+          </dl>
+        </details>
+      </div>
+    </article>
+  );
+}
 function SummaryCard({
   label,
   value,
@@ -610,6 +1049,20 @@ export default function ActionCenterWorkspace() {
     useState<
       ActionCenterItem[]
     >([]);
+
+  const [
+    publications,
+    setPublications,
+  ] =
+    useState<
+      ControlledPublicationRecord[]
+    >([]);
+
+  const [
+    publicationReturned,
+    setPublicationReturned,
+  ] =
+    useState(0);
 
   const [
     statusFilter,
@@ -678,44 +1131,105 @@ export default function ActionCenterWorkspace() {
             );
           }
 
-          const response =
-            await fetch(
-              `/api/ai/controlled-actions?${query.toString()}`,
-              {
-                method:
-                  "GET",
+          const shouldLoadPublications =
+            statusFilter ===
+              "all" ||
+            statusFilter ===
+              "proposed" ||
+            statusFilter ===
+              "confirmed" ||
+            statusFilter ===
+              "stale";
 
-                cache:
-                  "no-store",
+          const publicationQuery =
+            new URLSearchParams({
+              limit:
+                String(
+                  PAGE_LIMIT,
+                ),
 
-                signal,
-              },
+              offset:
+                String(
+                  offset,
+                ),
+            });
+
+          if (
+            statusFilter ===
+              "proposed" ||
+            statusFilter ===
+              "confirmed" ||
+            statusFilter ===
+              "stale"
+          ) {
+            publicationQuery.set(
+              "status",
+              statusFilter,
             );
+          }
 
-          const body:
+          const [
+            actionResponse,
+            publicationResponse,
+          ] =
+            await Promise.all([
+              fetch(
+                `/api/ai/controlled-actions?${query.toString()}`,
+                {
+                  method:
+                    "GET",
+
+                  cache:
+                    "no-store",
+
+                  signal,
+                },
+              ),
+
+              shouldLoadPublications
+                ? fetch(
+                    `/api/ai/controlled-publications?${publicationQuery.toString()}`,
+                    {
+                      method:
+                        "GET",
+
+                      cache:
+                        "no-store",
+
+                      signal,
+                    },
+                  )
+                : Promise.resolve(
+                    null,
+                  ),
+            ]);
+
+          const actionBody:
             unknown =
-            await response
+            await actionResponse
               .json()
               .catch(
                 () => null,
               );
 
           if (
-            !response.ok
+            !actionResponse.ok
           ) {
             const message =
-              typeof body ===
+              typeof actionBody ===
                 "object" &&
-              body !== null &&
-              "error" in body &&
+              actionBody !==
+                null &&
+              "error" in
+                actionBody &&
               typeof (
-                body as {
+                actionBody as {
                   error?: unknown;
                 }
               ).error ===
                 "string"
                 ? (
-                    body as {
+                    actionBody as {
                       error: string;
                     }
                   ).error
@@ -727,23 +1241,24 @@ export default function ActionCenterWorkspace() {
           }
 
           if (
-            typeof body !==
+            typeof actionBody !==
               "object" ||
-            body === null ||
+            actionBody ===
+              null ||
             !(
               "actions" in
-              body
+              actionBody
             ) ||
             !Array.isArray(
               (
-                body as {
+                actionBody as {
                   actions?: unknown;
                 }
               ).actions,
             ) ||
             !(
               "pagination" in
-              body
+              actionBody
             )
           ) {
             throw new Error(
@@ -751,16 +1266,117 @@ export default function ActionCenterWorkspace() {
             );
           }
 
-          const data =
-            body as
+          const actionData =
+            actionBody as
               ActionCenterResponse;
 
+          let publicationData:
+            ControlledPublicationResponse =
+              {
+                publications:
+                  [],
+
+                pagination: {
+                  limit:
+                    PAGE_LIMIT,
+
+                  offset,
+
+                  status:
+                    null,
+
+                  returned:
+                    0,
+                },
+              };
+
+          if (
+            publicationResponse
+          ) {
+            const publicationBody:
+              unknown =
+              await publicationResponse
+                .json()
+                .catch(
+                  () => null,
+                );
+
+            if (
+              !publicationResponse.ok
+            ) {
+              const message =
+                typeof publicationBody ===
+                  "object" &&
+                publicationBody !==
+                  null &&
+                "error" in
+                  publicationBody &&
+                typeof (
+                  publicationBody as {
+                    error?: unknown;
+                  }
+                ).error ===
+                  "string"
+                  ? (
+                      publicationBody as {
+                        error: string;
+                      }
+                    ).error
+                  : copy.messages.loadFailed;
+
+              throw new Error(
+                message,
+              );
+            }
+
+            if (
+              typeof publicationBody !==
+                "object" ||
+              publicationBody ===
+                null ||
+              !(
+                "publications" in
+                publicationBody
+              ) ||
+              !Array.isArray(
+                (
+                  publicationBody as {
+                    publications?: unknown;
+                  }
+                ).publications,
+              ) ||
+              !(
+                "pagination" in
+                publicationBody
+              )
+            ) {
+              throw new Error(
+                copy.messages.invalidResponse,
+              );
+            }
+
+            publicationData =
+              publicationBody as
+                ControlledPublicationResponse;
+          }
+
           setActions(
-            data.actions,
+            actionData.actions,
           );
 
           setReturned(
-            data.pagination
+            actionData.pagination
+              .returned,
+          );
+
+          setPublications(
+            publicationData
+              .publications,
+          );
+
+          setPublicationReturned(
+            publicationData
+              .pagination
               .returned,
           );
         } catch (
@@ -777,6 +1393,10 @@ export default function ActionCenterWorkspace() {
 
           setActions([]);
           setReturned(0);
+          setPublications([]);
+          setPublicationReturned(
+            0,
+          );
 
           setError(
             caughtError instanceof
@@ -799,7 +1419,6 @@ export default function ActionCenterWorkspace() {
         statusFilter,
       ],
     );
-
   useEffect(
     () => {
       const controller =
@@ -836,6 +1455,11 @@ export default function ActionCenterWorkspace() {
             (item) =>
               item.lifecycleBucket ===
               "needs_review",
+          ).length +
+          publications.filter(
+            (item) =>
+              item.status ===
+              "proposed",
           ).length,
 
         ready:
@@ -850,6 +1474,11 @@ export default function ActionCenterWorkspace() {
             (item) =>
               item.lifecycleBucket ===
               "needs_attention",
+          ).length +
+          publications.filter(
+            (item) =>
+              item.status ===
+              "stale",
           ).length,
 
         completed:
@@ -858,8 +1487,18 @@ export default function ActionCenterWorkspace() {
               item.lifecycleBucket ===
               "completed",
           ).length,
+
+        publicationConfirmed:
+          publications.filter(
+            (item) =>
+              item.status ===
+              "confirmed",
+          ).length,
       }),
-      [actions],
+      [
+        actions,
+        publications,
+      ],
     );
 
   const currentPage =
@@ -870,7 +1509,9 @@ export default function ActionCenterWorkspace() {
 
   const canGoNext =
     returned ===
-    PAGE_LIMIT;
+      PAGE_LIMIT ||
+    publicationReturned ===
+      PAGE_LIMIT;
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">
@@ -939,6 +1580,22 @@ export default function ActionCenterWorkspace() {
         />
       </div>
 
+      {summary.publicationConfirmed > 0 ? (
+        <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
+          <span className="font-semibold">
+            {
+              locale === "id"
+                ? `${summary.publicationConfirmed} proposal publikasi sudah dikonfirmasi.`
+                : `${summary.publicationConfirmed} publication proposal(s) are confirmed.`
+            }
+          </span>{" "}
+          {
+            locale === "id"
+              ? "Item publication yang dikonfirmasi tidak dihitung sebagai ready-to-execute karena SG4 belum memiliki executor channel."
+              : "Confirmed publication items are not counted as ready-to-execute because SG4 has no channel executor."
+          }
+        </div>
+      ) : null}
       <div className="flex flex-col gap-3 rounded-2xl border bg-card p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
         <div>
           <label
@@ -1014,7 +1671,8 @@ export default function ActionCenterWorkspace() {
       ) : null}
 
       {loading &&
-      actions.length === 0 ? (
+      actions.length === 0 &&
+      publications.length === 0 ? (
         <div className="space-y-3">
           {Array.from({
             length: 3,
@@ -1034,22 +1692,81 @@ export default function ActionCenterWorkspace() {
 
       {!loading &&
       !error &&
-      actions.length === 0 ? (
+      actions.length === 0 &&
+      publications.length === 0 ? (
         <div className="rounded-2xl border bg-card px-6 py-14 text-center shadow-sm">
           <p className="font-semibold">
             {copy.messages.emptyTitle}
           </p>
 
           <p className="mx-auto mt-2 max-w-xl text-sm text-muted-foreground">
-            Tidak ada action yang cocok
-            dengan filter dan halaman
-            saat ini.
+            {
+              locale === "id"
+                ? "Tidak ada controlled action atau publication proposal yang cocok dengan filter dan halaman saat ini."
+                : "No controlled action or publication proposal matches the current filter and page."
+            }
           </p>
         </div>
       ) : null}
 
+      {publications.length > 0 ? (
+        <section className="space-y-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">
+              {
+                locale === "id"
+                  ? "Controlled Publication"
+                  : "Controlled Publication"
+              }
+            </p>
+
+            <p className="mt-1 text-sm text-muted-foreground">
+              {
+                locale === "id"
+                  ? "Proposal publikasi memiliki workflow terpisah. Konfirmasi tidak membuka eksekusi eksternal di SG4."
+                  : "Publication proposals use a separate workflow. Confirmation does not enable external execution in SG4."
+              }
+            </p>
+          </div>
+
+          {publications.map(
+            (item) => (
+              <PublicationCard
+                key={
+                  item.id
+                }
+                item={
+                  item
+                }
+                locale={
+                  locale
+                }
+                localeTag={
+                  localeTag
+                }
+                onChanged={() =>
+                  loadActions()
+                }
+              />
+            ),
+          )}
+        </section>
+      ) : null}
+
       {actions.length > 0 ? (
-        <div className="space-y-4">
+        <section className="space-y-4">
+          {publications.length > 0 ? (
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                {
+                  locale === "id"
+                    ? "Controlled Commerce Actions"
+                    : "Controlled Commerce Actions"
+                }
+              </p>
+            </div>
+          ) : null}
+
           {actions.map(
             (item) => (
               <ActionCard
@@ -1063,18 +1780,21 @@ export default function ActionCenterWorkspace() {
               />
             ),
           )}
-        </div>
+        </section>
       ) : null}
-
       {!error &&
       (actions.length > 0 ||
+        publications.length > 0 ||
         offset > 0) ? (
         <div className="flex flex-col gap-3 rounded-2xl border bg-card p-4 text-sm shadow-sm sm:flex-row sm:items-center sm:justify-between">
           <p className="text-muted-foreground">
             {copy.pagination.page}{" "}
             {currentPage}
             {" \u00b7 "}
-            {returned} action
+            {
+              returned +
+              publicationReturned
+            } item
             ditampilkan
           </p>
 
