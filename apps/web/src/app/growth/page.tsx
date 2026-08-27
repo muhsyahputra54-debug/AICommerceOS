@@ -4,15 +4,27 @@ import type {
 
 import GrowthAssistantWorkspace from "@/components/growth/GrowthAssistantWorkspace";
 import DashboardLayout from "@/components/layout/DashboardLayout";
+
+import {
+  controlledPublicationChannelDestinationIsCompatible,
+} from "@/lib/ai/controlled-publication-channel-target";
+
 import type {
   ControlledPublicationDestination,
 } from "@/lib/ai/controlled-publication-ui";
+
+import {
+  parsePublishingDestinationRecord,
+} from "@/lib/ai/publishing-destination";
+
 import {
   getLocale,
 } from "@/lib/i18n/server";
+
 import {
   getCurrentOrganization,
 } from "@/lib/supabase/current-organization";
+
 import {
   createClient,
 } from "@/lib/supabase/server";
@@ -29,16 +41,6 @@ type PublicationContext = {
   destinations:
     ControlledPublicationDestination[];
 };
-
-function textValue(
-  value: unknown,
-) {
-  return typeof value ===
-    "string" &&
-    value.trim()
-    ? value.trim()
-    : null;
-}
 
 function recordValue(
   value: unknown,
@@ -93,27 +95,30 @@ Promise<PublicationContext> {
     await createClient();
 
   const {
-    data:
-      accounts,
-    error:
-      accountsError,
+    data,
+    error,
   } =
-    await supabase
-      .from(
-        "marketplace_accounts",
-      )
-      .select(
-        "id, provider, name, status",
-      )
-      .eq(
-        "organization_id",
-        currentOrganization
-          .organizationId,
-      );
+    await supabase.rpc(
+      "get_publishing_channel_destinations",
+      {
+        p_organization_id:
+          currentOrganization
+            .organizationId,
 
-  if (accountsError) {
+        p_provider:
+          null,
+      },
+    );
+
+  if (error) {
     throw new Error(
-      accountsError.message,
+      error.message,
+    );
+  }
+
+  if (!Array.isArray(data)) {
+    throw new Error(
+      "Publishing destination response tidak valid.",
     );
   }
 
@@ -121,140 +126,59 @@ Promise<PublicationContext> {
     ControlledPublicationDestination[] =
       [];
 
-  for (
-    const rawAccount of
-    accounts ?? []
-  ) {
-    const account =
+  for (const raw of data) {
+    const row =
       recordValue(
-        rawAccount,
+        raw,
       );
 
-    if (!account) {
+    if (!row) {
       continue;
     }
 
-    const accountId =
-      textValue(
-        account.id,
-      );
+    const parsed =
+      parsePublishingDestinationRecord({
+        ...row,
 
-    const provider =
-      textValue(
-        account.provider,
-      );
-
-    if (
-      !accountId ||
-      !provider
-    ) {
-      continue;
-    }
-
-    const {
-      data:
-        authorizedShops,
-      error:
-        authorizedShopsError,
-    } =
-      await supabase.rpc(
-        "get_marketplace_authorized_shops",
-        {
-          p_marketplace_account_id:
-            accountId,
-        },
-      );
-
-    if (authorizedShopsError) {
-      throw new Error(
-        authorizedShopsError
-          .message,
-      );
-    }
+        organization_id:
+          currentOrganization
+            .organizationId,
+      });
 
     if (
-      !Array.isArray(
-        authorizedShops,
+      !parsed.ok ||
+      !parsed.value.isSelected ||
+      !controlledPublicationChannelDestinationIsCompatible(
+        parsed.value,
       )
     ) {
       continue;
     }
 
-    for (
-      const rawShop of
-      authorizedShops
-    ) {
-      const shop =
-        recordValue(
-          rawShop,
-        );
+    destinations.push({
+      id:
+        parsed.value.id,
 
-      if (
-        !shop ||
-        shop.is_selected !==
-          true ||
-        shop.status !==
-          "active"
-      ) {
-        continue;
-      }
+      provider:
+        parsed.value.provider,
 
-      const id =
-        textValue(
-          shop.id,
-        );
+      destinationType:
+        parsed.value.destinationType,
 
-      const externalShopId =
-        textValue(
-          shop.external_shop_id,
-        );
+      externalDestinationId:
+        parsed.value.externalDestinationId,
 
-      const name =
-        textValue(
-          shop.name,
-        );
-
-      if (
-        !id ||
-        !externalShopId ||
-        !name
-      ) {
-        continue;
-      }
-
-      destinations.push({
-        id,
-        provider:
-          provider.toLowerCase(),
-        name,
-        externalShopId,
-      });
-    }
-  }
-
-  const unique =
-    new Map<
-      string,
-      ControlledPublicationDestination
-    >();
-
-  for (
-    const destination of
-    destinations
-  ) {
-    unique.set(
-      destination.id,
-      destination,
-    );
+      name:
+        parsed.value.displayName,
+    });
   }
 
   return {
     allowed:
       true,
+
     destinations:
-      Array.from(
-        unique.values(),
-      ).sort(
+      destinations.sort(
         (
           left,
           right,

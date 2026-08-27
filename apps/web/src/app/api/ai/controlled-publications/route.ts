@@ -7,6 +7,10 @@ import {
 } from "@/lib/ai/controlled-publication";
 
 import {
+  parseControlledPublicationChannelProposal,
+} from "@/lib/ai/controlled-publication-channel-target";
+
+import {
   parseControlledPublicationListQuery,
   projectControlledPublicationList,
   projectControlledPublicationRpcResult,
@@ -16,6 +20,16 @@ import {
   controlledActionRpcErrorResponse,
   getControlledActionRequestContext,
 } from "@/lib/ai/controlled-action-server";
+
+function isRecord(
+  value: unknown,
+): value is Record<string, unknown> {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    !Array.isArray(value)
+  );
+}
 
 export async function GET(
   request: Request,
@@ -126,16 +140,28 @@ export async function POST(
         () => null,
       );
 
-  const parsed =
-    parseControlledPublicationProposal(
+  const hasLegacyIdentity =
+    isRecord(rawBody) &&
+    Object.prototype.hasOwnProperty.call(
       rawBody,
+      "authorizedShopId",
     );
 
-  if (!parsed.ok) {
+  const hasChannelIdentity =
+    isRecord(rawBody) &&
+    Object.prototype.hasOwnProperty.call(
+      rawBody,
+      "publishingDestinationId",
+    );
+
+  if (
+    hasLegacyIdentity ===
+    hasChannelIdentity
+  ) {
     return NextResponse.json(
       {
         error:
-          parsed.error,
+          "Controlled publication harus memakai tepat satu jenis destination identity.",
       },
       {
         status: 400,
@@ -143,31 +169,98 @@ export async function POST(
     );
   }
 
-  const {
-    data,
-    error,
-  } =
-    await context.supabase.rpc(
-      "propose_ai_controlled_publication",
-      {
-        p_organization_id:
-          context.organizationId,
+  let data:
+    unknown;
 
-        p_authorized_shop_id:
-          parsed.value.authorizedShopId,
+  if (hasChannelIdentity) {
+    const parsed =
+      parseControlledPublicationChannelProposal(
+        rawBody,
+      );
 
-        p_proposed_content:
-          parsed.value.content,
+    if (!parsed.ok) {
+      return NextResponse.json(
+        {
+          error:
+            parsed.error,
+        },
+        {
+          status: 400,
+        },
+      );
+    }
 
-        p_idempotency_key:
-          parsed.value.idempotencyKey,
-      },
-    );
+    const result =
+      await context.supabase.rpc(
+        "propose_ai_controlled_publication_channel",
+        {
+          p_organization_id:
+            context.organizationId,
 
-  if (error) {
-    return controlledActionRpcErrorResponse(
-      error.message,
-    );
+          p_publishing_destination_id:
+            parsed.value
+              .publishingDestinationId,
+
+          p_proposed_content:
+            parsed.value.content,
+
+          p_idempotency_key:
+            parsed.value.idempotencyKey,
+        },
+      );
+
+    if (result.error) {
+      return controlledActionRpcErrorResponse(
+        result.error.message,
+      );
+    }
+
+    data =
+      result.data;
+  } else {
+    const parsed =
+      parseControlledPublicationProposal(
+        rawBody,
+      );
+
+    if (!parsed.ok) {
+      return NextResponse.json(
+        {
+          error:
+            parsed.error,
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
+    const result =
+      await context.supabase.rpc(
+        "propose_ai_controlled_publication",
+        {
+          p_organization_id:
+            context.organizationId,
+
+          p_authorized_shop_id:
+            parsed.value.authorizedShopId,
+
+          p_proposed_content:
+            parsed.value.content,
+
+          p_idempotency_key:
+            parsed.value.idempotencyKey,
+        },
+      );
+
+    if (result.error) {
+      return controlledActionRpcErrorResponse(
+        result.error.message,
+      );
+    }
+
+    data =
+      result.data;
   }
 
   const publication =

@@ -1,13 +1,22 @@
-import {
-  normalizeControlledPublicationContent,
-  type ControlledPublicationStatus,
+import type {
+  ControlledPublicationStatus,
 } from "./controlled-publication";
+
+import {
+  normalizeControlledPublicationChannelContent,
+} from "./controlled-publication-channel-target";
+
+import type {
+  PublishingDestinationType,
+} from "./publishing-destination";
 
 export type ControlledPublicationDestination = {
   id: string;
   provider: string;
+  destinationType:
+    PublishingDestinationType;
   name: string;
-  externalShopId: string;
+  externalDestinationId: string;
 };
 
 export function controlledPublicationCanConfirm(
@@ -35,7 +44,7 @@ export async function buildGrowthPublicationIdempotencyKey(
       .toLowerCase();
 
   const normalizedContent =
-    normalizeControlledPublicationContent(
+    normalizeControlledPublicationChannelContent(
       content,
     );
 

@@ -1,10 +1,10 @@
 import type {
-  ControlledPublicationRecord,
-} from "./controlled-publication";
+  ControlledPublicationApiRecord,
+} from "./controlled-publication-runtime";
 
 import {
-  projectControlledPublicationRecord,
-} from "./controlled-publication";
+  projectControlledPublicationApiRecord,
+} from "./controlled-publication-runtime";
 
 export const CONTROLLED_PUBLICATION_API_STATUSES = [
   "proposed",
@@ -153,7 +153,7 @@ export function parseControlledPublicationListQuery(
 
 export function projectControlledPublicationRpcResult(
   value: unknown,
-): ControlledPublicationRecord | null {
+): ControlledPublicationApiRecord | null {
   if (value === null) {
     return null;
   }
@@ -171,24 +171,24 @@ export function projectControlledPublicationRpcResult(
     return null;
   }
 
-  return projectControlledPublicationRecord(
+  return projectControlledPublicationApiRecord(
     row,
   );
 }
 
 export function projectControlledPublicationList(
   value: unknown,
-): ControlledPublicationRecord[] | null {
+): ControlledPublicationApiRecord[] | null {
   if (!Array.isArray(value)) {
     return null;
   }
 
   const publications:
-    ControlledPublicationRecord[] = [];
+    ControlledPublicationApiRecord[] = [];
 
   for (const row of value) {
     const publication =
-      projectControlledPublicationRecord(
+      projectControlledPublicationApiRecord(
         row,
       );
 

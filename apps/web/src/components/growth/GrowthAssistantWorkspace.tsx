@@ -20,10 +20,13 @@ import {
 } from "react";
 
 import {
-  CONTROLLED_PUBLICATION_ACTION_TYPE,
-  CONTROLLED_PUBLICATION_MAX_CONTENT_LENGTH,
-  type ControlledPublicationRecord,
-} from "@/lib/ai/controlled-publication";
+  CONTROLLED_PUBLICATION_CHANNEL_ACTION_TYPE,
+  CONTROLLED_PUBLICATION_CHANNEL_MAX_CONTENT_LENGTH,
+} from "@/lib/ai/controlled-publication-channel-target";
+
+import type {
+  ControlledPublicationApiRecord,
+} from "@/lib/ai/controlled-publication-runtime";
 import {
   buildGrowthPublicationIdempotencyKey,
   type ControlledPublicationDestination,
@@ -52,7 +55,7 @@ type ChatResponse = {
 
 type PublicationResponse = {
   publication?:
-    ControlledPublicationRecord;
+    ControlledPublicationApiRecord;
   error?: string;
 };
 
@@ -136,7 +139,7 @@ export default function GrowthAssistantWorkspace({
           publicationSubmitting:
             "Membuat proposal...",
           publicationNoDestination:
-            "Belum ada Authorized Shop aktif yang dipilih. Pilih toko tujuan di Marketplace terlebih dahulu.",
+            "Belum ada destination publikasi terverifikasi yang aktif dan dipilih. Koneksi seller Marketplace tidak digunakan sebagai identitas publishing.",
           publicationOwnerOnly:
             "Proposal publikasi hanya tersedia untuk owner atau admin organisasi.",
           publicationTooLong:
@@ -150,7 +153,7 @@ export default function GrowthAssistantWorkspace({
           publicationReset:
             "Batalkan draft",
           publicationSafety:
-            "Konfirmasi proposal tidak mempublikasikan konten di SG4. Eksekusi channel tetap dinonaktifkan sampai foundation SG5 tersedia.",
+            "Konfirmasi proposal tidak mempublikasikan konten. Eksekusi channel tetap dinonaktifkan sampai executor provider SG5 selesai direview.",
           evidence:
             "Konteks data tetap mengikuti sumber terverifikasi LAKUVO. Jika data tidak tersedia, AI diarahkan untuk menyatakannya tanpa menebak.",
         }
@@ -206,7 +209,7 @@ export default function GrowthAssistantWorkspace({
           publicationSubmitting:
             "Creating proposal...",
           publicationNoDestination:
-            "No active selected Authorized Shop is available. Select the destination shop in Marketplace first.",
+            "No verified active selected publishing destination is available. Seller Marketplace connections are not used as publishing identities.",
           publicationOwnerOnly:
             "Publication proposals are available only to organization owners or admins.",
           publicationTooLong:
@@ -220,7 +223,7 @@ export default function GrowthAssistantWorkspace({
           publicationReset:
             "Discard draft",
           publicationSafety:
-            "Confirming the proposal does not publish content in SG4. Channel execution remains disabled until the SG5 foundation is available.",
+            "Confirming the proposal does not publish content. Channel execution remains disabled until the SG5 provider executor is separately reviewed.",
           evidence:
             "Data context continues to use verified LAKUVO sources. When data is unavailable, AI is instructed to say so instead of guessing.",
         };
@@ -298,7 +301,7 @@ export default function GrowthAssistantWorkspace({
     setCreatedPublication,
   ] =
     useState<
-      ControlledPublicationRecord | null
+      ControlledPublicationApiRecord | null
     >(
       null,
     );
@@ -471,7 +474,7 @@ export default function GrowthAssistantWorkspace({
 
     if (
       result.length >
-        CONTROLLED_PUBLICATION_MAX_CONTENT_LENGTH
+        CONTROLLED_PUBLICATION_CHANNEL_MAX_CONTENT_LENGTH
     ) {
       setPublicationError(
         copy.publicationTooLong,
@@ -542,9 +545,9 @@ export default function GrowthAssistantWorkspace({
             body:
               JSON.stringify({
                 actionType:
-                  CONTROLLED_PUBLICATION_ACTION_TYPE,
+                  CONTROLLED_PUBLICATION_CHANNEL_ACTION_TYPE,
 
-                authorizedShopId:
+                publishingDestinationId:
                   selectedPublicationDestination
                     .id,
 
@@ -929,7 +932,7 @@ export default function GrowthAssistantWorkspace({
                         publicationDestinations.length ===
                           0 ||
                         result.length >
-                          CONTROLLED_PUBLICATION_MAX_CONTENT_LENGTH
+                          CONTROLLED_PUBLICATION_CHANNEL_MAX_CONTENT_LENGTH
                       }
                       onClick={
                         preparePublication
@@ -947,16 +950,10 @@ export default function GrowthAssistantWorkspace({
                   ) : publicationDestinations.length ===
                     0 ? (
                     <p className="mt-3 text-xs leading-5 text-amber-700">
-                      {copy.publicationNoDestination}{" "}
-                      <Link
-                        href="/marketplaces"
-                        className="font-semibold underline underline-offset-2"
-                      >
-                        Marketplace
-                      </Link>
+                      {copy.publicationNoDestination}
                     </p>
                   ) : result.length >
-                    CONTROLLED_PUBLICATION_MAX_CONTENT_LENGTH ? (
+                    CONTROLLED_PUBLICATION_CHANNEL_MAX_CONTENT_LENGTH ? (
                     <p className="mt-3 text-xs leading-5 text-amber-700">
                       {copy.publicationTooLong}
                     </p>
@@ -1046,7 +1043,7 @@ export default function GrowthAssistantWorkspace({
                             }{" "}
                             Â·{" "}
                             {
-                              destination.externalShopId
+                              destination.externalDestinationId
                             }
                           </option>
                         ),
@@ -1073,7 +1070,7 @@ export default function GrowthAssistantWorkspace({
                           null
                       }
                       maxLength={
-                        CONTROLLED_PUBLICATION_MAX_CONTENT_LENGTH
+                        CONTROLLED_PUBLICATION_CHANNEL_MAX_CONTENT_LENGTH
                       }
                       rows={
                         8
@@ -1100,7 +1097,7 @@ export default function GrowthAssistantWorkspace({
                         publicationDraft.length
                       }/
                       {
-                        CONTROLLED_PUBLICATION_MAX_CONTENT_LENGTH
+                        CONTROLLED_PUBLICATION_CHANNEL_MAX_CONTENT_LENGTH
                       }
                     </p>
                   </div>

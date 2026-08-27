@@ -19,8 +19,8 @@ import type {
   ActionCenterLifecycleBucket,
 } from "@/lib/ai/action-center-contract";
 import type {
-  ControlledPublicationRecord,
-} from "@/lib/ai/controlled-publication";
+  ControlledPublicationApiRecord,
+} from "@/lib/ai/controlled-publication-runtime";
 import {
   controlledPublicationCanConfirm,
   controlledPublicationCanExecuteInSg4,
@@ -45,12 +45,12 @@ type ActionCenterResponse = {
 
 type ControlledPublicationResponse = {
   publications:
-    ControlledPublicationRecord[];
+    ControlledPublicationApiRecord[];
   pagination: {
     limit: number;
     offset: number;
     status:
-      ControlledPublicationRecord["status"] | null;
+      ControlledPublicationApiRecord["status"] | null;
     returned: number;
   };
 };
@@ -583,7 +583,7 @@ function ActionCard({
 function publicationStatusLabel(
   locale: "id" | "en",
   status:
-    ControlledPublicationRecord["status"],
+    ControlledPublicationApiRecord["status"],
 ) {
   switch (status) {
     case "proposed":
@@ -606,6 +606,17 @@ function publicationStatusLabel(
   }
 }
 
+function publicationExternalDestinationId(
+  item: ControlledPublicationApiRecord,
+) {
+  return item.contractVersion ===
+    2
+    ? item.destination
+        .externalDestinationId
+    : item.destination
+        .externalShopId;
+}
+
 function PublicationCard({
   item,
   locale,
@@ -613,7 +624,7 @@ function PublicationCard({
   onChanged,
 }: {
   item:
-    ControlledPublicationRecord;
+    ControlledPublicationApiRecord;
   locale:
     "id" | "en";
   localeTag: string;
@@ -790,7 +801,7 @@ function PublicationCard({
             {" Â· "}
             {item.destination.provider}
             {" Â· "}
-            {item.destination.externalShopId}
+            {publicationExternalDestinationId(item)}
           </p>
         </div>
 
@@ -844,8 +855,8 @@ function PublicationCard({
             <p className="mt-1 text-xs leading-5 text-amber-800">
               {
                 isId
-                  ? "SG4 tidak memiliki executor channel. Tidak ada posting eksternal setelah konfirmasi."
-                  : "SG4 has no channel executor. No external post occurs after confirmation."
+                  ? "Executor channel tetap dinonaktifkan. Tidak ada posting eksternal setelah konfirmasi."
+                  : "The channel executor remains disabled. No external post occurs after confirmation."
               }
             </p>
 
@@ -890,8 +901,8 @@ function PublicationCard({
             <p className="mt-1 text-xs leading-5">
               {
                 isId
-                  ? "Eksekusi channel tidak tersedia di SG4. Item ini tidak memiliki tombol execute."
-                  : "Channel execution is unavailable in SG4. This item has no execute action."
+                  ? "Eksekusi channel belum tersedia. Item ini tidak memiliki tombol execute."
+                  : "Channel execution is not available yet. This item has no execute action."
               }
             </p>
           </div>
@@ -1055,7 +1066,7 @@ export default function ActionCenterWorkspace() {
     setPublications,
   ] =
     useState<
-      ControlledPublicationRecord[]
+      ControlledPublicationApiRecord[]
     >([]);
 
   const [
