@@ -75,6 +75,7 @@ describe(
           ),
         ).toEqual([
           "lakuvoAi",
+          "growthAssistant",
         ]);
 
         expect(
