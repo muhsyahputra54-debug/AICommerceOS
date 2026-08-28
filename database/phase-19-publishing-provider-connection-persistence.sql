@@ -417,9 +417,9 @@ begin
       public.publishing_provider_connections.version + 1,
     updated_at = now()
   returning
-    id,
-    credential_reference_id,
-    version
+    public.publishing_provider_connections.id,
+    public.publishing_provider_connections.credential_reference_id,
+    public.publishing_provider_connections.version
   into
     v_connection_id,
     v_credential_reference_id,
