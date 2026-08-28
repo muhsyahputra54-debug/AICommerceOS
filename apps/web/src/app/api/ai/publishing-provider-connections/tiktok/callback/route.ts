@@ -332,13 +332,6 @@ export async function GET(
       prepared.value,
     );
 
-  if (error) {
-    console.warn(
-      "[tiktok-creator-oauth] persistence RPC error code",
-      error.code,
-    );
-  }
-
   if (
     error ||
     !Array.isArray(data) ||
