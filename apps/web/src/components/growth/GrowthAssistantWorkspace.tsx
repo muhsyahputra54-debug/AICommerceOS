@@ -1,5 +1,7 @@
 "use client";
 
+import TikTokCreatorConnectionCard from "@/components/growth/TikTokCreatorConnectionCard";
+
 import Link from "next/link";
 import {
   ArrowRight,
@@ -658,6 +660,10 @@ export default function GrowthAssistantWorkspace({
           </div>
         </div>
       </section>
+
+      <TikTokCreatorConnectionCard
+        locale={locale}
+      />
 
       <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
         <section className="rounded-3xl border bg-card p-6 shadow-sm md:p-8">
