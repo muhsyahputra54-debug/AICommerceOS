@@ -67,6 +67,13 @@ function clearOAuthCookie(
 function fixedGrowthRedirect(
   status: CallbackStatus,
 ): NextResponse {
+  if (status !== "connected") {
+    console.warn(
+      "[tiktok-creator-oauth] callback status",
+      status,
+    );
+  }
+
   const appUrl =
     process.env.LAKUVO_APP_URL?.trim();
 
