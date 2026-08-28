@@ -225,6 +225,11 @@ export async function GET(
     );
 
   if (!stateValidation.ok) {
+    console.warn(
+      "[tiktok-creator-oauth] state validation failed",
+      stateValidation.code,
+    );
+
     return stateFailureRedirect();
   }
 
