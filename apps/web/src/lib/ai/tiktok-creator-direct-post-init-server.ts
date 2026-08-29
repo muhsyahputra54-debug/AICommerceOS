@@ -891,10 +891,7 @@ export async function initializeTikTokCreatorDirectPost(
       payload,
     );
 
-  if (
-    !response.ok ||
-    !parsed.ok
-  ) {
+  if (!parsed.ok) {
     return {
       ok: false,
       code:
@@ -907,6 +904,14 @@ export async function initializeTikTokCreatorDirectPost(
               parsed.providerCode,
           }
         : {}),
+    };
+  }
+
+  if (!response.ok) {
+    return {
+      ok: false,
+      code:
+        "direct_post_init_response_invalid",
     };
   }
 
