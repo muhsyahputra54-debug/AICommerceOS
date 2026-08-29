@@ -951,6 +951,163 @@ export function encryptPublishingProviderToken(
   ].join(".");
 }
 
+export async function decryptPublishingProviderToken(
+  input: Readonly<{
+    ciphertext: string;
+    organizationId: string;
+    externalAccountId: string;
+    tokenKind: "access" | "refresh";
+    keyVersion: string;
+    keyring: PublishingProviderTokenKeyring;
+  }>,
+): Promise<string | null> {
+  if (
+    !isNonEmptyString(input.ciphertext) ||
+    !isNonEmptyString(input.organizationId) ||
+    !isNonEmptyString(input.externalAccountId) ||
+    !isNonEmptyString(input.keyVersion)
+  ) {
+    return null;
+  }
+
+  const envelope =
+    input.ciphertext.trim().split(".");
+
+  if (envelope.length !== 5) {
+    return null;
+  }
+
+  const [
+    envelopeVersion,
+    keyVersion,
+    encodedIv,
+    encodedCiphertext,
+    encodedTag,
+  ] = envelope;
+
+  if (
+    envelopeVersion !==
+      PROVIDER_TOKEN_ENVELOPE_VERSION ||
+    keyVersion !== input.keyVersion.trim()
+  ) {
+    return null;
+  }
+
+  const key =
+    input.keyring.keys.get(
+      keyVersion,
+    );
+
+  if (
+    !key ||
+    key.length !== 32
+  ) {
+    return null;
+  }
+
+  function decodeEnvelopePart(
+    value: string,
+  ): Buffer | null {
+    if (
+      value.length === 0 ||
+      !/^[A-Za-z0-9_-]+$/.test(value)
+    ) {
+      return null;
+    }
+
+    try {
+      return Buffer.from(
+        value,
+        "base64url",
+      );
+    } catch {
+      return null;
+    }
+  }
+
+  const iv =
+    decodeEnvelopePart(
+      encodedIv,
+    );
+
+  const ciphertext =
+    decodeEnvelopePart(
+      encodedCiphertext,
+    );
+
+  const tag =
+    decodeEnvelopePart(
+      encodedTag,
+    );
+
+  if (
+    !iv ||
+    !ciphertext ||
+    !tag ||
+    iv.length !== PROVIDER_TOKEN_IV_BYTES ||
+    ciphertext.length === 0 ||
+    tag.length !== PROVIDER_TOKEN_TAG_BYTES
+  ) {
+    return null;
+  }
+
+  const aad =
+    Buffer.from(
+      [
+        "provider=tiktok",
+        `organizationId=${input.organizationId.trim()}`,
+        `externalAccountId=${input.externalAccountId.trim()}`,
+        `tokenKind=${input.tokenKind}`,
+        `keyVersion=${keyVersion}`,
+      ].join("\n"),
+      "utf8",
+    );
+
+  try {
+    const {
+      createDecipheriv,
+    } =
+      await import(
+        "node:crypto"
+      );
+
+    const decipher =
+      createDecipheriv(
+        PROVIDER_TOKEN_ALGORITHM,
+        key,
+        iv,
+        {
+          authTagLength:
+            PROVIDER_TOKEN_TAG_BYTES,
+        },
+      );
+
+    decipher.setAAD(
+      aad,
+    );
+
+    decipher.setAuthTag(
+      tag,
+    );
+
+    const plaintext =
+      Buffer.concat([
+        decipher.update(
+          ciphertext,
+        ),
+        decipher.final(),
+      ]).toString("utf8");
+
+    if (!isNonEmptyString(plaintext)) {
+      return null;
+    }
+
+    return plaintext;
+  } catch {
+    return null;
+  }
+}
+
 export function resolveTikTokCreatorOAuthConfig(
   env: Readonly<
     Record<
