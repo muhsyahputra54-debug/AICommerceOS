@@ -955,7 +955,7 @@ export default function TikTokCreatorDirectPostPanel({
 
           <button
             type="button"
-            disabled={!canContinue}
+            disabled={!canContinue || preparationAccepted}
             onClick={() => {
               if (canContinue) {
                 setPreparationAccepted(
@@ -965,14 +965,22 @@ export default function TikTokCreatorDirectPostPanel({
             }}
             className="rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40"
           >
-            {copy.continue}
+            {preparationAccepted ? (isId ? "Persiapan siap" : "Preparation ready") : copy.continue}
           </button>
 
-          <p className="text-xs leading-5 text-slate-500">
-            {preparationAccepted
-              ? copy.prepared
-              : copy.incomplete}
-          </p>
+          <div
+              role="status"
+              aria-live="polite"
+              className={
+                preparationAccepted
+                  ? "rounded-xl bg-emerald-50 p-3 text-xs leading-5 text-emerald-800"
+                  : "text-xs leading-5 text-slate-500"
+              }
+            >
+              {preparationAccepted
+                ? copy.prepared
+                : copy.incomplete}
+            </div>
         </div>
       ) : null}
     </section>
