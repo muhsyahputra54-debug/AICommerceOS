@@ -54,6 +54,7 @@ export function LandingPage() {
           nav: {
             product: "Produk",
             solutions: "Solusi",
+            tiktok: "TikTok",
             workflow: "Cara Kerja",
             pricing: "Harga",
             login: "Masuk",
@@ -136,6 +137,7 @@ export function LandingPage() {
           nav: {
             product: "Product",
             solutions: "Solutions",
+            tiktok: "TikTok",
             workflow: "How It Works",
             pricing: "Pricing",
             login: "Sign In",
@@ -425,6 +427,13 @@ export function LandingPage() {
               className="transition-colors hover:text-foreground"
             >
               {copy.nav.solutions}
+            </a>
+
+            <a
+              href="#tiktok-early-access"
+              className="transition-colors hover:text-foreground"
+            >
+              {copy.nav.tiktok}
             </a>
 
             <a

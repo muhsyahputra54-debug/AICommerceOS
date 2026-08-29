@@ -33,6 +33,9 @@ import {
   DEFAULT_POST_AUTH_PATH,
 } from "@/lib/auth/auth-routing";
 import {
+  normalizeMarketingSignupSource,
+} from "@/lib/marketing/signup-attribution";
+import {
   createClient,
 } from "@/lib/supabase/client";
 
@@ -194,6 +197,13 @@ export default function SignupPage() {
 
     setErrorMessage(null);
 
+    const signupSource =
+      normalizeMarketingSignupSource(
+        new URLSearchParams(
+          window.location.search,
+        ).get("source"),
+      );
+
     const validationError =
       validateSignUpCredentials({
         email,
@@ -241,6 +251,14 @@ export default function SignupPage() {
           options: {
             emailRedirectTo:
               callbackUrl.toString(),
+            ...(signupSource
+              ? {
+                  data: {
+                    signup_source:
+                      signupSource,
+                  },
+                }
+              : {}),
           },
         });
 

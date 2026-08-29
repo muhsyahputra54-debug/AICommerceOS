@@ -11,6 +11,10 @@ import {
 import type {
   Locale,
 } from "@/lib/i18n/config";
+import {
+  buildMarketingSignupHref,
+  TIKTOK_EARLY_ACCESS_SIGNUP_SOURCE,
+} from "@/lib/marketing/signup-attribution";
 
 type LandingTikTokEarlyAccessProps = Readonly<{
   locale: Locale;
@@ -131,7 +135,12 @@ export function LandingTikTokEarlyAccess({
             </div>
 
             <Link
-              href="/signup"
+              href={buildMarketingSignupHref(
+                TIKTOK_EARLY_ACCESS_SIGNUP_SOURCE,
+              )}
+              data-marketing-source={
+                TIKTOK_EARLY_ACCESS_SIGNUP_SOURCE
+              }
               className="mt-7 inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-primary px-6 text-sm font-semibold text-primary-foreground shadow-sm transition hover:-translate-y-0.5 hover:opacity-95"
             >
               {copy.cta}
