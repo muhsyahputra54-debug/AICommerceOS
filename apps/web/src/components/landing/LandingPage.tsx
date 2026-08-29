@@ -33,6 +33,8 @@ import {
 
 import { LandingTodayStory } from "./LandingTodayStory";
 
+import { LandingTikTokEarlyAccess } from "./LandingTikTokEarlyAccess";
+
 import { LandingAiActionStory } from "./LandingAiActionStory";
 
 import { LandingVisualShowcase } from "./LandingVisualShowcase";
@@ -52,6 +54,7 @@ export function LandingPage() {
           nav: {
             product: "Produk",
             solutions: "Solusi",
+            tiktok: "TikTok",
             workflow: "Cara Kerja",
             pricing: "Harga",
             login: "Masuk",
@@ -134,6 +137,7 @@ export function LandingPage() {
           nav: {
             product: "Product",
             solutions: "Solutions",
+            tiktok: "TikTok",
             workflow: "How It Works",
             pricing: "Pricing",
             login: "Sign In",
@@ -426,6 +430,13 @@ export function LandingPage() {
             </a>
 
             <a
+              href="#tiktok-early-access"
+              className="transition-colors hover:text-foreground"
+            >
+              {copy.nav.tiktok}
+            </a>
+
+            <a
               href="#workflow"
               className="transition-colors hover:text-foreground"
             >
@@ -587,6 +598,10 @@ export function LandingPage() {
         </section>
 
         <LandingVisualShowcase
+          locale={locale}
+        />
+
+        <LandingTikTokEarlyAccess
           locale={locale}
         />
 
