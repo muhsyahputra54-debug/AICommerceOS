@@ -33,6 +33,8 @@ import {
 
 import { LandingTodayStory } from "./LandingTodayStory";
 
+import { LandingTikTokEarlyAccess } from "./LandingTikTokEarlyAccess";
+
 import { LandingAiActionStory } from "./LandingAiActionStory";
 
 import { LandingVisualShowcase } from "./LandingVisualShowcase";
@@ -587,6 +589,10 @@ export function LandingPage() {
         </section>
 
         <LandingVisualShowcase
+          locale={locale}
+        />
+
+        <LandingTikTokEarlyAccess
           locale={locale}
         />
 
