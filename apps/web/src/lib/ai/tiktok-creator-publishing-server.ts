@@ -285,39 +285,22 @@ async function loadTikTokCreatorAccessContext(
   }
 
   const {
-    data: connections,
-    error: connectionError,
+    data: rows,
+    error,
   } =
-    await admin
-      .from(
-        "publishing_provider_connections",
-      )
-      .select(
-        "id,external_account_id,credential_reference_id,granted_scopes,authorization_status,revoked_at",
-      )
-      .eq(
-        "organization_id",
-        organizationId,
-      )
-      .eq(
-        "provider",
-        "tiktok",
-      )
-      .eq(
-        "authorization_status",
-        "authorized",
-      )
-      .is(
-        "revoked_at",
-        null,
-      )
-      .limit(
-        2,
-      );
+    await admin.rpc(
+      "get_publishing_provider_execution_credentials",
+      {
+        p_organization_id:
+          organizationId,
+        p_provider:
+          "tiktok",
+      },
+    );
 
   if (
-    connectionError ||
-    !Array.isArray(connections)
+    error ||
+    !Array.isArray(rows)
   ) {
     return {
       ok: false,
@@ -326,7 +309,7 @@ async function loadTikTokCreatorAccessContext(
     };
   }
 
-  if (connections.length === 0) {
+  if (rows.length === 0) {
     return {
       ok: false,
       code:
@@ -334,7 +317,7 @@ async function loadTikTokCreatorAccessContext(
     };
   }
 
-  if (connections.length !== 1) {
+  if (rows.length !== 1) {
     return {
       ok: false,
       code:
@@ -342,35 +325,53 @@ async function loadTikTokCreatorAccessContext(
     };
   }
 
-  const connection =
-    connections[0] as
+  const row =
+    rows[0] as
       Record<string, unknown>;
 
   const connectionId =
     nonEmptyString(
-      connection.id,
+      row.connection_id,
     );
 
   const externalAccountId =
     nonEmptyString(
-      connection.external_account_id,
+      row.external_account_id,
     );
 
   const credentialReferenceId =
     nonEmptyString(
-      connection.credential_reference_id,
+      row.credential_reference_id,
     );
 
   const grantedScopes =
     stringArray(
-      connection.granted_scopes,
+      row.granted_scopes,
+    );
+
+  const ciphertext =
+    nonEmptyString(
+      row.access_token_ciphertext,
+    );
+
+  const keyVersion =
+    nonEmptyString(
+      row.encryption_key_version,
+    );
+
+  const accessTokenExpiresAt =
+    nonEmptyString(
+      row.access_token_expires_at,
     );
 
   if (
     !connectionId ||
     !externalAccountId ||
     !credentialReferenceId ||
-    !grantedScopes
+    !grantedScopes ||
+    !ciphertext ||
+    !keyVersion ||
+    !accessTokenExpiresAt
   ) {
     return {
       ok: false,
@@ -388,66 +389,6 @@ async function loadTikTokCreatorAccessContext(
       ok: false,
       code:
         "scope_missing",
-    };
-  }
-
-  const {
-    data: credential,
-    error: credentialError,
-  } =
-    await admin
-      .from(
-        "publishing_provider_credentials",
-      )
-      .select(
-        "id,connection_id,access_token_ciphertext,access_token_expires_at,encryption_key_version",
-      )
-      .eq(
-        "id",
-        credentialReferenceId,
-      )
-      .eq(
-        "connection_id",
-        connectionId,
-      )
-      .maybeSingle();
-
-  if (
-    credentialError ||
-    !credential ||
-    !isRecord(credential)
-  ) {
-    return {
-      ok: false,
-      code:
-        "credential_unavailable",
-    };
-  }
-
-  const ciphertext =
-    nonEmptyString(
-      credential.access_token_ciphertext,
-    );
-
-  const keyVersion =
-    nonEmptyString(
-      credential.encryption_key_version,
-    );
-
-  const accessTokenExpiresAt =
-    nonEmptyString(
-      credential.access_token_expires_at,
-    );
-
-  if (
-    !ciphertext ||
-    !keyVersion ||
-    !accessTokenExpiresAt
-  ) {
-    return {
-      ok: false,
-      code:
-        "credential_invalid",
     };
   }
 

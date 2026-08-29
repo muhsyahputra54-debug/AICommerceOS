@@ -477,6 +477,84 @@ begin
 end;
 $$;
 
+create or replace function public.get_publishing_provider_execution_credentials(
+  p_organization_id uuid,
+  p_provider text
+)
+returns table (
+  connection_id uuid,
+  external_account_id text,
+  granted_scopes text[],
+  credential_reference_id uuid,
+  access_token_ciphertext text,
+  access_token_expires_at timestamptz,
+  encryption_key_version text
+)
+language plpgsql
+stable
+security definer
+set search_path = public, auth
+as $$
+declare
+  v_provider text;
+begin
+  if coalesce(auth.role(), '') <> 'service_role' then
+    raise exception 'service_role_required'
+      using errcode = '42501';
+  end if;
+
+  if p_organization_id is null then
+    raise exception 'organization_required'
+      using errcode = '22023';
+  end if;
+
+  v_provider :=
+    lower(
+      btrim(
+        coalesce(
+          p_provider,
+          ''
+        )
+      )
+    );
+
+  if v_provider = '' then
+    raise exception 'provider_required'
+      using errcode = '22023';
+  end if;
+
+  return query
+  select
+    c.id,
+    c.external_account_id,
+    c.granted_scopes,
+    c.credential_reference_id,
+    pc.access_token_ciphertext,
+    pc.access_token_expires_at,
+    pc.encryption_key_version
+  from public.publishing_provider_connections c
+  join public.publishing_provider_credentials pc
+    on pc.id = c.credential_reference_id
+   and pc.connection_id = c.id
+  where c.organization_id = p_organization_id
+    and c.provider = v_provider
+    and c.authorization_status = 'authorized'
+    and c.revoked_at is null
+  order by
+    c.updated_at desc,
+    c.id;
+end;
+$$;
+
+revoke all on function
+  public.get_publishing_provider_execution_credentials(uuid, text)
+from public, anon, authenticated, service_role;
+
+grant execute on function
+  public.get_publishing_provider_execution_credentials(uuid, text)
+to service_role;
+
+
 create or replace function public.revoke_publishing_provider_connection(
   p_organization_id uuid,
   p_connection_id uuid
