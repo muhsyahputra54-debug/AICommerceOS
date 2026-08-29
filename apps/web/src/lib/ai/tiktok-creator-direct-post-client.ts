@@ -69,6 +69,7 @@ export type TikTokDirectPostClientResult =
       code: string;
       providerCode?: string;
       failReason?: string;
+      publishId?: string;
     }>;
 
 type InitSuccess =
@@ -581,6 +582,84 @@ export async function fetchTikTokDirectPostStatus(
   };
 }
 
+export type TikTokDirectPostStatusCheckResult =
+  | Readonly<{
+      ok: true;
+      status: "complete";
+    }>
+  | Readonly<{
+      ok: true;
+      status: "processing";
+      providerStatus: string;
+    }>
+  | Readonly<{
+      ok: false;
+      code: string;
+      providerCode?: string;
+      failReason?: string;
+    }>;
+
+export async function checkTikTokDirectPostStatusOnce(
+  publishId: string,
+  fetchImpl: typeof fetch = fetch,
+): Promise<TikTokDirectPostStatusCheckResult> {
+  const status =
+    await fetchTikTokDirectPostStatus(
+      publishId,
+      fetchImpl,
+    );
+
+  if (!status.ok) {
+    return {
+      ok: false,
+      code:
+        status.code,
+      ...(status.providerCode
+        ? {
+            providerCode:
+              status.providerCode,
+          }
+        : {}),
+    };
+  }
+
+  if (
+    status.value.postStatus ===
+    "PUBLISH_COMPLETE"
+  ) {
+    return {
+      ok: true,
+      status:
+        "complete",
+    };
+  }
+
+  if (
+    status.value.postStatus ===
+    "FAILED"
+  ) {
+    return {
+      ok: false,
+      code:
+        "publish_failed",
+      ...(status.value.failReason
+        ? {
+            failReason:
+              status.value.failReason,
+          }
+        : {}),
+    };
+  }
+
+  return {
+    ok: true,
+    status:
+      "processing",
+    providerStatus:
+      status.value.postStatus,
+  };
+}
+
 function delay(
   milliseconds: number,
 ): Promise<void> {
@@ -784,6 +863,8 @@ export async function executeTikTokCreatorDirectPost(
           "status",
         code:
           status.code,
+        publishId:
+          initialized.publishId,
         ...(status.providerCode
           ? {
               providerCode:

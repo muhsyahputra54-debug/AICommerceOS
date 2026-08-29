@@ -6,6 +6,7 @@ import {
 } from "vitest";
 
 import {
+  checkTikTokDirectPostStatusOnce,
   executeTikTokCreatorDirectPost,
   isAllowedTikTokUploadUrl,
   uploadTikTokVideoChunks,
@@ -489,5 +490,203 @@ describe(
         });
       },
     );
-  },
+
+    it(
+      "checks pending status without re-running init or upload",
+      async () => {
+        const fetchImpl =
+          vi.fn(
+            async (
+              ...args: Parameters<typeof fetch>
+            ) => {
+              void args;
+
+              return response(
+                200,
+                {
+                  postStatus:
+                    "PROCESSING_UPLOAD",
+                  failReason:
+                    null,
+                  uploadedBytes:
+                    4,
+                },
+              );
+            },
+          );
+
+        const result =
+          await checkTikTokDirectPostStatusOnce(
+            "pub-recovery-1",
+            fetchImpl as unknown as typeof fetch,
+          );
+
+        expect(
+          result,
+        ).toEqual({
+          ok: true,
+          status:
+            "processing",
+          providerStatus:
+            "PROCESSING_UPLOAD",
+        });
+
+        expect(
+          fetchImpl,
+        ).toHaveBeenCalledTimes(
+          1,
+        );
+
+        const call =
+          fetchImpl.mock.calls[0];
+
+        expect(
+          String(
+            call?.[0],
+          ),
+        ).toContain(
+          "/direct-post/status",
+        );
+
+        const options =
+          call?.[1] as
+            RequestInit | undefined;
+
+        expect(
+          options?.method,
+        ).toBe(
+          "POST",
+        );
+
+        expect(
+          String(
+            options?.body,
+          ),
+        ).toContain(
+          "pub-recovery-1",
+        );
+      },
+    );
+
+    it(
+      "keeps publish id when status lookup fails after upload",
+      async () => {
+        const fetchImpl =
+          vi.fn();
+
+        fetchImpl
+          .mockResolvedValueOnce(
+            response(
+              200,
+              {
+                publishId:
+                  "pub-recovery-2",
+                uploadUrl:
+                  "https://open-upload-sg.tiktokapis.com/video/?upload_id=2",
+                uploadPlan:
+                  oneChunkPlan,
+              },
+            ),
+          )
+          .mockResolvedValueOnce(
+            new Response(
+              null,
+              {
+                status:
+                  201,
+              },
+            ),
+          )
+          .mockResolvedValueOnce(
+            response(
+              502,
+              {
+                error:
+                  "post_status_request_failed",
+              },
+            ),
+          );
+
+        const result =
+          await executeTikTokCreatorDirectPost(
+            {
+              request: {
+                creatorInfoCheckedAt:
+                  "2026-08-29T00:00:00.000Z",
+                expectedCreatorUsername:
+                  "creator",
+                title:
+                  "Recovery test",
+                selectedPrivacyLevel:
+                  "SELF_ONLY",
+                explicitUserConsent:
+                  true,
+                allowComment:
+                  false,
+                allowDuet:
+                  false,
+                allowStitch:
+                  false,
+                videoDurationSec:
+                  36,
+                fileName:
+                  "test.mp4",
+                mimeType:
+                  "video/mp4",
+                videoSize:
+                  4,
+                ownBrand:
+                  false,
+                brandedContent:
+                  false,
+                isAigc:
+                  false,
+              },
+              file:
+                new Blob(
+                  [
+                    new Uint8Array(
+                      [
+                        1,
+                        2,
+                        3,
+                        4,
+                      ],
+                    ),
+                  ],
+                  {
+                    type:
+                      "video/mp4",
+                  },
+                ),
+              maxStatusAttempts:
+                1,
+              statusIntervalMs:
+                3000,
+            },
+            {
+              fetchImpl:
+                fetchImpl as unknown as typeof fetch,
+            },
+          );
+
+        expect(
+          result,
+        ).toEqual({
+          ok: false,
+          stage:
+            "status",
+          code:
+            "post_status_request_failed",
+          publishId:
+            "pub-recovery-2",
+        });
+
+        expect(
+          fetchImpl,
+        ).toHaveBeenCalledTimes(
+          3,
+        );
+      },
+    );  },
 );
