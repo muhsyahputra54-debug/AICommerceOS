@@ -16,6 +16,9 @@ import {
   listControlledActions,
   readControlledAction,
 } from "@/lib/ai/controlled-action-server";
+import {
+  logControlledActionFailure,
+} from "@/lib/ai/controlled-action-observability";
 
 export async function GET(
   request: Request,
@@ -91,6 +94,11 @@ export async function GET(
 export async function POST(
   request: Request,
 ) {
+  const requestId =
+    request.headers.get(
+      "x-request-id",
+    );
+
   const context =
     await getControlledActionRequestContext();
 
@@ -100,7 +108,6 @@ export async function POST(
 
   const {
     supabase,
-    user,
     organizationId,
   } = context;
 
@@ -224,16 +231,12 @@ export async function POST(
     proposalResult;
 
   if (error) {
-    console.error(
-      "Failed to propose controlled AI action.",
-      {
-        organizationId,
-        userId:
-          user.id,
-        productId,
-        error,
-      },
-    );
+    logControlledActionFailure({
+      operation:
+        "propose",
+      requestId,
+      error,
+    });
 
     return controlledActionRpcErrorResponse(
       error.message,

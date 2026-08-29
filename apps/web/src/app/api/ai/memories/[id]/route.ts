@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
 
+import {
+  logAiMemoryFailure,
+} from "@/lib/ai/ai-memory-observability";
 import { getCurrentOrganization } from "@/lib/supabase/current-organization";
 import { createClient } from "@/lib/supabase/server";
 
@@ -259,9 +262,14 @@ async function validateSourceConversation({
 }
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: RouteContext,
 ) {
+  const requestId =
+    request.headers.get(
+      "x-request-id",
+    );
+
   const {
     id,
   } = await params;
@@ -327,15 +335,12 @@ export async function GET(
     .maybeSingle();
 
   if (error) {
-    console.error(
-      "Failed to load AI memory.",
-      {
-        memoryId: id,
-        organizationId,
-        userId: user.id,
-        error,
-      },
-    );
+    logAiMemoryFailure({
+      operation:
+        "memory_load",
+      requestId,
+      error,
+    });
 
     return NextResponse.json(
       {
@@ -369,6 +374,11 @@ export async function PATCH(
   request: Request,
   { params }: RouteContext,
 ) {
+  const requestId =
+    request.headers.get(
+      "x-request-id",
+    );
+
   const {
     id,
   } = await params;
@@ -547,18 +557,13 @@ export async function PATCH(
         });
 
       if (conversationError) {
-        console.error(
-          "Failed to validate memory source conversation.",
-          {
-            memoryId: id,
-            conversationId:
-              sourceConversation.value,
-            organizationId,
-            userId: user.id,
-            error:
-              conversationError,
-          },
-        );
+        logAiMemoryFailure({
+          operation:
+            "memory_source_conversation_validate_update",
+          requestId,
+          error:
+            conversationError,
+        });
 
         return NextResponse.json(
           {
@@ -678,15 +683,12 @@ export async function PATCH(
       );
     }
 
-    console.error(
-      "Failed to update AI memory.",
-      {
-        memoryId: id,
-        organizationId,
-        userId: user.id,
-        error,
-      },
-    );
+    logAiMemoryFailure({
+      operation:
+        "memory_update",
+      requestId,
+      error,
+    });
 
     return NextResponse.json(
       {
@@ -717,9 +719,14 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  _request: Request,
+  request: Request,
   { params }: RouteContext,
 ) {
+  const requestId =
+    request.headers.get(
+      "x-request-id",
+    );
+
   const {
     id,
   } = await params;
@@ -773,15 +780,12 @@ export async function DELETE(
     .maybeSingle();
 
   if (error) {
-    console.error(
-      "Failed to permanently delete AI memory.",
-      {
-        memoryId: id,
-        organizationId,
-        userId: user.id,
-        error,
-      },
-    );
+    logAiMemoryFailure({
+      operation:
+        "memory_delete",
+      requestId,
+      error,
+    });
 
     return NextResponse.json(
       {

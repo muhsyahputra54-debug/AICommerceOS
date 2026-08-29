@@ -4,6 +4,9 @@ import {
   buildProactiveInsights,
   type ProactiveInsightSnapshot,
 } from "@/lib/ai/proactive-insights";
+import {
+  logAiInsightsFailure,
+} from "@/lib/ai/ai-insights-observability";
 import { getCurrentOrganization } from "@/lib/supabase/current-organization";
 import { createClient } from "@/lib/supabase/server";
 
@@ -72,7 +75,14 @@ async function getRequestContext() {
   };
 }
 
-export async function GET() {
+export async function GET(
+  request: Request,
+) {
+  const requestId =
+    request.headers.get(
+      "x-request-id",
+    );
+
   const context =
     await getRequestContext();
 
@@ -82,7 +92,6 @@ export async function GET() {
 
   const {
     supabase,
-    user,
     organizationId,
   } = context;
 
@@ -214,16 +223,13 @@ export async function GET() {
     activeTargetsResult.error;
 
   if (contextError) {
-    console.error(
-      "Failed to load proactive AI insight snapshot.",
-      {
-        organizationId,
-        userId:
-          user.id,
-        error:
-          contextError,
-      },
-    );
+    logAiInsightsFailure({
+      operation:
+        "insight_snapshot_load",
+      requestId,
+      error:
+        contextError,
+    });
 
     return NextResponse.json(
       {
@@ -327,18 +333,13 @@ export async function GET() {
       observationError
         ?.error
     ) {
-      console.error(
-        "Failed to load latest price observations for proactive insights.",
-        {
-          organizationId,
-          userId:
-            user.id,
-          targetId:
-            observationError.targetId,
-          error:
-            observationError.error,
-        },
-      );
+      logAiInsightsFailure({
+        operation:
+          "insight_price_observations_load",
+        requestId,
+        error:
+          observationError.error,
+      });
 
       return NextResponse.json(
         {

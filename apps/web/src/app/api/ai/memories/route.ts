@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
 
+import {
+  logAiMemoryFailure,
+} from "@/lib/ai/ai-memory-observability";
 import { getCurrentOrganization } from "@/lib/supabase/current-organization";
 import { createClient } from "@/lib/supabase/server";
 
@@ -213,6 +216,11 @@ async function getRequestContext() {
 export async function GET(
   request: Request,
 ) {
+  const requestId =
+    request.headers.get(
+      "x-request-id",
+    );
+
   const context =
     await getRequestContext();
 
@@ -283,14 +291,12 @@ export async function GET(
     .limit(100);
 
   if (error) {
-    console.error(
-      "Failed to load AI memories.",
-      {
-        organizationId,
-        userId: user.id,
-        error,
-      },
-    );
+    logAiMemoryFailure({
+      operation:
+        "memory_list",
+      requestId,
+      error,
+    });
 
     return NextResponse.json(
       {
@@ -312,6 +318,11 @@ export async function GET(
 export async function POST(
   request: Request,
 ) {
+  const requestId =
+    request.headers.get(
+      "x-request-id",
+    );
+
   const context =
     await getRequestContext();
 
@@ -399,17 +410,13 @@ export async function POST(
       .maybeSingle();
 
     if (conversationError) {
-      console.error(
-        "Failed to validate memory source conversation.",
-        {
-          conversationId:
-            sourceConversation.value,
-          organizationId,
-          userId: user.id,
-          error:
-            conversationError,
-        },
-      );
+      logAiMemoryFailure({
+        operation:
+          "memory_source_conversation_validate_create",
+        requestId,
+        error:
+          conversationError,
+      });
 
       return NextResponse.json(
         {
@@ -492,14 +499,12 @@ export async function POST(
       );
     }
 
-    console.error(
-      "Failed to create AI memory.",
-      {
-        organizationId,
-        userId: user.id,
-        error,
-      },
-    );
+    logAiMemoryFailure({
+      operation:
+        "memory_create",
+      requestId,
+      error,
+    });
 
     return NextResponse.json(
       {

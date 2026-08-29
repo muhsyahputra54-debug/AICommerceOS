@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
 
+import {
+  logAiPersistenceFailure,
+} from "@/lib/ai/ai-persistence-observability";
 import { getCurrentOrganization } from "@/lib/supabase/current-organization";
 import { createClient } from "@/lib/supabase/server";
 
@@ -83,7 +86,14 @@ async function getRequestContext() {
   } as const;
 }
 
-export async function GET() {
+export async function GET(
+  request: Request,
+) {
+  const requestId =
+    request.headers.get(
+      "x-request-id",
+    );
+
   const context =
     await getRequestContext();
 
@@ -127,14 +137,12 @@ export async function GET() {
     .maybeSingle();
 
   if (error) {
-    console.error(
-      "Failed to load AI conversation.",
-      {
-        organizationId,
-        userId: user.id,
-        error,
-      },
-    );
+    logAiPersistenceFailure({
+      operation:
+        "conversation_load_latest",
+      requestId,
+      error,
+    });
 
     return NextResponse.json(
       {
@@ -156,6 +164,11 @@ export async function GET() {
 export async function POST(
   request: Request,
 ) {
+  const requestId =
+    request.headers.get(
+      "x-request-id",
+    );
+
   const context =
     await getRequestContext();
 
@@ -225,14 +238,12 @@ export async function POST(
     .single();
 
   if (error) {
-    console.error(
-      "Failed to create AI conversation.",
-      {
-        organizationId,
-        userId: user.id,
-        error,
-      },
-    );
+    logAiPersistenceFailure({
+      operation:
+        "conversation_create",
+      requestId,
+      error,
+    });
 
     return NextResponse.json(
       {
