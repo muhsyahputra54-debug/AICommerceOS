@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
 
+import {
+  logAiPersistenceFailure,
+} from "@/lib/ai/ai-persistence-observability";
 import { getCurrentOrganization } from "@/lib/supabase/current-organization";
 import { createClient } from "@/lib/supabase/server";
 
@@ -61,9 +64,14 @@ async function getRequestContext() {
 }
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: RouteContext,
 ) {
+  const requestId =
+    request.headers.get(
+      "x-request-id",
+    );
+
   const {
     id,
   } = await params;
@@ -116,15 +124,13 @@ export async function GET(
     .maybeSingle();
 
   if (conversationError) {
-    console.error(
-      "Failed to load AI conversation.",
-      {
-        conversationId: id,
-        organizationId,
-        userId: user.id,
-        error: conversationError,
-      },
-    );
+    logAiPersistenceFailure({
+      operation:
+        "conversation_load",
+      requestId,
+      error:
+        conversationError,
+    });
 
     return NextResponse.json(
       {
@@ -183,15 +189,13 @@ export async function GET(
     );
 
   if (messagesError) {
-    console.error(
-      "Failed to load AI conversation messages.",
-      {
-        conversationId: id,
-        organizationId,
-        userId: user.id,
-        error: messagesError,
-      },
-    );
+    logAiPersistenceFailure({
+      operation:
+        "conversation_messages_load",
+      requestId,
+      error:
+        messagesError,
+    });
 
     return NextResponse.json(
       {
@@ -212,9 +216,14 @@ export async function GET(
 }
 
 export async function PATCH(
-  _request: Request,
+  request: Request,
   { params }: RouteContext,
 ) {
+  const requestId =
+    request.headers.get(
+      "x-request-id",
+    );
+
   const {
     id,
   } = await params;
@@ -281,15 +290,12 @@ export async function PATCH(
     .maybeSingle();
 
   if (error) {
-    console.error(
-      "Failed to archive AI conversation.",
-      {
-        conversationId: id,
-        organizationId,
-        userId: user.id,
-        error,
-      },
-    );
+    logAiPersistenceFailure({
+      operation:
+        "conversation_archive",
+      requestId,
+      error,
+    });
 
     return NextResponse.json(
       {

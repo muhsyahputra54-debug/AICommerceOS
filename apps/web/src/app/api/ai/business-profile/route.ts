@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
 
+import {
+  logAiPersistenceFailure,
+} from "@/lib/ai/ai-persistence-observability";
 import { getCurrentOrganization } from "@/lib/supabase/current-organization";
 import { createClient } from "@/lib/supabase/server";
 
@@ -280,7 +283,14 @@ async function getRequestContext() {
   } as const;
 }
 
-export async function GET() {
+export async function GET(
+  request: Request,
+) {
+  const requestId =
+    request.headers.get(
+      "x-request-id",
+    );
+
   const context =
     await getRequestContext();
 
@@ -290,7 +300,6 @@ export async function GET() {
 
   const {
     supabase,
-    user,
     organizationId,
   } = context;
 
@@ -309,14 +318,12 @@ export async function GET() {
     .maybeSingle();
 
   if (error) {
-    console.error(
-      "Failed to load AI business profile.",
-      {
-        organizationId,
-        userId: user.id,
-        error,
-      },
-    );
+    logAiPersistenceFailure({
+      operation:
+        "business_profile_load",
+      requestId,
+      error,
+    });
 
     return NextResponse.json(
       {
@@ -338,6 +345,11 @@ export async function GET() {
 export async function PUT(
   request: Request,
 ) {
+  const requestId =
+    request.headers.get(
+      "x-request-id",
+    );
+
   const context =
     await getRequestContext();
 
@@ -494,15 +506,13 @@ export async function PUT(
     .maybeSingle();
 
   if (existingError) {
-    console.error(
-      "Failed to check AI business profile.",
-      {
-        organizationId,
-        userId: user.id,
-        error:
-          existingError,
-      },
-    );
+    logAiPersistenceFailure({
+      operation:
+        "business_profile_check_existing",
+      requestId,
+      error:
+        existingError,
+    });
 
     return NextResponse.json(
       {
@@ -538,14 +548,12 @@ export async function PUT(
       .single();
 
     if (error) {
-      console.error(
-        "Failed to update AI business profile.",
-        {
-          organizationId,
-          userId: user.id,
-          error,
-        },
-      );
+      logAiPersistenceFailure({
+        operation:
+          "business_profile_update",
+        requestId,
+        error,
+      });
 
       return NextResponse.json(
         {
@@ -613,15 +621,13 @@ export async function PUT(
       .single();
 
     if (retryError) {
-      console.error(
-        "Failed to update AI business profile after concurrent create.",
-        {
-          organizationId,
-          userId: user.id,
-          error:
-            retryError,
-        },
-      );
+      logAiPersistenceFailure({
+        operation:
+          "business_profile_update_after_concurrent_create",
+        requestId,
+        error:
+          retryError,
+      });
 
       return NextResponse.json(
         {
@@ -640,15 +646,13 @@ export async function PUT(
   }
 
   if (createError) {
-    console.error(
-      "Failed to create AI business profile.",
-      {
-        organizationId,
-        userId: user.id,
-        error:
-          createError,
-      },
-    );
+    logAiPersistenceFailure({
+      operation:
+        "business_profile_create",
+      requestId,
+      error:
+        createError,
+    });
 
     return NextResponse.json(
       {
