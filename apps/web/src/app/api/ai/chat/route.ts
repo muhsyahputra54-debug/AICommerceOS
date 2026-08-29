@@ -57,6 +57,9 @@ import {
 import {
   createOpenAIChatCompletion,
 } from "@/lib/ai/openai-chat";
+import {
+  logAiChatFailure,
+} from "@/lib/ai/ai-chat-observability";
 import { getCurrentOrganization } from "@/lib/supabase/current-organization";
 import { createClient } from "@/lib/supabase/server";
 
@@ -67,6 +70,7 @@ type ChatRequestBody = {
 
 async function persistMemoryCommandAssistantMessage({
   supabase,
+  requestId,
   conversationId,
   organizationId,
   userId,
@@ -78,6 +82,9 @@ async function persistMemoryCommandAssistantMessage({
         typeof createClient
       >
     >;
+
+  requestId:
+    string | null;
 
   conversationId:
     string | null;
@@ -160,16 +167,13 @@ async function persistMemoryCommandAssistantMessage({
     );
 
   if (touchError) {
-    console.error(
-      "Failed to update conversation after memory command.",
-      {
-        conversationId,
-        organizationId,
-        userId,
-        error:
-          touchError,
-      },
-    );
+    logAiChatFailure({
+      operation:
+        "memory_command_conversation_touch",
+      requestId,
+      error:
+        touchError,
+    });
   }
 
   return null;
@@ -219,6 +223,11 @@ function parseAgentAdvisoryReference(
 export async function POST(
   request: Request,
 ) {
+  const clientRequestId =
+    request.headers.get(
+      "x-request-id",
+    );
+
   const supabase =
     await createClient();
 
@@ -396,15 +405,14 @@ export async function POST(
       .maybeSingle();
 
     if (conversationError) {
-      console.error(
-        "Failed to validate AI conversation.",
-        {
-          conversationId,
-          organizationId,
-          userId: user.id,
-          error: conversationError,
-        },
-      );
+      logAiChatFailure({
+        operation:
+          "conversation_validate",
+        requestId:
+          clientRequestId,
+        error:
+          conversationError,
+      });
 
       return NextResponse.json(
         {
@@ -475,15 +483,14 @@ export async function POST(
       });
 
     if (userMessageError) {
-      console.error(
-        "Failed to persist AI user message.",
-        {
-          conversationId,
-          organizationId,
-          userId: user.id,
-          error: userMessageError,
-        },
-      );
+      logAiChatFailure({
+        operation:
+          "user_message_persist",
+        requestId:
+          clientRequestId,
+        error:
+          userMessageError,
+      });
 
       return NextResponse.json(
         {
@@ -525,15 +532,14 @@ export async function POST(
       );
 
     if (touchError) {
-      console.error(
-        "Failed to update AI conversation timestamp.",
-        {
-          conversationId,
-          organizationId,
-          userId: user.id,
-          error: touchError,
-        },
-      );
+      logAiChatFailure({
+        operation:
+          "user_message_conversation_touch",
+        requestId:
+          clientRequestId,
+        error:
+          touchError,
+      });
     }
   }
 
@@ -567,8 +573,10 @@ export async function POST(
     ) {
       const persistError =
         await persistMemoryCommandAssistantMessage({
-          supabase,
-          conversationId,
+            supabase,
+            requestId:
+              clientRequestId,
+            conversationId,
           organizationId,
           userId:
             memoryCommandUserId,
@@ -577,17 +585,14 @@ export async function POST(
         });
 
       if (persistError) {
-        console.error(
-          "Failed to persist memory command assistant response.",
-          {
-            conversationId,
-            organizationId,
-            userId:
-              memoryCommandUserId,
-            error:
-              persistError,
-          },
-        );
+        logAiChatFailure({
+          operation:
+            "memory_command_response_persist",
+          requestId:
+            clientRequestId,
+          error:
+            persistError,
+        });
 
         return NextResponse.json(
           {
@@ -718,19 +723,14 @@ export async function POST(
         memoryError.code !==
           "23505"
       ) {
-        console.error(
-          "Failed to save explicit AI memory.",
-          {
-            conversationId,
-            organizationId,
-            userId:
-              user.id,
-            memoryType,
-            memoryKey,
-            error:
-              memoryError,
-          },
-        );
+        logAiChatFailure({
+          operation:
+            "explicit_memory_save",
+          requestId:
+            clientRequestId,
+          error:
+            memoryError,
+        });
 
         return NextResponse.json(
           {
@@ -881,16 +881,14 @@ export async function POST(
       .limit(100);
 
     if (memoriesError) {
-      console.error(
-        "Failed to load memories for explicit forget command.",
-        {
-          organizationId,
-          userId:
-            user.id,
-          error:
-            memoriesError,
-        },
-      );
+      logAiChatFailure({
+        operation:
+          "explicit_memory_forget_load",
+        requestId:
+          clientRequestId,
+        error:
+          memoriesError,
+      });
 
       return NextResponse.json(
         {
@@ -981,18 +979,14 @@ export async function POST(
       .maybeSingle();
 
     if (deleteError) {
-      console.error(
-        "Failed to forget explicit AI memory.",
-        {
-          memoryId:
-            memoryToForget.id,
-          organizationId,
-          userId:
-            user.id,
-          error:
-            deleteError,
-        },
-      );
+      logAiChatFailure({
+        operation:
+          "explicit_memory_forget_delete",
+        requestId:
+          clientRequestId,
+        error:
+          deleteError,
+      });
 
       return NextResponse.json(
         {
