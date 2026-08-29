@@ -30,6 +30,55 @@ import {
 const DIRECT_POST_INIT_ENABLED_VALUE =
   "true";
 
+const DIRECT_POST_ALL_ORGANIZATIONS_VALUE =
+  "*";
+
+const DIRECT_POST_ALLOWED_ORGANIZATION_IDS_ENV =
+  "TIKTOK_CREATOR_DIRECT_POST_ALLOWED_ORGANIZATION_IDS";
+
+export function isTikTokCreatorDirectPostEnabledForOrganization(
+  organizationId: string,
+): boolean {
+  if (
+    process.env
+      .TIKTOK_CREATOR_DIRECT_POST_INIT_ENABLED !==
+    DIRECT_POST_INIT_ENABLED_VALUE
+  ) {
+    return false;
+  }
+
+  const normalizedOrganizationId =
+    organizationId.trim();
+
+  if (!normalizedOrganizationId) {
+    return false;
+  }
+
+  const configuredAllowlist =
+    process.env[
+      DIRECT_POST_ALLOWED_ORGANIZATION_IDS_ENV
+    ]?.trim();
+
+  if (!configuredAllowlist) {
+    return false;
+  }
+
+  const allowedOrganizationIds =
+    configuredAllowlist
+      .split(",")
+      .map((value) => value.trim())
+      .filter(Boolean);
+
+  return (
+    allowedOrganizationIds.includes(
+      DIRECT_POST_ALL_ORGANIZATIONS_VALUE,
+    ) ||
+    allowedOrganizationIds.includes(
+      normalizedOrganizationId,
+    )
+  );
+}
+
 const MAX_TITLE_LENGTH =
   2200;
 
@@ -723,9 +772,9 @@ export async function initializeTikTokCreatorDirectPost(
   fetchImpl: typeof fetch = fetch,
 ): Promise<TikTokCreatorDirectPostInitResult> {
   if (
-    process.env
-      .TIKTOK_CREATOR_DIRECT_POST_INIT_ENABLED !==
-    DIRECT_POST_INIT_ENABLED_VALUE
+    !isTikTokCreatorDirectPostEnabledForOrganization(
+      input.organizationId,
+    )
   ) {
     return {
       ok: false,

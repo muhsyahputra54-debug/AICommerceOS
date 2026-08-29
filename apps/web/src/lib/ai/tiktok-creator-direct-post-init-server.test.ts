@@ -9,6 +9,7 @@ import {
 import {
   buildTikTokCreatorDirectPostInitBody,
   initializeTikTokCreatorDirectPost,
+  isTikTokCreatorDirectPostEnabledForOrganization,
   parseTikTokCreatorDirectPostInitRequest,
   parseTikTokCreatorDirectPostInitResponse,
 } from "./tiktok-creator-direct-post-init-server";
@@ -54,6 +55,8 @@ afterEach(
   () => {
     delete process.env
       .TIKTOK_CREATOR_DIRECT_POST_INIT_ENABLED;
+    delete process.env
+      .TIKTOK_CREATOR_DIRECT_POST_ALLOWED_ORGANIZATION_IDS;
   },
 );
 
@@ -202,6 +205,85 @@ describe(
       },
     );
 
+
+    it(
+      "fails closed when the global flag is on but the organization allowlist is absent",
+      async () => {
+        process.env
+          .TIKTOK_CREATOR_DIRECT_POST_INIT_ENABLED =
+          "true";
+
+        const fetchImpl =
+          vi.fn();
+
+        const result =
+          await initializeTikTokCreatorDirectPost(
+            {
+              organizationId:
+                "00000000-0000-0000-0000-000000000001",
+              request,
+            },
+            fetchImpl as unknown as typeof fetch,
+          );
+
+        expect(
+          result,
+        ).toEqual({
+          ok: false,
+          code:
+            "direct_post_init_disabled",
+        });
+
+        expect(
+          fetchImpl,
+        ).not.toHaveBeenCalled();
+      },
+    );
+
+    it(
+      "allows only explicitly listed organizations while the global flag is on",
+      () => {
+        process.env
+          .TIKTOK_CREATOR_DIRECT_POST_INIT_ENABLED =
+          "true";
+        process.env
+          .TIKTOK_CREATOR_DIRECT_POST_ALLOWED_ORGANIZATION_IDS =
+          [
+            "00000000-0000-0000-0000-000000000001",
+            "00000000-0000-0000-0000-000000000002",
+          ].join(",");
+
+        expect(
+          isTikTokCreatorDirectPostEnabledForOrganization(
+            "00000000-0000-0000-0000-000000000001",
+          ),
+        ).toBe(true);
+
+        expect(
+          isTikTokCreatorDirectPostEnabledForOrganization(
+            "00000000-0000-0000-0000-000000000003",
+          ),
+        ).toBe(false);
+      },
+    );
+
+    it(
+      "requires an explicit wildcard for global Direct Post rollout",
+      () => {
+        process.env
+          .TIKTOK_CREATOR_DIRECT_POST_INIT_ENABLED =
+          "true";
+        process.env
+          .TIKTOK_CREATOR_DIRECT_POST_ALLOWED_ORGANIZATION_IDS =
+          "*";
+
+        expect(
+          isTikTokCreatorDirectPostEnabledForOrganization(
+            "00000000-0000-0000-0000-000000000099",
+          ),
+        ).toBe(true);
+      },
+    );
     it(
       "fails closed before DB or TikTok access while feature flag is off",
       async () => {
