@@ -138,6 +138,12 @@ export async function POST(
       {
         error:
           result.code,
+        ...(result.providerCode
+          ? {
+              providerCode:
+                result.providerCode,
+            }
+          : {}),
       },
       {
         status:
