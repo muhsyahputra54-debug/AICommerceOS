@@ -1320,15 +1320,14 @@ export async function POST(
   if (
     businessProfileResult.error
   ) {
-    console.error(
-      "Failed to load AI business profile for chat context.",
-      {
-        organizationId,
-        userId: user.id,
-        error:
-          businessProfileResult.error,
-      },
-    );
+    logAiChatFailure({
+      operation:
+        "business_profile_context_load",
+      requestId:
+        clientRequestId,
+      error:
+        businessProfileResult.error,
+    });
   }
 
   const businessProfile =
@@ -1385,15 +1384,14 @@ export async function POST(
   if (
     activeMemoriesResult.error
   ) {
-    console.error(
-      "Failed to load active AI memories for chat context.",
-      {
-        organizationId,
-        userId: user.id,
-        error:
-          activeMemoriesResult.error,
-      },
-    );
+    logAiChatFailure({
+      operation:
+        "active_memories_context_load",
+      requestId:
+        clientRequestId,
+      error:
+        activeMemoriesResult.error,
+    });
   }
 
   const activeMemories =
@@ -1650,15 +1648,14 @@ export async function POST(
         });
 
       if (assistantMessageError) {
-        console.error(
-          "Failed to persist AI assistant message.",
-          {
-            conversationId,
-            organizationId,
-            userId: user.id,
-            error: assistantMessageError,
-          },
-        );
+        logAiChatFailure({
+          operation:
+            "assistant_message_persist",
+          requestId:
+            clientRequestId,
+          error:
+            assistantMessageError,
+        });
 
         return NextResponse.json(
           {
@@ -1700,15 +1697,14 @@ export async function POST(
         );
 
       if (touchError) {
-        console.error(
-          "Failed to update AI conversation timestamp.",
-          {
-            conversationId,
-            organizationId,
-            userId: user.id,
-            error: touchError,
-          },
-        );
+        logAiChatFailure({
+          operation:
+            "assistant_message_conversation_touch",
+          requestId:
+            clientRequestId,
+          error:
+            touchError,
+        });
       }
     }
 

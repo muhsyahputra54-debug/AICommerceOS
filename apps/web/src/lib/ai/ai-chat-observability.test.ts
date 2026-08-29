@@ -66,6 +66,22 @@ describe(
         "explicit_memory_forget_delete",
         "ai_chat_explicit_memory_forget_delete_failed",
       ],
+      [
+        "business_profile_context_load",
+        "ai_chat_business_profile_context_load_failed",
+      ],
+      [
+        "active_memories_context_load",
+        "ai_chat_active_memories_context_load_failed",
+      ],
+      [
+        "assistant_message_persist",
+        "ai_chat_assistant_message_persist_failed",
+      ],
+      [
+        "assistant_message_conversation_touch",
+        "ai_chat_assistant_message_conversation_touch_failed",
+      ],
     ] as const)(
       "maps %s to bounded structured metadata",
       (
