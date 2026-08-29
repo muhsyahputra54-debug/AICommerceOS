@@ -8,6 +8,9 @@ import {
   getControlledActionRequestContext,
   readControlledAction,
 } from "@/lib/ai/controlled-action-server";
+import {
+  logControlledActionFailure,
+} from "@/lib/ai/controlled-action-observability";
 
 type RouteContext = {
   params: Promise<{
@@ -16,11 +19,16 @@ type RouteContext = {
 };
 
 export async function POST(
-  _request: Request,
+  request: Request,
   {
     params,
   }: RouteContext,
 ) {
+  const requestId =
+    request.headers.get(
+      "x-request-id",
+    );
+
   const context =
     await getControlledActionRequestContext();
 
@@ -30,7 +38,6 @@ export async function POST(
 
   const {
     supabase,
-    user,
     organizationId,
   } = context;
 
@@ -68,16 +75,12 @@ export async function POST(
     );
 
   if (error) {
-    console.error(
-      "Failed to confirm controlled AI action.",
-      {
-        organizationId,
-        userId:
-          user.id,
-        actionId,
-        error,
-      },
-    );
+    logControlledActionFailure({
+      operation:
+        "confirm",
+      requestId,
+      error,
+    });
 
     return controlledActionRpcErrorResponse(
       error.message,
