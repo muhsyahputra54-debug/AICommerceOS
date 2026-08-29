@@ -476,7 +476,7 @@ export default function TikTokCreatorDirectPostPanel({
               {new Date(
                 creatorInfo.checkedAt,
               ).toLocaleString()}
-              {" â€¢ "}
+              {" | "}
               {copy.maxDuration}:{" "}
               {creatorInfo.maxVideoPostDurationSec}s
             </div>
