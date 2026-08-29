@@ -929,3 +929,227 @@ export async function initializeTikTokCreatorDirectPost(
     },
   };
 }
+export const TIKTOK_CREATOR_POST_STATUSES = [
+  "PROCESSING_UPLOAD",
+  "PROCESSING_DOWNLOAD",
+  "SEND_TO_USER_INBOX",
+  "PUBLISH_COMPLETE",
+  "FAILED",
+] as const;
+
+export type TikTokCreatorPostStatus =
+  (typeof TIKTOK_CREATOR_POST_STATUSES)[number];
+
+export type TikTokCreatorPostStatusSnapshot =
+  Readonly<{
+    status: TikTokCreatorPostStatus;
+    failReason: string | null;
+    uploadedBytes: number | null;
+  }>;
+
+export type TikTokCreatorPostStatusErrorCode =
+  | "invalid_publish_id"
+  | "connection_unavailable"
+  | "connection_ambiguous"
+  | "scope_missing"
+  | "credential_unavailable"
+  | "credential_invalid"
+  | "token_keyring_unavailable"
+  | "token_decryption_failed"
+  | "access_token_expired"
+  | "post_status_request_failed"
+  | "post_status_provider_error"
+  | "post_status_response_invalid";
+
+export function parseTikTokCreatorPostStatusResponse(
+  payload: unknown,
+):
+  | Readonly<{
+      ok: true;
+      value: TikTokCreatorPostStatusSnapshot;
+    }>
+  | Readonly<{
+      ok: false;
+      providerCode?: string;
+    }> {
+  if (!isRecord(payload)) {
+    return { ok: false };
+  }
+
+  const remoteErrorCode =
+    providerErrorCode(payload);
+
+  if (remoteErrorCode !== "ok") {
+    return {
+      ok: false,
+      ...(remoteErrorCode
+        ? { providerCode: remoteErrorCode }
+        : {}),
+    };
+  }
+
+  if (!isRecord(payload.data)) {
+    return { ok: false };
+  }
+
+  const status =
+    nonEmptyString(payload.data.status);
+
+  if (
+    !status ||
+    !TIKTOK_CREATOR_POST_STATUSES.includes(
+      status as TikTokCreatorPostStatus,
+    )
+  ) {
+    return { ok: false };
+  }
+
+  const failReasonRaw =
+    payload.data.fail_reason;
+
+  const failReason =
+    failReasonRaw === undefined ||
+    failReasonRaw === null ||
+    failReasonRaw === ""
+      ? null
+      : nonEmptyString(failReasonRaw);
+
+  if (
+    failReasonRaw !== undefined &&
+    failReasonRaw !== null &&
+    failReasonRaw !== "" &&
+    !failReason
+  ) {
+    return { ok: false };
+  }
+
+  const uploadedBytesRaw =
+    payload.data.uploaded_bytes;
+
+  let uploadedBytes: number | null = null;
+
+  if (
+    uploadedBytesRaw !== undefined &&
+    uploadedBytesRaw !== null
+  ) {
+    if (
+      typeof uploadedBytesRaw !== "number" ||
+      !Number.isSafeInteger(uploadedBytesRaw) ||
+      uploadedBytesRaw < 0
+    ) {
+      return { ok: false };
+    }
+
+    uploadedBytes = uploadedBytesRaw;
+  }
+
+  return {
+    ok: true,
+    value: {
+      status: status as TikTokCreatorPostStatus,
+      failReason,
+      uploadedBytes,
+    },
+  };
+}
+
+export async function getTikTokCreatorPostStatusForOrganization(
+  input: Readonly<{
+    organizationId: string;
+    publishId: string;
+    nowMs?: number;
+  }>,
+  fetchImpl: typeof fetch = fetch,
+): Promise<
+  | Readonly<{
+      ok: true;
+      value: TikTokCreatorPostStatusSnapshot;
+    }>
+  | Readonly<{
+      ok: false;
+      code: TikTokCreatorPostStatusErrorCode;
+      providerCode?: string;
+    }>
+> {
+  const publishId =
+    nonEmptyString(input.publishId);
+
+  if (!publishId || publishId.length > 64) {
+    return {
+      ok: false,
+      code: "invalid_publish_id",
+    };
+  }
+
+  const accessToken =
+    await loadTikTokCreatorAccessToken({
+      organizationId: input.organizationId,
+      nowMs: input.nowMs,
+    });
+
+  if (!accessToken.ok) {
+    return accessToken;
+  }
+
+  let response: Response;
+
+  try {
+    response = await fetchImpl(
+      TIKTOK_CREATOR_ENDPOINTS.statusFetch,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken.value}`,
+          "Content-Type": "application/json; charset=UTF-8",
+        },
+        cache: "no-store",
+        body: JSON.stringify({
+          publish_id: publishId,
+        }),
+      },
+    );
+  } catch {
+    return {
+      ok: false,
+      code: "post_status_request_failed",
+    };
+  }
+
+  let payload: unknown;
+
+  try {
+    payload = await response.json();
+  } catch {
+    return {
+      ok: false,
+      code: "post_status_response_invalid",
+    };
+  }
+
+  const parsed =
+    parseTikTokCreatorPostStatusResponse(payload);
+
+  if (!parsed.ok) {
+    return {
+      ok: false,
+      code: parsed.providerCode
+        ? "post_status_provider_error"
+        : "post_status_response_invalid",
+      ...(parsed.providerCode
+        ? { providerCode: parsed.providerCode }
+        : {}),
+    };
+  }
+
+  if (!response.ok) {
+    return {
+      ok: false,
+      code: "post_status_response_invalid",
+    };
+  }
+
+  return {
+    ok: true,
+    value: parsed.value,
+  };
+}
