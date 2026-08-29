@@ -5,6 +5,11 @@ import {
 } from "react";
 
 import {
+  executeTikTokCreatorDirectPost,
+  type TikTokDirectPostClientProgress,
+} from "@/lib/ai/tiktok-creator-direct-post-client";
+
+import {
   assessTikTokCreatorPreparation,
   parseTikTokCreatorInfoApiResponse,
 } from "@/lib/ai/tiktok-creator-direct-post-ui";
@@ -30,6 +35,15 @@ type LoadState =
   | "idle"
   | "loading"
   | "ready"
+  | "error";
+
+type PublishUiState =
+  | "idle"
+  | "initializing"
+  | "uploading"
+  | "processing"
+  | "processing_pending"
+  | "complete"
   | "error";
 
 function privacyLabel(
@@ -244,6 +258,38 @@ export default function TikTokCreatorDirectPostPanel({
       false,
     );
 
+  const [
+    isAigc,
+    setIsAigc,
+  ] =
+    useState(
+      false,
+    );
+
+  const [
+    publishState,
+    setPublishState,
+  ] =
+    useState<PublishUiState>(
+      "idle",
+    );
+
+  const [
+    uploadPercent,
+    setUploadPercent,
+  ] =
+    useState(
+      0,
+    );
+
+  const [
+    publishErrorCode,
+    setPublishErrorCode,
+  ] =
+    useState<string | null>(
+      null,
+    );
+
   const copy =
     isId
       ? {
@@ -391,6 +437,15 @@ export default function TikTokCreatorDirectPostPanel({
     setPreparationAccepted(
       false,
     );
+    setPublishState(
+      "idle",
+    );
+    setUploadPercent(
+      0,
+    );
+    setPublishErrorCode(
+      null,
+    );
 
     try {
       const response =
@@ -484,6 +539,9 @@ export default function TikTokCreatorDirectPostPanel({
     file: File,
   ) {
     setPreparationAccepted(false);
+    setPublishState("idle");
+    setUploadPercent(0);
+    setPublishErrorCode(null);
     setExplicitUserConsent(false);
     setSelectedVideo(null);
     setVideoStatus("reading");
@@ -527,6 +585,149 @@ export default function TikTokCreatorDirectPostPanel({
     catch {
       setVideoStatus("error");
     }
+  }
+
+  async function publishVideo() {
+    if (
+      !creatorInfo ||
+      !selectedVideo ||
+      selectedPrivacy === ""
+    ) {
+      return;
+    }
+
+    const currentPreparation =
+      assessTikTokCreatorPreparation(
+        {
+          snapshot:
+            creatorInfo,
+          selectedPrivacyLevel:
+            selectedPrivacy,
+          allowComment,
+          allowDuet,
+          allowStitch,
+          commercialDisclosureEnabled,
+          ownBrand,
+          brandedContent,
+          explicitUserConsent,
+        },
+      );
+
+    if (
+      !currentPreparation.ready
+    ) {
+      return;
+    }
+
+    setPreparationAccepted(
+      true,
+    );
+    setPublishState(
+      "initializing",
+    );
+    setUploadPercent(
+      0,
+    );
+    setPublishErrorCode(
+      null,
+    );
+
+    const result =
+      await executeTikTokCreatorDirectPost(
+        {
+          request: {
+            creatorInfoCheckedAt:
+              creatorInfo.checkedAt,
+            expectedCreatorUsername:
+              creatorInfo.creatorUsername,
+            title,
+            selectedPrivacyLevel:
+              selectedPrivacy,
+            explicitUserConsent,
+            allowComment,
+            allowDuet,
+            allowStitch,
+            videoDurationSec:
+              selectedVideo.durationSec,
+            fileName:
+              selectedVideo.file.name,
+            mimeType:
+              selectedVideo.file.type,
+            videoSize:
+              selectedVideo.file.size,
+            ownBrand,
+            brandedContent,
+            isAigc,
+          },
+          file:
+            selectedVideo.file,
+          onProgress: (
+            progress:
+              TikTokDirectPostClientProgress,
+          ) => {
+            switch (
+              progress.stage
+            ) {
+              case "initializing":
+                setPublishState(
+                  "initializing",
+                );
+                break;
+
+              case "uploading":
+                setPublishState(
+                  "uploading",
+                );
+                setUploadPercent(
+                  Math.min(
+                    100,
+                    Math.round(
+                      (
+                        progress.uploadedBytes /
+                        progress.totalBytes
+                      ) *
+                        100,
+                    ),
+                  ),
+                );
+                break;
+
+              case "processing":
+                setPublishState(
+                  "processing",
+                );
+                break;
+            }
+          },
+        },
+      );
+
+    if (!result.ok) {
+      setPublishState(
+        "error",
+      );
+      setPublishErrorCode(
+        result.code,
+      );
+      return;
+    }
+
+    if (
+      result.status ===
+      "complete"
+    ) {
+      setPublishState(
+        "complete",
+      );
+      setUploadPercent(
+        100,
+      );
+      return;
+    }
+
+    setPublishState(
+      "processing_pending",
+    );
   }
 
   const preparation =
@@ -934,6 +1135,27 @@ export default function TikTokCreatorDirectPostPanel({
             ) : null}
           </div>
 
+          <label className="flex items-start gap-3 rounded-xl border border-slate-200 p-4 text-sm text-slate-800">
+            <input
+              type="checkbox"
+              checked={isAigc}
+              onChange={(event) => {
+                setIsAigc(
+                  event.target.checked,
+                );
+                setPreparationAccepted(
+                  false,
+                );
+              }}
+              className="mt-1"
+            />
+            <span>
+              {isId
+                ? "Video ini berisi konten yang dibuat atau diubah secara signifikan dengan AI."
+                : "This video contains content created or significantly altered with AI."}
+            </span>
+          </label>
+
           <label className="flex items-start gap-3 rounded-xl bg-sky-50 p-4 text-sm text-slate-800">
             <input
               type="checkbox"
@@ -955,32 +1177,126 @@ export default function TikTokCreatorDirectPostPanel({
 
           <button
             type="button"
-            disabled={!canContinue || preparationAccepted}
+            disabled={
+              !canContinue ||
+              publishState === "initializing" ||
+              publishState === "uploading" ||
+              publishState === "processing" ||
+              (
+                preparationAccepted &&
+                (
+                  publishState === "processing_pending" ||
+                  publishState === "complete"
+                )
+              )
+            }
             onClick={() => {
               if (canContinue) {
-                setPreparationAccepted(
-                  true,
-                );
+                void publishVideo();
               }
             }}
             className="rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40"
           >
-            {preparationAccepted ? (isId ? "Persiapan siap" : "Preparation ready") : copy.continue}
+            {publishState === "initializing"
+              ? (
+                  isId
+                    ? "Menginisialisasi..."
+                    : "Initializing..."
+                )
+              : publishState === "uploading"
+                ? (
+                    isId
+                      ? `Mengunggah ${uploadPercent}%`
+                      : `Uploading ${uploadPercent}%`
+                  )
+                : publishState === "processing"
+                  ? (
+                      isId
+                        ? "Memproses..."
+                        : "Processing..."
+                    )
+                  : publishState === "processing_pending"
+                    ? (
+                        isId
+                          ? "Menunggu TikTok"
+                          : "Waiting for TikTok"
+                      )
+                    : publishState === "complete"
+                      ? (
+                          isId
+                            ? "Dipublikasikan"
+                            : "Published"
+                        )
+                      : (
+                          isId
+                            ? "Publikasikan ke TikTok"
+                            : "Publish to TikTok"
+                        )}
           </button>
 
           <div
-              role="status"
-              aria-live="polite"
-              className={
-                preparationAccepted
-                  ? "rounded-xl bg-emerald-50 p-3 text-xs leading-5 text-emerald-800"
-                  : "text-xs leading-5 text-slate-500"
-              }
-            >
-              {preparationAccepted
-                ? copy.prepared
-                : copy.incomplete}
-            </div>
+            role="status"
+            aria-live="polite"
+            className={
+              preparationAccepted &&
+              publishState === "complete"
+                ? "rounded-xl bg-emerald-50 p-3 text-xs leading-5 text-emerald-800"
+                : preparationAccepted &&
+                    publishState === "error"
+                  ? "rounded-xl bg-rose-50 p-3 text-xs leading-5 text-rose-800"
+                  : preparationAccepted
+                    ? "rounded-xl bg-sky-50 p-3 text-xs leading-5 text-sky-800"
+                    : "text-xs leading-5 text-slate-500"
+            }
+          >
+            {!preparationAccepted
+              ? copy.incomplete
+              : publishState === "initializing"
+                ? (
+                    isId
+                      ? "Meminta sesi Direct Post dari TikTok. Video belum diunggah."
+                      : "Requesting a Direct Post session from TikTok. The video has not been uploaded yet."
+                  )
+                : publishState === "uploading"
+                  ? (
+                      isId
+                        ? `Mengunggah video ke TikTok: ${uploadPercent}%.`
+                        : `Uploading video to TikTok: ${uploadPercent}%.`
+                    )
+                  : publishState === "processing"
+                    ? (
+                        isId
+                          ? "Unggahan selesai. TikTok sedang memproses publikasi."
+                          : "Upload complete. TikTok is processing the post."
+                      )
+                    : publishState === "processing_pending"
+                      ? (
+                          isId
+                            ? "TikTok masih memproses video. Jangan mulai unggahan baru untuk video ini."
+                            : "TikTok is still processing the video. Do not start another upload for this video."
+                        )
+                      : publishState === "complete"
+                        ? (
+                            isId
+                              ? "TikTok mengonfirmasi PUBLISH_COMPLETE."
+                              : "TikTok confirmed PUBLISH_COMPLETE."
+                          )
+                        : publishState === "error"
+                          ? (
+                              publishErrorCode === "direct_post_init_disabled"
+                                ? (
+                                    isId
+                                      ? "Direct Post belum diaktifkan untuk lingkungan ini. Tidak ada video yang diunggah."
+                                      : "Direct Post is not enabled for this environment. No video was uploaded."
+                                  )
+                                : (
+                                    isId
+                                      ? `Publikasi belum berhasil (${publishErrorCode ?? "unknown_error"}). Periksa koneksi dan pengaturan lalu coba lagi.`
+                                      : `Publishing did not complete (${publishErrorCode ?? "unknown_error"}). Check the connection and settings, then try again.`
+                                  )
+                            )
+                          : copy.prepared}
+          </div>
         </div>
       ) : null}
     </section>
