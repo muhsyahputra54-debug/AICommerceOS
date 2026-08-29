@@ -14,6 +14,11 @@ import type {
   TikTokPrivacyLevel,
 } from "@/lib/ai/tiktok-creator-publishing";
 
+import {
+  planTikTokVideoFileUpload,
+  type TikTokVideoUploadPlan,
+} from "@/lib/ai/tiktok-creator-video-upload";
+
 import type {
   Locale,
 } from "@/lib/i18n/config";
@@ -54,6 +59,65 @@ function privacyLabel(
   }
 }
 
+type SelectedVideo = Readonly<{
+  file: File;
+  durationSec: number;
+  uploadPlan: TikTokVideoUploadPlan;
+}>;
+
+async function readVideoDurationSec(
+  file: File,
+): Promise<number> {
+  const url =
+    URL.createObjectURL(file);
+
+  try {
+    return await new Promise<number>(
+      (resolve, reject) => {
+        const video =
+          document.createElement(
+            "video",
+          );
+
+        video.preload =
+          "metadata";
+
+        video.onloadedmetadata =
+          () => {
+            if (
+              Number.isFinite(video.duration) &&
+              video.duration > 0
+            ) {
+              resolve(video.duration);
+            }
+            else {
+              reject(
+                new Error(
+                  "invalid duration",
+                ),
+              );
+            }
+          };
+
+        video.onerror =
+          () => {
+            reject(
+              new Error(
+                "metadata read failed",
+              ),
+            );
+          };
+
+        video.src =
+          url;
+      },
+    );
+  }
+  finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
 export default function TikTokCreatorDirectPostPanel({
   locale,
 }: Readonly<{
@@ -85,6 +149,27 @@ export default function TikTokCreatorDirectPostPanel({
   ] =
     useState(
       "",
+    );
+
+  const [
+    selectedVideo,
+    setSelectedVideo,
+  ] =
+    useState<SelectedVideo | null>(
+      null,
+    );
+
+  const [
+    videoStatus,
+    setVideoStatus,
+  ] =
+    useState<
+      | "idle"
+      | "reading"
+      | "ready"
+      | "error"
+    >(
+      "idle",
     );
 
   const [
@@ -180,6 +265,16 @@ export default function TikTokCreatorDirectPostPanel({
             "Akun tujuan",
           checkedAt:
             "Info kreator diperbarui",
+          video:
+            "Video TikTok",
+          videoHelp:
+            "Pilih MP4, MOV, atau WebM. File belum dikirim ke TikTok pada tahap ini.",
+          videoReading:
+            "Membaca metadata video...",
+          videoError:
+            "Video tidak memenuhi format, ukuran, metadata, atau batas durasi TikTok.",
+          videoReady:
+            "Video siap untuk tahap inisialisasi.",
           caption:
             "Caption / judul TikTok",
           captionPlaceholder:
@@ -215,7 +310,7 @@ export default function TikTokCreatorDirectPostPanel({
           prepared:
             "Persiapan siap. Belum ada video yang diunggah atau dipublikasikan.",
           incomplete:
-            "Lengkapi pilihan privasi dan persetujuan sebelum melanjutkan.",
+            "Pilih video, privasi, dan berikan persetujuan sebelum melanjutkan.",
           maxDuration:
             "Durasi video maksimum",
         }
@@ -238,6 +333,16 @@ export default function TikTokCreatorDirectPostPanel({
             "Target account",
           checkedAt:
             "Creator info refreshed",
+          video:
+            "TikTok video",
+          videoHelp:
+            "Choose MP4, MOV, or WebM. The file is not sent to TikTok at this stage.",
+          videoReading:
+            "Reading video metadata...",
+          videoError:
+            "The video does not meet TikTok format, size, metadata, or duration limits.",
+          videoReady:
+            "Video is ready for the initialization step.",
           caption:
             "TikTok caption / title",
           captionPlaceholder:
@@ -273,7 +378,7 @@ export default function TikTokCreatorDirectPostPanel({
           prepared:
             "Preparation is ready. No video has been uploaded or published.",
           incomplete:
-            "Choose a privacy setting and provide consent before continuing.",
+            "Choose a video and privacy setting, then provide consent before continuing.",
           maxDuration:
             "Maximum video duration",
         };
@@ -329,6 +434,12 @@ export default function TikTokCreatorDirectPostPanel({
       setCreatorInfo(
         parsed.value,
       );
+      setSelectedVideo(
+        null,
+      );
+      setVideoStatus(
+        "idle",
+      );
 
       // TikTok UX requirements: no privacy or interaction defaults.
       setSelectedPrivacy(
@@ -369,6 +480,55 @@ export default function TikTokCreatorDirectPostPanel({
     }
   }
 
+  async function selectVideo(
+    file: File,
+  ) {
+    setPreparationAccepted(false);
+    setExplicitUserConsent(false);
+    setSelectedVideo(null);
+    setVideoStatus("reading");
+
+    const plan =
+      planTikTokVideoFileUpload({
+        videoSize:
+          file.size,
+        mimeType:
+          file.type,
+        fileName:
+          file.name,
+      });
+
+    if (!plan.ok) {
+      setVideoStatus("error");
+      return;
+    }
+
+    try {
+      const durationSec =
+        await readVideoDurationSec(file);
+
+      if (
+        !creatorInfo ||
+        durationSec >
+          creatorInfo.maxVideoPostDurationSec
+      ) {
+        setVideoStatus("error");
+        return;
+      }
+
+      setSelectedVideo({
+        file,
+        durationSec,
+        uploadPlan:
+          plan.value,
+      });
+      setVideoStatus("ready");
+    }
+    catch {
+      setVideoStatus("error");
+    }
+  }
+
   const preparation =
     creatorInfo
       ? assessTikTokCreatorPreparation(
@@ -390,7 +550,9 @@ export default function TikTokCreatorDirectPostPanel({
 
   const canContinue =
     preparation?.ready ===
-    true;
+      true &&
+    selectedVideo !==
+      null;
 
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -480,6 +642,66 @@ export default function TikTokCreatorDirectPostPanel({
               {copy.maxDuration}:{" "}
               {creatorInfo.maxVideoPostDurationSec}s
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="block text-sm font-semibold text-slate-800">
+              {copy.video}
+            </label>
+
+            <input
+              type="file"
+              accept=".mp4,.mov,.webm,video/mp4,video/quicktime,video/webm"
+              onChange={(event) => {
+                const file =
+                  event.target.files?.[0];
+
+                if (!file) {
+                  setSelectedVideo(null);
+                  setVideoStatus("idle");
+                  setExplicitUserConsent(false);
+                  setPreparationAccepted(false);
+                  return;
+                }
+
+                void selectVideo(file);
+              }}
+              className="block w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700"
+            />
+
+            <p className="text-xs leading-5 text-slate-500">
+              {copy.videoHelp}
+            </p>
+
+            {videoStatus === "reading" ? (
+              <p className="text-xs font-medium text-sky-700">
+                {copy.videoReading}
+              </p>
+            ) : null}
+
+            {videoStatus === "error" ? (
+              <p className="text-xs font-medium text-rose-700">
+                {copy.videoError}
+              </p>
+            ) : null}
+
+            {videoStatus === "ready" && selectedVideo ? (
+              <div className="rounded-xl bg-slate-50 p-3 text-xs leading-5 text-slate-600">
+                <p className="font-semibold text-slate-800">
+                  {selectedVideo.file.name}
+                </p>
+                <p>
+                  {(selectedVideo.file.size / 1_000_000).toFixed(2)} MB
+                  {" | "}
+                  {selectedVideo.durationSec.toFixed(1)}s
+                  {" | "}
+                  {selectedVideo.uploadPlan.totalChunkCount} chunk(s)
+                </p>
+                <p className="text-emerald-700">
+                  {copy.videoReady}
+                </p>
+              </div>
+            ) : null}
           </div>
 
           <label className="block space-y-2">
