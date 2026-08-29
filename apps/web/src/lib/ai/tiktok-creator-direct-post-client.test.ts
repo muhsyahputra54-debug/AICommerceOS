@@ -91,15 +91,18 @@ describe(
         const fetchImpl =
           vi.fn(
             async (
-              ..._args: Parameters<typeof fetch>
-            ) =>
-              new Response(
+              ...args: Parameters<typeof fetch>
+            ) => {
+              void args;
+
+              return new Response(
                 null,
                 {
                   status:
                     201,
                 },
-              ),
+              );
+            },
           );
 
         const progress =
