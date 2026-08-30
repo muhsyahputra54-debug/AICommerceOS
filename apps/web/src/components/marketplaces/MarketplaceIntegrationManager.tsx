@@ -1,5 +1,9 @@
 "use client";
 
+import {
+  getMarketplaceProviderDefinition,
+} from "@/lib/marketplaces/provider-registry";
+
 import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
@@ -261,6 +265,19 @@ function supportsTokopediaShopConnector(provider: string) {
   );
 }
 
+
+function requireMarketplaceProviderRoute(
+  route: string | null | undefined,
+  action: string,
+) {
+  if (!route) {
+    throw new Error(
+      `Marketplace ${action} route unavailable.`,
+    );
+  }
+
+  return route;
+}
 export default function MarketplaceIntegrationManager({
   organizationId,
   account,
@@ -282,6 +299,16 @@ export default function MarketplaceIntegrationManager({
   const router = useRouter();
   const { locale } = useLanguage();
   const copy = getDictionary(locale).marketplaces.detail.manager;
+  const connectorDefinition =
+    getMarketplaceProviderDefinition(
+      supportsTokopediaShopConnector(
+        account.provider,
+      )
+        ? "tiktok_shop"
+        : account.provider,
+    );
+  const connectorRoutes =
+    connectorDefinition?.routes ?? null;
   const localeTag = locale === "id" ? "id-ID" : "en-US";
 
   const formatCurrency = (
@@ -365,7 +392,7 @@ export default function MarketplaceIntegrationManager({
 
     try {
       const response = await fetch(
-        "/api/marketplaces/tiktok-shop/shops/sync",
+        requireMarketplaceProviderRoute(connectorRoutes?.shopsSync, "shops sync"),
         {
           method: "POST",
           headers: {
@@ -432,7 +459,7 @@ export default function MarketplaceIntegrationManager({
 
     try {
       const response = await fetch(
-        "/api/marketplaces/tiktok-shop/products/sync",
+        requireMarketplaceProviderRoute(connectorRoutes?.productsSync, "products sync"),
         {
           method: "POST",
           headers: {
@@ -469,7 +496,7 @@ export default function MarketplaceIntegrationManager({
 
     try {
       const response = await fetch(
-        "/api/marketplaces/tiktok-shop/orders/sync",
+        requireMarketplaceProviderRoute(connectorRoutes?.ordersSync, "orders sync"),
         {
           method: "POST",
           headers: {
@@ -506,7 +533,7 @@ export default function MarketplaceIntegrationManager({
 
     try {
       const response = await fetch(
-        "/api/marketplaces/tiktok-shop/webhook/process",
+        requireMarketplaceProviderRoute(connectorRoutes?.webhookProcess, "webhook process"),
         {
           method: "POST",
           headers: {
@@ -958,7 +985,7 @@ export default function MarketplaceIntegrationManager({
               </span>
             ) : (
               <Link
-                href={`/api/marketplaces/tiktok-shop/authorize?account_id=${encodeURIComponent(account.id)}`}
+                href={`${requireMarketplaceProviderRoute(connectorRoutes?.authorize, "authorize")}?account_id=${encodeURIComponent(account.id)}`}
                 className="inline-flex h-10 items-center justify-center rounded-lg border bg-background px-4 text-sm font-medium transition-colors hover:bg-muted"
               >
                 {connection
