@@ -3,6 +3,10 @@ import {
 } from "next/server";
 
 import {
+  logServerError,
+} from "@/lib/observability/server-logger";
+
+import {
   getControlledActionRequestContext,
 } from "@/lib/ai/controlled-action-server";
 
@@ -33,7 +37,13 @@ function errorStatus(
   }
 }
 
-export async function GET() {
+export async function GET(
+  request: Request,
+) {
+  const requestId =
+    request.headers.get(
+      "x-request-id",
+    );
   const context =
     await getControlledActionRequestContext();
 
@@ -41,6 +51,20 @@ export async function GET() {
     if (context.error) {
       return context.error;
     }
+
+    logServerError({
+      event:
+        "ai_tiktok_creator_info_auth_context_unavailable",
+      requestId,
+      route:
+        "/api/ai/publishing-provider-connections/tiktok/creator-info",
+      method:
+        "GET",
+      provider:
+        "tiktok",
+      operation:
+        "resolve_authentication_context",
+    });
 
     return NextResponse.json(
       {

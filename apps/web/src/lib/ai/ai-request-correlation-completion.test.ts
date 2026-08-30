@@ -15,6 +15,11 @@ const ROUTE_FILES = [
   "../../app/api/ai/controlled-publications/route.ts",
   "../../app/api/ai/publishing-provider-connections/route.ts",
   "../../app/api/ai/today/daily-brief/route.ts",
+  "../../app/api/ai/publishing-provider-connections/tiktok/authorize/route.ts",
+  "../../app/api/ai/publishing-provider-connections/tiktok/callback/route.ts",
+  "../../app/api/ai/publishing-provider-connections/tiktok/creator-info/route.ts",
+  "../../app/api/ai/publishing-provider-connections/tiktok/direct-post/init/route.ts",
+  "../../app/api/ai/publishing-provider-connections/tiktok/direct-post/status/route.ts",
 ] as const;
 
 describe(
@@ -38,8 +43,8 @@ describe(
 
           expect(
             source,
-          ).toContain(
-            'request.headers.get(',
+          ).toMatch(
+            /request\??\.headers\.get\(/u,
           );
 
           expect(

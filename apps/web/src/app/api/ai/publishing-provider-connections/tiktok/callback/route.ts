@@ -4,6 +4,10 @@ import {
 } from "next/server";
 
 import {
+  logServerError,
+} from "@/lib/observability/server-logger";
+
+import {
   getControlledActionRequestContext,
 } from "@/lib/ai/controlled-action-server";
 
@@ -154,6 +158,10 @@ function stateFailureRedirect() {
 export async function GET(
   request: NextRequest,
 ) {
+  const requestId =
+    request.headers.get(
+      "x-request-id",
+    );
   const context =
     await getControlledActionRequestContext();
 
@@ -163,6 +171,20 @@ export async function GET(
         context.error,
       );
     }
+
+    logServerError({
+      event:
+        "ai_tiktok_callback_auth_context_unavailable",
+      requestId,
+      route:
+        "/api/ai/publishing-provider-connections/tiktok/callback",
+      method:
+        "GET",
+      provider:
+        "tiktok",
+      operation:
+        "resolve_authentication_context",
+    });
 
     return clearOAuthCookie(
       NextResponse.json(
