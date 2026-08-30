@@ -1,3 +1,4 @@
+import { normalizeMarketplaceProvider } from "@/lib/marketplaces/provider-registry";
 import {
   decryptMarketplaceSecret,
   encryptMarketplaceSecret,
@@ -475,4 +476,31 @@ export async function getValidShopeeAccessToken(
     ),
     refreshed: true,
   };
+}
+
+export type MarketplaceTokenResolver =
+  | typeof getValidTikTokShopAccessToken
+  | typeof getValidShopeeAccessToken;
+
+export function getMarketplaceTokenResolver(
+  provider: string,
+): MarketplaceTokenResolver {
+  const normalized =
+    normalizeMarketplaceProvider(provider);
+
+  if (
+    normalized === TIKTOK_SHOP_PROVIDER
+  ) {
+    return getValidTikTokShopAccessToken;
+  }
+
+  if (
+    normalized === SHOPEE_PROVIDER
+  ) {
+    return getValidShopeeAccessToken;
+  }
+
+  throw new Error(
+    "Marketplace provider token strategy unavailable.",
+  );
 }
