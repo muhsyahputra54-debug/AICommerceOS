@@ -8,6 +8,9 @@ import {
   type OpenAIChatResponseMetadata,
 } from "@/lib/ai/metering";
 
+import {
+  normalizeLocale,
+} from "@/lib/i18n/config";
 import { getCurrentOrganization } from "@/lib/supabase/current-organization";
 import { createClient } from "@/lib/supabase/server";
 
@@ -45,16 +48,63 @@ function errorMessage(error: unknown) {
 }
 
 export async function POST(
-  _request: Request,
+  request: Request,
   { params }: RouteContext,
 ) {
+  const requestBody =
+    (await request.json().catch(() => ({}))) as {
+      locale?: string;
+    };
+
+  const locale =
+    normalizeLocale(requestBody.locale);
+
+  const outputLanguage =
+    locale === "en"
+      ? "English"
+      : "Indonesian";
+
+  const routeCopy =
+    locale === "en"
+      ? {
+          apiKeyMissing:
+            "OPENAI_API_KEY is not configured on the server.",
+          organizationMissing:
+            "Active organization was not found.",
+          authenticationRequired:
+            "Authentication required.",
+          candidateNotFound:
+            "Research candidate was not found.",
+          usageUnavailable:
+            "AI usage metering is unavailable.",
+          runCreateFailed:
+            "AI research run could not be created.",
+          noAnalysis:
+            "OpenAI returned no analysis.",
+        }
+      : {
+          apiKeyMissing:
+            "OPENAI_API_KEY belum dikonfigurasi pada server.",
+          organizationMissing:
+            "Organisasi aktif tidak ditemukan.",
+          authenticationRequired:
+            "Autentikasi diperlukan.",
+          candidateNotFound:
+            "Kandidat riset tidak ditemukan.",
+          usageUnavailable:
+            "Metering penggunaan AI tidak tersedia.",
+          runCreateFailed:
+            "Proses riset AI tidak dapat dibuat.",
+          noAnalysis:
+            "OpenAI tidak mengembalikan analisis.",
+        };
+
   const apiKey = process.env.OPENAI_API_KEY?.trim();
 
   if (!apiKey) {
     return NextResponse.json(
       {
-        error:
-          "OPENAI_API_KEY belum dikonfigurasi pada server.",
+        error: routeCopy.apiKeyMissing,
       },
       { status: 503 },
     );
@@ -64,7 +114,7 @@ export async function POST(
 
   if (!currentOrganization) {
     return NextResponse.json(
-      { error: "Organization aktif tidak ditemukan." },
+      { error: routeCopy.organizationMissing },
       { status: 401 },
     );
   }
@@ -80,7 +130,7 @@ export async function POST(
 
   if (userError || !user) {
     return NextResponse.json(
-      { error: "Authentication required." },
+      { error: routeCopy.authenticationRequired },
       { status: 401 },
     );
   }
@@ -115,7 +165,7 @@ export async function POST(
 
   if (!itemResult.data) {
     return NextResponse.json(
-      { error: "Research candidate tidak ditemukan." },
+      { error: routeCopy.candidateNotFound },
       { status: 404 },
     );
   }
@@ -149,7 +199,7 @@ export async function POST(
         error:
           error instanceof Error
             ? error.message
-            : "AI usage metering tidak tersedia.",
+            : routeCopy.usageUnavailable,
       },
       { status: 503 },
     );
@@ -183,7 +233,7 @@ export async function POST(
       {
         error:
           runError?.message ??
-          "AI research run tidak dapat dibuat.",
+          routeCopy.runCreateFailed,
       },
       { status: 500 },
     );
@@ -216,6 +266,8 @@ export async function POST(
                 "Recommendations are advisory only.",
                 "Keep summary and rationale concise and commercially useful.",
                 "Risks and next actions must contain concrete short items.",
+                `Return summary, rationale, risks, and next_actions in ${outputLanguage}.`,
+                "Keep recommendation enum values exactly as watch, shortlist, approve, or reject.",
               ].join("\n"),
             },
             {
@@ -345,7 +397,7 @@ export async function POST(
       responseData.choices?.[0]?.message?.content;
 
     if (!content) {
-      throw new Error("OpenAI returned no analysis.");
+      throw new Error(routeCopy.noAnalysis);
     }
 
     const analysis = JSON.parse(content) as AIAnalysis;

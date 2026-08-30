@@ -1,10 +1,15 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { useMemo, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
+import { useLanguage } from "@/components/i18n/LanguageProvider";
 import { Button } from "@/components/ui/button";
+import {
+  getProductResearchCopy,
+  getProductResearchStatusLabel,
+} from "@/lib/i18n/product-research";
 import { Input } from "@/components/ui/input";
 import { createClient } from "@/lib/supabase/client";
 
@@ -57,16 +62,22 @@ function nullableInteger(value: FormDataEntryValue | null) {
   return number === null ? null : Math.round(number);
 }
 
-function formatCurrency(value: number | string | null) {
+function formatCurrency(
+  value: number | string | null,
+  locale: "id" | "en",
+) {
   if (value === null) {
     return "—";
   }
 
-  return new Intl.NumberFormat("id-ID", {
+  return new Intl.NumberFormat(
+    locale === "id" ? "id-ID" : "en-US",
+    {
     style: "currency",
     currency: "IDR",
-    maximumFractionDigits: 0,
-  }).format(Number(value));
+      maximumFractionDigits: 0,
+    },
+  ).format(Number(value));
 }
 
 export default function ProductResearchManager({
@@ -75,6 +86,8 @@ export default function ProductResearchManager({
   products,
 }: Props) {
   const router = useRouter();
+  const { locale } = useLanguage();
+  const copy = getProductResearchCopy(locale);
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -110,7 +123,7 @@ export default function ProductResearchManager({
     const name = String(formData.get("name") ?? "").trim();
 
     if (!name) {
-      setErrorMessage("Nama kandidat produk wajib diisi.");
+      setErrorMessage(copy.manager.nameRequired);
       setIsSubmitting(false);
       return;
     }
@@ -174,24 +187,24 @@ export default function ProductResearchManager({
 
       <div className="rounded-2xl border bg-card p-6 shadow-sm">
         <h2 className="text-lg font-semibold">
-          Add Research Candidate
+          {copy.manager.addTitle}
         </h2>
 
         <form onSubmit={handleCreate} className="mt-5 space-y-5">
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <Input name="name" placeholder="Product candidate" required />
+            <Input name="name" placeholder={copy.manager.productCandidate} required />
 
-            <Input name="category" placeholder="Category" />
+            <Input name="category" placeholder={copy.manager.category} />
 
             <Input
               name="source_marketplace"
-              placeholder="Marketplace / source"
+              placeholder={copy.manager.marketplaceSource}
             />
 
             <Input
               name="source_url"
               type="url"
-              placeholder="Source URL"
+              placeholder={copy.manager.sourceUrl}
             />
           </div>
 
@@ -201,7 +214,7 @@ export default function ProductResearchManager({
               type="number"
               min="0"
               step="0.01"
-              placeholder="Observed price"
+              placeholder={copy.manager.observedPrice}
             />
 
             <Input
@@ -209,7 +222,7 @@ export default function ProductResearchManager({
               type="number"
               min="0"
               step="0.01"
-              placeholder="Estimated cost"
+              placeholder={copy.manager.estimatedCost}
             />
 
             <select
@@ -217,7 +230,7 @@ export default function ProductResearchManager({
               defaultValue=""
               className="h-10 rounded-lg border bg-background px-3 text-sm"
             >
-              <option value="">No linked product</option>
+              <option value="">{copy.manager.noLinkedProduct}</option>
 
               {products.map((product) => (
                 <option key={product.id} value={product.id}>
@@ -232,10 +245,10 @@ export default function ProductResearchManager({
               defaultValue="researching"
               className="h-10 rounded-lg border bg-background px-3 text-sm"
             >
-              <option value="researching">Researching</option>
-              <option value="shortlisted">Shortlisted</option>
-              <option value="approved">Approved</option>
-              <option value="rejected">Rejected</option>
+              <option value="researching">{copy.statuses.researching}</option>
+              <option value="shortlisted">{copy.statuses.shortlisted}</option>
+              <option value="approved">{copy.statuses.approved}</option>
+              <option value="rejected">{copy.statuses.rejected}</option>
             </select>
           </div>
 
@@ -245,7 +258,7 @@ export default function ProductResearchManager({
               type="number"
               min="0"
               max="100"
-              placeholder="Demand score 0-100"
+              placeholder={`${copy.manager.demandScore} 0-100`}
             />
 
             <Input
@@ -253,7 +266,7 @@ export default function ProductResearchManager({
               type="number"
               min="0"
               max="100"
-              placeholder="Competition score 0-100"
+              placeholder={`${copy.manager.competitionScore} 0-100`}
             />
 
             <Input
@@ -261,19 +274,19 @@ export default function ProductResearchManager({
               type="number"
               min="0"
               max="100"
-              placeholder="Opportunity score 0-100"
+              placeholder={`${copy.manager.opportunityScore} 0-100`}
             />
           </div>
 
           <textarea
             name="notes"
             rows={3}
-            placeholder="Research notes"
+            placeholder={copy.manager.researchNotes}
             className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
           />
 
           <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "Saving..." : "Add candidate"}
+            {isSubmitting ? copy.manager.saving : copy.manager.addCandidate}
           </Button>
         </form>
       </div>
@@ -283,7 +296,7 @@ export default function ProductResearchManager({
           <Input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search candidate, category, marketplace..."
+            placeholder={copy.manager.search}
           />
 
           <select
@@ -291,11 +304,11 @@ export default function ProductResearchManager({
             onChange={(event) => setStatusFilter(event.target.value)}
             className="h-10 rounded-lg border bg-background px-3 text-sm"
           >
-            <option value="all">All status</option>
-            <option value="researching">Researching</option>
-            <option value="shortlisted">Shortlisted</option>
-            <option value="approved">Approved</option>
-            <option value="rejected">Rejected</option>
+            <option value="all">{copy.manager.allStatus}</option>
+            <option value="researching">{copy.statuses.researching}</option>
+            <option value="shortlisted">{copy.statuses.shortlisted}</option>
+            <option value="approved">{copy.statuses.approved}</option>
+            <option value="rejected">{copy.statuses.rejected}</option>
           </select>
         </div>
       </div>
@@ -303,7 +316,7 @@ export default function ProductResearchManager({
       <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
         <div className="border-b px-6 py-5">
           <h2 className="text-lg font-semibold">
-            Research Candidates
+            {copy.manager.candidatesTitle}
           </h2>
 
           <p className="mt-1 text-sm text-muted-foreground">
@@ -314,7 +327,7 @@ export default function ProductResearchManager({
         {filteredItems.length === 0 ? (
           <div className="px-6 py-12 text-center">
             <p className="font-medium">
-              Belum ada kandidat yang cocok.
+              {copy.manager.empty}
             </p>
           </div>
         ) : (
@@ -322,14 +335,14 @@ export default function ProductResearchManager({
             <table className="w-full text-sm">
               <thead className="border-b bg-muted/40 text-left">
                 <tr>
-                  <th className="px-6 py-3">Candidate</th>
-                  <th className="px-6 py-3">Source</th>
-                  <th className="px-6 py-3">Price</th>
-                  <th className="px-6 py-3">Demand</th>
-                  <th className="px-6 py-3">Competition</th>
-                  <th className="px-6 py-3">Opportunity</th>
-                  <th className="px-6 py-3">Status</th>
-                  <th className="px-6 py-3">Action</th>
+                  <th className="px-6 py-3">{copy.manager.candidate}</th>
+                  <th className="px-6 py-3">{copy.manager.source}</th>
+                  <th className="px-6 py-3">{copy.manager.price}</th>
+                  <th className="px-6 py-3">{copy.manager.demand}</th>
+                  <th className="px-6 py-3">{copy.manager.competition}</th>
+                  <th className="px-6 py-3">{copy.manager.opportunity}</th>
+                  <th className="px-6 py-3">{copy.manager.status}</th>
+                  <th className="px-6 py-3">{copy.manager.action}</th>
                 </tr>
               </thead>
 
@@ -339,7 +352,7 @@ export default function ProductResearchManager({
                     <td className="px-6 py-4">
                       <div className="font-medium">{item.name}</div>
                       <div className="text-xs text-muted-foreground">
-                        {item.category ?? "Uncategorized"}
+                        {item.category ?? copy.manager.uncategorized}
                       </div>
                     </td>
 
@@ -348,7 +361,7 @@ export default function ProductResearchManager({
                     </td>
 
                     <td className="px-6 py-4">
-                      {formatCurrency(item.observed_price)}
+                      {formatCurrency(item.observed_price, locale)}
                     </td>
 
                     <td className="px-6 py-4">
@@ -364,7 +377,7 @@ export default function ProductResearchManager({
                     </td>
 
                     <td className="px-6 py-4 capitalize">
-                      {item.status}
+                      {getProductResearchStatusLabel(locale, item.status)}
                     </td>
 
                     <td className="px-6 py-4">
@@ -372,7 +385,7 @@ export default function ProductResearchManager({
                         href={`/research/${item.id}`}
                         className="inline-flex h-8 items-center rounded-lg border px-3 text-xs font-medium hover:bg-muted"
                       >
-                        Open
+                        {copy.manager.open}
                       </Link>
                     </td>
                   </tr>

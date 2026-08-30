@@ -1,9 +1,15 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { notFound } from "next/navigation";
+import { cookies } from "next/headers";
 
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import AIProductResearchPanel from "@/components/research/AIProductResearchPanel";
 import ProductResearchDetailManager from "@/components/research/ProductResearchDetailManager";
+import {
+  LOCALE_COOKIE,
+  normalizeLocale,
+} from "@/lib/i18n/config";
+import { getProductResearchCopy } from "@/lib/i18n/product-research";
 import { getCurrentOrganization } from "@/lib/supabase/current-organization";
 import { createClient } from "@/lib/supabase/server";
 
@@ -16,6 +22,12 @@ type ProductResearchDetailPageProps = {
 export default async function ProductResearchDetailPage({
   params,
 }: ProductResearchDetailPageProps) {
+  const cookieStore = await cookies();
+  const locale = normalizeLocale(
+    cookieStore.get(LOCALE_COOKIE)?.value,
+  );
+  const copy = getProductResearchCopy(locale);
+
   const currentOrganization = await getCurrentOrganization();
 
   if (!currentOrganization) {
@@ -23,11 +35,11 @@ export default async function ProductResearchDetailPage({
       <DashboardLayout>
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
-            Product Research
+            {copy.page.title}
           </h1>
 
           <p className="mt-2 text-muted-foreground">
-            Organization aktif tidak ditemukan.
+            {copy.page.organizationMissing}
           </p>
         </div>
       </DashboardLayout>
@@ -109,7 +121,7 @@ export default async function ProductResearchDetailPage({
             href="/research"
             className="text-sm font-medium text-muted-foreground hover:text-foreground"
           >
-            Back to Product Research
+            {copy.page.back}
           </Link>
 
           <h1 className="mt-3 text-2xl font-semibold tracking-tight">
@@ -117,8 +129,7 @@ export default async function ProductResearchDetailPage({
           </h1>
 
           <p className="mt-2 text-muted-foreground">
-            Product research, market observations, dan AI-assisted
-            opportunity analysis.
+            {copy.page.detailDescription}
           </p>
         </div>
 
