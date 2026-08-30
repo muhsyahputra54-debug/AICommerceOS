@@ -167,3 +167,45 @@ export function logServerError({
 
   console.error(JSON.stringify(entry));
 }
+
+export function logServerWarning(
+  {
+    event,
+    requestId = null,
+    route,
+    method,
+    provider,
+    operation,
+    errorDigest = null,
+    routerKind = null,
+    routeType = null,
+    runtime = null,
+    error,
+  }: Parameters<typeof logServerError>[0],
+) {
+  const entry = {
+    timestamp: new Date().toISOString(),
+    level: "warn",
+    service: "aicommerceos-web",
+    event: safeString(event, 150),
+    request_id:
+      safeString(requestId, 128),
+    route: safeString(route, 250),
+    method: safeString(method, 20),
+    provider:
+      safeString(provider, 100),
+    operation:
+      safeString(operation, 150),
+    error_digest:
+      safeString(errorDigest, 150),
+    router_kind:
+      safeString(routerKind, 50),
+    route_type:
+      safeString(routeType, 50),
+    runtime:
+      safeString(runtime, 50),
+    ...errorFields(error),
+  };
+
+  console.warn(JSON.stringify(entry));
+}

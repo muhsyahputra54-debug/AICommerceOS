@@ -29,6 +29,7 @@ import {
 
 import {
   logServerError,
+  logServerWarning,
 } from "@/lib/observability/server-logger";
 
 import {
@@ -814,16 +815,19 @@ export async function POST(
         entitlementResult ===
           "active_paid_plan_change_requires_policy"
       ) {
-        console.warn(
-          JSON.stringify({
-            event:
-              "billing_checkout_entitlement_policy_hold",
-            request_id:
-              requestId,
-            entitlement_result:
-              entitlementResult,
-          }),
-        );
+        logServerWarning({
+          event:
+            "billing_checkout_entitlement_policy_hold",
+          requestId,
+          route:
+            ROUTE_PATH,
+          method:
+            "POST",
+          provider:
+            MIDTRANS_PROVIDER,
+          operation:
+            "active_paid_plan_change_requires_policy",
+        });
       } else if (
         entitlementResult !==
           "activated" &&
