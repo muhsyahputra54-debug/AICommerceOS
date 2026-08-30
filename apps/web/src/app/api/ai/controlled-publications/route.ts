@@ -3,6 +3,10 @@ import {
 } from "next/server";
 
 import {
+  logServerError,
+} from "@/lib/observability/server-logger";
+
+import {
   parseControlledPublicationProposal,
 } from "@/lib/ai/controlled-publication";
 
@@ -34,6 +38,10 @@ function isRecord(
 export async function GET(
   request: Request,
 ) {
+  const requestId =
+    request.headers.get(
+      "x-request-id",
+    );
   const context =
     await getControlledActionRequestContext();
 
@@ -82,6 +90,21 @@ export async function GET(
     );
 
   if (error) {
+    logServerError({
+      event:
+        "ai_controlled_publication_list_failed",
+      requestId,
+      route:
+        "/api/ai/controlled-publications",
+      method:
+        "GET",
+      provider:
+        "supabase",
+      operation:
+        "list_controlled_publications",
+      error,
+    });
+
     return controlledActionRpcErrorResponse(
       error.message,
     );
@@ -126,6 +149,10 @@ export async function GET(
 export async function POST(
   request: Request,
 ) {
+  const requestId =
+    request.headers.get(
+      "x-request-id",
+    );
   const context =
     await getControlledActionRequestContext();
 
@@ -210,6 +237,22 @@ export async function POST(
       );
 
     if (result.error) {
+      logServerError({
+        event:
+          "ai_controlled_publication_proposal_failed",
+        requestId,
+        route:
+          "/api/ai/controlled-publications",
+        method:
+          "POST",
+        provider:
+          "supabase",
+        operation:
+          "propose_controlled_publication",
+        error:
+          result.error,
+      });
+
       return controlledActionRpcErrorResponse(
         result.error.message,
       );
@@ -254,6 +297,22 @@ export async function POST(
       );
 
     if (result.error) {
+      logServerError({
+        event:
+          "ai_controlled_publication_proposal_failed",
+        requestId,
+        route:
+          "/api/ai/controlled-publications",
+        method:
+          "POST",
+        provider:
+          "supabase",
+        operation:
+          "propose_controlled_publication",
+        error:
+          result.error,
+      });
+
       return controlledActionRpcErrorResponse(
         result.error.message,
       );

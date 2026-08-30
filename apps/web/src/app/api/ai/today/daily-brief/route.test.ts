@@ -63,7 +63,11 @@ describe(
           );
 
         const response =
-          await POST();
+          await POST(
+          new Request(
+            "http://localhost/api/ai/today/daily-brief",
+          ),
+        );
 
         expect(
           response.status,
@@ -123,7 +127,11 @@ describe(
           );
 
         const response =
-          await POST();
+          await POST(
+          new Request(
+            "http://localhost/api/ai/today/daily-brief",
+          ),
+        );
 
         expect(
           response.status,
@@ -168,7 +176,11 @@ describe(
           );
 
         const response =
-          await POST();
+          await POST(
+          new Request(
+            "http://localhost/api/ai/today/daily-brief",
+          ),
+        );
 
         expect(
           response.status,
@@ -201,7 +213,11 @@ describe(
           );
 
         const response =
-          await POST();
+          await POST(
+          new Request(
+            "http://localhost/api/ai/today/daily-brief",
+          ),
+        );
 
         expect(
           response.status,

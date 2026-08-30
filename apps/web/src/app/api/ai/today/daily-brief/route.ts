@@ -3,10 +3,20 @@ import {
 } from "next/server";
 
 import {
+  logServerError,
+} from "@/lib/observability/server-logger";
+
+import {
   loadLakuvoTodayWithDailyBriefFromServer,
 } from "@/lib/ai/today-daily-brief-runtime";
 
-export async function POST() {
+export async function POST(
+  request: Request,
+) {
+  const requestId =
+    request.headers.get(
+      "x-request-id",
+    );
   try {
     const snapshot =
       await loadLakuvoTodayWithDailyBriefFromServer();
@@ -28,7 +38,20 @@ export async function POST() {
       dailyBrief:
         snapshot.dailyBrief,
     });
-  } catch {
+  } catch (error) {
+    logServerError({
+      event:
+        "ai_today_daily_brief_load_failed",
+      requestId,
+      route:
+        "/api/ai/today/daily-brief",
+      method:
+        "POST",
+      operation:
+        "load_today_daily_brief",
+      error,
+    });
+
     return NextResponse.json(
       {
         error:
