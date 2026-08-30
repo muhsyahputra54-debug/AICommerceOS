@@ -1,9 +1,22 @@
-﻿import DashboardLayout from "@/components/layout/DashboardLayout";
+import { cookies } from "next/headers";
+
+import DashboardLayout from "@/components/layout/DashboardLayout";
+import {
+  LOCALE_COOKIE,
+  normalizeLocale,
+} from "@/lib/i18n/config";
+import { getProductResearchCopy } from "@/lib/i18n/product-research";
 import ProductResearchManager from "@/components/research/ProductResearchManager";
 import { getCurrentOrganization } from "@/lib/supabase/current-organization";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function ProductResearchPage() {
+  const cookieStore = await cookies();
+  const locale = normalizeLocale(
+    cookieStore.get(LOCALE_COOKIE)?.value,
+  );
+  const copy = getProductResearchCopy(locale);
+
   const currentOrganization = await getCurrentOrganization();
 
   if (!currentOrganization) {
@@ -11,10 +24,10 @@ export default async function ProductResearchPage() {
       <DashboardLayout>
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
-            Product Research
+            {copy.page.title}
           </h1>
           <p className="mt-2 text-muted-foreground">
-            Organization aktif tidak ditemukan.
+            {copy.page.organizationMissing}
           </p>
         </div>
       </DashboardLayout>
@@ -57,12 +70,11 @@ export default async function ProductResearchPage() {
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
-            Product Research
+            {copy.page.title}
           </h1>
 
           <p className="mt-2 text-muted-foreground">
-            Riset kandidat produk, market signal, kompetisi, dan peluang
-            sebelum produk masuk ke catalog.
+            {copy.page.description}
           </p>
         </div>
 

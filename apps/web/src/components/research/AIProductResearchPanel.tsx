@@ -1,9 +1,15 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { useLanguage } from "@/components/i18n/LanguageProvider";
 import { Button } from "@/components/ui/button";
+import {
+  getProductResearchCopy,
+  getProductResearchRecommendationLabel,
+  getProductResearchStatusLabel,
+} from "@/lib/i18n/product-research";
 import { createClient } from "@/lib/supabase/client";
 
 type AIRun = {
@@ -46,11 +52,17 @@ function stringArray(value: unknown) {
   );
 }
 
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat("id-ID", {
+function formatDate(
+  value: string,
+  locale: "id" | "en",
+) {
+  return new Intl.DateTimeFormat(
+    locale === "id" ? "id-ID" : "en-US",
+    {
     dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(value));
+      timeStyle: "short",
+    },
+  ).format(new Date(value));
 }
 
 export default function AIProductResearchPanel({
@@ -58,6 +70,8 @@ export default function AIProductResearchPanel({
   runs,
 }: Props) {
   const router = useRouter();
+  const { locale } = useLanguage();
+  const copy = getProductResearchCopy(locale);
 
   const [isRunning, setIsRunning] = useState(false);
   const [applyingId, setApplyingId] =
@@ -78,6 +92,12 @@ export default function AIProductResearchPanel({
         `/api/research/${researchItemId}/ai`,
         {
           method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            locale,
+          }),
         },
       );
 
@@ -87,17 +107,17 @@ export default function AIProductResearchPanel({
 
       if (!response.ok) {
         throw new Error(
-          data.error ?? "AI analysis gagal dijalankan.",
+          data.error ?? copy.ai.runFailed,
         );
       }
 
-      setMessage("AI analysis selesai.");
+      setMessage(copy.ai.runComplete);
       router.refresh();
     } catch (error) {
       setMessage(
         error instanceof Error
           ? error.message
-          : "AI analysis gagal.",
+          : copy.ai.genericFailure,
       );
     } finally {
       setIsRunning(false);
@@ -124,7 +144,7 @@ export default function AIProductResearchPanel({
     }
 
     setMessage(
-      "AI scores diterapkan. Status kandidat tetap harus diputuskan user.",
+      copy.ai.applyComplete,
     );
 
     setApplyingId(null);
@@ -137,12 +157,11 @@ export default function AIProductResearchPanel({
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <h2 className="text-lg font-semibold">
-              AI Product Research
+              {copy.ai.title}
             </h2>
 
             <p className="mt-1 text-sm text-muted-foreground">
-              Analisis AI terhadap research candidate dan market
-              observations yang sudah tersedia.
+              {copy.ai.description}
             </p>
           </div>
 
@@ -152,8 +171,8 @@ export default function AIProductResearchPanel({
             onClick={handleRun}
           >
             {isRunning
-              ? "Analyzing..."
-              : "Run AI Analysis"}
+              ? copy.ai.analyzing
+              : copy.ai.run}
           </Button>
         </div>
 
@@ -169,13 +188,13 @@ export default function AIProductResearchPanel({
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <h2 className="text-lg font-semibold">
-                Latest AI Analysis
+                {copy.ai.latest}
               </h2>
 
               <p className="mt-1 text-sm text-muted-foreground">
                 {latestCompleted.provider} ·{" "}
                 {latestCompleted.model} ·{" "}
-                {formatDate(latestCompleted.created_at)}
+                {formatDate(latestCompleted.created_at, locale)}
               </p>
             </div>
 
@@ -188,15 +207,15 @@ export default function AIProductResearchPanel({
               }
             >
               {applyingId === latestCompleted.id
-                ? "Applying..."
-                : "Apply AI Scores"}
+                ? copy.ai.applying
+                : copy.ai.applyScores}
             </Button>
           </div>
 
           <div className="grid gap-4 md:grid-cols-4">
             <div className="rounded-xl border p-4">
               <div className="text-xs text-muted-foreground">
-                AI Demand
+                {copy.ai.aiDemand}
               </div>
 
               <div className="mt-2 text-2xl font-semibold">
@@ -206,7 +225,7 @@ export default function AIProductResearchPanel({
 
             <div className="rounded-xl border p-4">
               <div className="text-xs text-muted-foreground">
-                AI Competition
+                {copy.ai.aiCompetition}
               </div>
 
               <div className="mt-2 text-2xl font-semibold">
@@ -216,7 +235,7 @@ export default function AIProductResearchPanel({
 
             <div className="rounded-xl border p-4">
               <div className="text-xs text-muted-foreground">
-                AI Opportunity
+                {copy.ai.aiOpportunity}
               </div>
 
               <div className="mt-2 text-2xl font-semibold">
@@ -226,7 +245,7 @@ export default function AIProductResearchPanel({
 
             <div className="rounded-xl border p-4">
               <div className="text-xs text-muted-foreground">
-                Confidence
+                {copy.ai.confidence}
               </div>
 
               <div className="mt-2 text-2xl font-semibold">
@@ -237,16 +256,16 @@ export default function AIProductResearchPanel({
 
           <div>
             <div className="text-sm font-medium">
-              Recommendation
+              {copy.ai.recommendation}
             </div>
 
             <div className="mt-2 inline-flex rounded-full border px-3 py-1 text-sm font-semibold capitalize">
-              {latestCompleted.recommendation ?? "—"}
+              {getProductResearchRecommendationLabel(locale, latestCompleted.recommendation)}
             </div>
           </div>
 
           <div>
-            <div className="text-sm font-medium">Summary</div>
+            <div className="text-sm font-medium">{copy.ai.summary}</div>
 
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
               {latestCompleted.summary ?? "—"}
@@ -254,7 +273,7 @@ export default function AIProductResearchPanel({
           </div>
 
           <div>
-            <div className="text-sm font-medium">Rationale</div>
+            <div className="text-sm font-medium">{copy.ai.rationale}</div>
 
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
               {latestCompleted.rationale ?? "—"}
@@ -263,7 +282,7 @@ export default function AIProductResearchPanel({
 
           <div className="grid gap-6 md:grid-cols-2">
             <div>
-              <div className="text-sm font-medium">Risks</div>
+              <div className="text-sm font-medium">{copy.ai.risks}</div>
 
               <div className="mt-3 space-y-2">
                 {stringArray(latestCompleted.risks).length ===
@@ -288,7 +307,7 @@ export default function AIProductResearchPanel({
 
             <div>
               <div className="text-sm font-medium">
-                Next Actions
+                {copy.ai.nextActions}
               </div>
 
               <div className="mt-3 space-y-2">
@@ -314,7 +333,7 @@ export default function AIProductResearchPanel({
           </div>
 
           <p className="text-xs text-muted-foreground">
-            AI recommendation bersifat advisory. Apply AI Scores
+            {copy.ai.advisoryNote}
             hanya memperbarui demand, competition, dan opportunity
             score; status kandidat tidak berubah otomatis.
           </p>
@@ -322,11 +341,11 @@ export default function AIProductResearchPanel({
       ) : (
         <div className="rounded-2xl border bg-card px-6 py-10 text-center shadow-sm">
           <p className="font-medium">
-            Belum ada AI analysis yang selesai.
+            {copy.ai.noCompleted}
           </p>
 
           <p className="mt-1 text-sm text-muted-foreground">
-            Jalankan AI analysis untuk mengevaluasi candidate ini.
+            {copy.ai.runHint}
           </p>
         </div>
       )}
@@ -334,7 +353,7 @@ export default function AIProductResearchPanel({
       <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
         <div className="border-b px-6 py-5">
           <h2 className="text-lg font-semibold">
-            AI Analysis History
+            {copy.ai.history}
           </h2>
 
           <p className="mt-1 text-sm text-muted-foreground">
@@ -344,7 +363,7 @@ export default function AIProductResearchPanel({
 
         {runs.length === 0 ? (
           <div className="px-6 py-10 text-center text-sm text-muted-foreground">
-            No AI analysis history.
+            {copy.ai.noRuns}
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -352,16 +371,16 @@ export default function AIProductResearchPanel({
               <thead className="border-b bg-muted/40 text-left">
                 <tr>
                   <th className="px-6 py-3">Time</th>
-                  <th className="px-6 py-3">Model</th>
-                  <th className="px-6 py-3">Status</th>
+                  <th className="px-6 py-3">{copy.ai.model}</th>
+                  <th className="px-6 py-3">{copy.manager.status}</th>
                   <th className="px-6 py-3">
                     Opportunity
                   </th>
                   <th className="px-6 py-3">
-                    Confidence
+                    {copy.ai.confidence}
                   </th>
                   <th className="px-6 py-3">
-                    Recommendation
+                    {copy.ai.recommendation}
                   </th>
                   <th className="px-6 py-3">Error</th>
                 </tr>
@@ -371,7 +390,7 @@ export default function AIProductResearchPanel({
                 {runs.map((run) => (
                   <tr key={run.id}>
                     <td className="whitespace-nowrap px-6 py-4">
-                      {formatDate(run.created_at)}
+                      {formatDate(run.created_at, locale)}
                     </td>
 
                     <td className="px-6 py-4">
@@ -379,7 +398,7 @@ export default function AIProductResearchPanel({
                     </td>
 
                     <td className="px-6 py-4 capitalize">
-                      {run.status}
+                      {getProductResearchStatusLabel(locale, run.status)}
                     </td>
 
                     <td className="px-6 py-4">
@@ -391,7 +410,7 @@ export default function AIProductResearchPanel({
                     </td>
 
                     <td className="px-6 py-4 capitalize">
-                      {run.recommendation ?? "—"}
+                      {getProductResearchRecommendationLabel(locale, run.recommendation)}
                     </td>
 
                     <td className="max-w-xs px-6 py-4 text-muted-foreground">

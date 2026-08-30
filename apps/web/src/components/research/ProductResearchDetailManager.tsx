@@ -1,9 +1,14 @@
-﻿"use client";
+"use client";
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
+import { useLanguage } from "@/components/i18n/LanguageProvider";
 import { Button } from "@/components/ui/button";
+import {
+  getProductResearchCopy,
+  getProductResearchStatusLabel,
+} from "@/lib/i18n/product-research";
 import { Input } from "@/components/ui/input";
 import { createClient } from "@/lib/supabase/client";
 
@@ -70,23 +75,35 @@ function optionalInteger(value: FormDataEntryValue | null) {
   return number === null ? null : Math.round(number);
 }
 
-function formatCurrency(value: number | string | null) {
+function formatCurrency(
+  value: number | string | null,
+  locale: "id" | "en",
+) {
   if (value === null) {
     return "—";
   }
 
-  return new Intl.NumberFormat("id-ID", {
+  return new Intl.NumberFormat(
+    locale === "id" ? "id-ID" : "en-US",
+    {
     style: "currency",
     currency: "IDR",
-    maximumFractionDigits: 0,
-  }).format(Number(value));
+      maximumFractionDigits: 0,
+    },
+  ).format(Number(value));
 }
 
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat("id-ID", {
+function formatDate(
+  value: string,
+  locale: "id" | "en",
+) {
+  return new Intl.DateTimeFormat(
+    locale === "id" ? "id-ID" : "en-US",
+    {
     dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(value));
+      timeStyle: "short",
+    },
+  ).format(new Date(value));
 }
 
 export default function ProductResearchDetailManager({
@@ -96,6 +113,8 @@ export default function ProductResearchDetailManager({
   observations,
 }: Props) {
   const router = useRouter();
+  const { locale } = useLanguage();
+  const copy = getProductResearchCopy(locale);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -119,7 +138,7 @@ export default function ProductResearchDetailManager({
 
     if (error || !data) {
       setErrorMessage(
-        error?.message ?? "Research candidate tidak ditemukan.",
+        error?.message ?? copy.detail.candidateNotFound,
       );
       setIsSubmitting(false);
       return;
@@ -139,7 +158,7 @@ export default function ProductResearchDetailManager({
     const name = String(formData.get("name") ?? "").trim();
 
     if (!name) {
-      setErrorMessage("Nama kandidat wajib diisi.");
+      setErrorMessage(copy.detail.candidateNameRequired);
       setIsSubmitting(false);
       return;
     }
@@ -186,7 +205,7 @@ export default function ProductResearchDetailManager({
 
     if (error || !data) {
       setErrorMessage(
-        error?.message ?? "Research candidate tidak ditemukan.",
+        error?.message ?? copy.detail.candidateNotFound,
       );
       setIsSubmitting(false);
       return;
@@ -197,7 +216,7 @@ export default function ProductResearchDetailManager({
   }
 
   async function handleDeleteCandidate() {
-    if (!window.confirm(`Hapus research "${item.name}"?`)) {
+    if (!window.confirm(`${copy.detail.deleteCandidateConfirmPrefix} "${item.name}"?`)) {
       return;
     }
 
@@ -216,7 +235,7 @@ export default function ProductResearchDetailManager({
 
     if (error || !data) {
       setErrorMessage(
-        error?.message ?? "Research candidate tidak ditemukan.",
+        error?.message ?? copy.detail.candidateNotFound,
       );
       setIsSubmitting(false);
       return;
@@ -242,7 +261,7 @@ export default function ProductResearchDetailManager({
     ).trim();
 
     if (!sourceName) {
-      setErrorMessage("Observation source wajib diisi.");
+      setErrorMessage(copy.detail.observationSourceRequired);
       setIsSubmitting(false);
       return;
     }
@@ -281,7 +300,7 @@ export default function ProductResearchDetailManager({
   }
 
   async function deleteObservation(observation: Observation) {
-    if (!window.confirm("Hapus observation ini?")) {
+    if (!window.confirm(copy.detail.deleteObservationConfirm)) {
       return;
     }
 
@@ -301,7 +320,7 @@ export default function ProductResearchDetailManager({
 
     if (error || !data) {
       setErrorMessage(
-        error?.message ?? "Observation tidak ditemukan.",
+        error?.message ?? copy.detail.observationNotFound,
       );
       setIsSubmitting(false);
       return;
@@ -322,7 +341,7 @@ export default function ProductResearchDetailManager({
       <div className="grid gap-4 md:grid-cols-3">
         <div className="rounded-2xl border bg-card p-5">
           <div className="text-sm text-muted-foreground">
-            Demand Score
+            {copy.detail.demandScore}
           </div>
           <div className="mt-2 text-3xl font-semibold">
             {item.demand_score ?? "—"}
@@ -331,7 +350,7 @@ export default function ProductResearchDetailManager({
 
         <div className="rounded-2xl border bg-card p-5">
           <div className="text-sm text-muted-foreground">
-            Competition Score
+            {copy.detail.competitionScore}
           </div>
           <div className="mt-2 text-3xl font-semibold">
             {item.competition_score ?? "—"}
@@ -340,7 +359,7 @@ export default function ProductResearchDetailManager({
 
         <div className="rounded-2xl border bg-card p-5">
           <div className="text-sm text-muted-foreground">
-            Opportunity Score
+            {copy.detail.opportunityScore}
           </div>
           <div className="mt-2 text-3xl font-semibold">
             {item.opportunity_score ?? "—"}
@@ -355,7 +374,7 @@ export default function ProductResearchDetailManager({
             disabled={isSubmitting}
             onClick={() => updateStatus("researching")}
           >
-            Researching
+            {copy.detail.researching}
           </Button>
 
           <Button
@@ -363,7 +382,7 @@ export default function ProductResearchDetailManager({
             disabled={isSubmitting}
             onClick={() => updateStatus("shortlisted")}
           >
-            Shortlist
+            {copy.detail.shortlist}
           </Button>
 
           <Button
@@ -371,7 +390,7 @@ export default function ProductResearchDetailManager({
             disabled={isSubmitting}
             onClick={() => updateStatus("approved")}
           >
-            Approve
+            {copy.detail.approve}
           </Button>
 
           <Button
@@ -379,13 +398,13 @@ export default function ProductResearchDetailManager({
             disabled={isSubmitting}
             onClick={() => updateStatus("rejected")}
           >
-            Reject
+            {copy.detail.reject}
           </Button>
         </div>
       </div>
 
       <div className="rounded-2xl border bg-card p-6 shadow-sm">
-        <h2 className="text-lg font-semibold">Research Profile</h2>
+        <h2 className="text-lg font-semibold">{copy.detail.profileTitle}</h2>
 
         <form onSubmit={handleUpdate} className="mt-5 space-y-5">
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -394,20 +413,20 @@ export default function ProductResearchDetailManager({
             <Input
               name="category"
               defaultValue={item.category ?? ""}
-              placeholder="Category"
+              placeholder={copy.manager.category}
             />
 
             <Input
               name="source_marketplace"
               defaultValue={item.source_marketplace ?? ""}
-              placeholder="Source marketplace"
+              placeholder={copy.manager.sourceMarketplace}
             />
 
             <Input
               name="source_url"
               type="url"
               defaultValue={item.source_url ?? ""}
-              placeholder="Source URL"
+              placeholder={copy.manager.sourceUrl}
             />
           </div>
 
@@ -418,7 +437,7 @@ export default function ProductResearchDetailManager({
               min="0"
               step="0.01"
               defaultValue={item.observed_price ?? ""}
-              placeholder="Observed price"
+              placeholder={copy.manager.observedPrice}
             />
 
             <Input
@@ -427,7 +446,7 @@ export default function ProductResearchDetailManager({
               min="0"
               step="0.01"
               defaultValue={item.estimated_cost ?? ""}
-              placeholder="Estimated cost"
+              placeholder={copy.manager.estimatedCost}
             />
 
             <select
@@ -435,7 +454,7 @@ export default function ProductResearchDetailManager({
               defaultValue={item.linked_product_id ?? ""}
               className="h-10 rounded-lg border bg-background px-3 text-sm"
             >
-              <option value="">No linked product</option>
+              <option value="">{copy.manager.noLinkedProduct}</option>
               {products.map((product) => (
                 <option key={product.id} value={product.id}>
                   {product.name}
@@ -446,13 +465,13 @@ export default function ProductResearchDetailManager({
 
             <select
               name="status"
-              defaultValue={item.status}
+              defaultValue={getProductResearchStatusLabel(locale, item.status)}
               className="h-10 rounded-lg border bg-background px-3 text-sm"
             >
-              <option value="researching">Researching</option>
-              <option value="shortlisted">Shortlisted</option>
-              <option value="approved">Approved</option>
-              <option value="rejected">Rejected</option>
+              <option value="researching">{copy.statuses.researching}</option>
+              <option value="shortlisted">{copy.statuses.shortlisted}</option>
+              <option value="approved">{copy.statuses.approved}</option>
+              <option value="rejected">{copy.statuses.rejected}</option>
             </select>
           </div>
 
@@ -463,7 +482,7 @@ export default function ProductResearchDetailManager({
               min="0"
               max="100"
               defaultValue={item.demand_score ?? ""}
-              placeholder="Demand score"
+              placeholder={copy.manager.demandScore}
             />
 
             <Input
@@ -472,7 +491,7 @@ export default function ProductResearchDetailManager({
               min="0"
               max="100"
               defaultValue={item.competition_score ?? ""}
-              placeholder="Competition score"
+              placeholder={copy.manager.competitionScore}
             />
 
             <Input
@@ -481,7 +500,7 @@ export default function ProductResearchDetailManager({
               min="0"
               max="100"
               defaultValue={item.opportunity_score ?? ""}
-              placeholder="Opportunity score"
+              placeholder={copy.manager.opportunityScore}
             />
           </div>
 
@@ -490,12 +509,12 @@ export default function ProductResearchDetailManager({
             rows={4}
             defaultValue={item.notes ?? ""}
             className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
-            placeholder="Research notes"
+            placeholder={copy.manager.researchNotes}
           />
 
           <div className="flex flex-wrap gap-3">
             <Button type="submit" disabled={isSubmitting}>
-              Save research
+              {copy.detail.saveResearch}
             </Button>
 
             <Button
@@ -504,7 +523,7 @@ export default function ProductResearchDetailManager({
               disabled={isSubmitting}
               onClick={handleDeleteCandidate}
             >
-              Delete candidate
+              {copy.detail.deleteCandidate}
             </Button>
           </div>
         </form>
@@ -512,7 +531,7 @@ export default function ProductResearchDetailManager({
 
       <div className="rounded-2xl border bg-card p-6 shadow-sm">
         <h2 className="text-lg font-semibold">
-          Add Market Observation
+          {copy.detail.addObservation}
         </h2>
 
         <form
@@ -522,14 +541,14 @@ export default function ProductResearchDetailManager({
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <Input
               name="source_name"
-              placeholder="Source name"
+              placeholder={copy.detail.sourceName}
               required
             />
 
             <Input
               name="source_url"
               type="url"
-              placeholder="Source URL"
+              placeholder={copy.manager.sourceUrl}
             />
 
             <Input
@@ -537,14 +556,14 @@ export default function ProductResearchDetailManager({
               type="number"
               min="0"
               step="0.01"
-              placeholder="Observed price"
+              placeholder={copy.manager.observedPrice}
             />
 
             <Input
               name="sold_count"
               type="number"
               min="0"
-              placeholder="Sold count"
+              placeholder={copy.detail.soldCount}
             />
           </div>
 
@@ -555,24 +574,24 @@ export default function ProductResearchDetailManager({
               min="0"
               max="5"
               step="0.1"
-              placeholder="Rating 0-5"
+              placeholder={copy.detail.rating}
             />
 
             <Input
               name="review_count"
               type="number"
               min="0"
-              placeholder="Review count"
+              placeholder={copy.detail.reviewCount}
             />
 
             <Input
               name="notes"
-              placeholder="Observation note"
+              placeholder={copy.detail.observationNote}
             />
           </div>
 
           <Button type="submit" disabled={isSubmitting}>
-            Add observation
+            {copy.detail.addObservationAction}
           </Button>
         </form>
       </div>
@@ -598,12 +617,12 @@ export default function ProductResearchDetailManager({
               <thead className="border-b bg-muted/40 text-left">
                 <tr>
                   <th className="px-6 py-3">Date</th>
-                  <th className="px-6 py-3">Source</th>
-                  <th className="px-6 py-3">Price</th>
-                  <th className="px-6 py-3">Sold</th>
-                  <th className="px-6 py-3">Rating</th>
-                  <th className="px-6 py-3">Reviews</th>
-                  <th className="px-6 py-3">Action</th>
+                  <th className="px-6 py-3">{copy.manager.source}</th>
+                  <th className="px-6 py-3">{copy.manager.price}</th>
+                  <th className="px-6 py-3">{copy.detail.soldCount}</th>
+                  <th className="px-6 py-3">{copy.detail.rating}</th>
+                  <th className="px-6 py-3">{copy.detail.reviewCount}</th>
+                  <th className="px-6 py-3">{copy.manager.action}</th>
                 </tr>
               </thead>
 
@@ -611,7 +630,7 @@ export default function ProductResearchDetailManager({
                 {observations.map((observation) => (
                   <tr key={observation.id}>
                     <td className="whitespace-nowrap px-6 py-4">
-                      {formatDate(observation.observed_at)}
+                      {formatDate(observation.observed_at, locale)}
                     </td>
 
                     <td className="px-6 py-4">
@@ -619,7 +638,7 @@ export default function ProductResearchDetailManager({
                     </td>
 
                     <td className="px-6 py-4">
-                      {formatCurrency(observation.observed_price)}
+                      {formatCurrency(observation.observed_price, locale)}
                     </td>
 
                     <td className="px-6 py-4">
@@ -643,7 +662,7 @@ export default function ProductResearchDetailManager({
                           deleteObservation(observation)
                         }
                       >
-                        Delete
+                        {copy.detail.delete}
                       </Button>
                     </td>
                   </tr>
