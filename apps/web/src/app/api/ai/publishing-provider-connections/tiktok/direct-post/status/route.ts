@@ -3,6 +3,10 @@ import {
 } from "next/server";
 
 import {
+  logServerError,
+} from "@/lib/observability/server-logger";
+
+import {
   getControlledActionRequestContext,
 } from "@/lib/ai/controlled-action-server";
 
@@ -39,6 +43,10 @@ function errorStatus(
 export async function POST(
   request: Request,
 ) {
+  const requestId =
+    request.headers.get(
+      "x-request-id",
+    );
   const context =
     await getControlledActionRequestContext();
 
@@ -46,6 +54,20 @@ export async function POST(
     if (context.error) {
       return context.error;
     }
+
+    logServerError({
+      event:
+        "ai_tiktok_direct_post_status_auth_context_unavailable",
+      requestId,
+      route:
+        "/api/ai/publishing-provider-connections/tiktok/direct-post/status",
+      method:
+        "POST",
+      provider:
+        "tiktok",
+      operation:
+        "resolve_authentication_context",
+    });
 
     return NextResponse.json(
       { error: "authentication_context_unavailable" },

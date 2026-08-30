@@ -3,6 +3,10 @@ import {
 } from "next/server";
 
 import {
+  logServerError,
+} from "@/lib/observability/server-logger";
+
+import {
   parseControlledPublicationId,
   projectControlledPublicationRpcResult,
 } from "@/lib/ai/controlled-publication-api";
@@ -19,11 +23,15 @@ type RouteContext = {
 };
 
 export async function POST(
-  _request: Request,
+  request: Request,
   {
     params,
   }: RouteContext,
 ) {
+  const requestId =
+    request.headers.get(
+      "x-request-id",
+    );
   const context =
     await getControlledActionRequestContext();
 
@@ -66,6 +74,21 @@ export async function POST(
     );
 
   if (error) {
+    logServerError({
+      event:
+        "ai_controlled_publication_confirm_failed",
+      requestId,
+      route:
+        "/api/ai/controlled-publications/[id]/confirm",
+      method:
+        "POST",
+      provider:
+        "supabase",
+      operation:
+        "confirm_controlled_publication",
+      error,
+    });
+
     return controlledActionRpcErrorResponse(
       error.message,
     );

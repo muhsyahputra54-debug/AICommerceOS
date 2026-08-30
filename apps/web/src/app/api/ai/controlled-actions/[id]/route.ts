@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 
 import {
+  logServerError,
+} from "@/lib/observability/server-logger";
+
+import {
   parseControlledActionId,
 } from "@/lib/ai/controlled-action-api";
 import {
@@ -15,11 +19,15 @@ type RouteContext = {
 };
 
 export async function GET(
-  _request: Request,
+  request: Request,
   {
     params,
   }: RouteContext,
 ) {
+  const requestId =
+    request.headers.get(
+      "x-request-id",
+    );
   const context =
     await getControlledActionRequestContext();
 
@@ -62,6 +70,18 @@ export async function GET(
     );
 
   if ("error" in loaded) {
+    logServerError({
+      event:
+        "ai_controlled_action_detail_load_failed",
+      requestId,
+      route:
+        "/api/ai/controlled-actions/[id]",
+      method:
+        "GET",
+      operation:
+        "read_controlled_action",
+    });
+
     return loaded.error;
   }
 

@@ -8,6 +8,7 @@ import {
 
 import {
   logServerError,
+  logServerWarning,
 } from "./server-logger";
 
 afterEach(() => {
@@ -201,6 +202,74 @@ describe(
           entry.error_message,
         ).toBe(
           "query failed",
+        );
+      },
+    );
+  },
+);
+
+describe(
+  "structured server warning logger",
+  () => {
+    it(
+      "emits redacted warning metadata with request correlation",
+      () => {
+        const consoleWarn =
+          vi.spyOn(
+            console,
+            "warn",
+          ).mockImplementation(
+            () => undefined,
+          );
+
+        logServerWarning({
+          event:
+            "billing_checkout_entitlement_policy_hold",
+          requestId:
+            "req-warning-demo",
+          route:
+            "/api/billing/midtrans/notification",
+          method:
+            "POST",
+          provider:
+            "midtrans",
+          operation:
+            "active_paid_plan_change_requires_policy",
+          error:
+            new Error(
+              "access_token=warning-secret",
+            ),
+        });
+
+        expect(
+          consoleWarn,
+        ).toHaveBeenCalledTimes(
+          1,
+        );
+
+        const entry =
+          JSON.parse(
+            String(
+              consoleWarn.mock.calls[0]?.[0],
+            ),
+          ) as Record<string, unknown>;
+
+        expect(entry.level).toBe(
+          "warn",
+        );
+        expect(entry.event).toBe(
+          "billing_checkout_entitlement_policy_hold",
+        );
+        expect(entry.request_id).toBe(
+          "req-warning-demo",
+        );
+        expect(entry.provider).toBe(
+          "midtrans",
+        );
+        expect(
+          String(entry.error_message),
+        ).not.toContain(
+          "warning-secret",
         );
       },
     );

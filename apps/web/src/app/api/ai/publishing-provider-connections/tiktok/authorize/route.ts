@@ -3,6 +3,10 @@ import {
 } from "next/server";
 
 import {
+  logServerError,
+} from "@/lib/observability/server-logger";
+
+import {
   getControlledActionRequestContext,
 } from "@/lib/ai/controlled-action-server";
 
@@ -17,7 +21,13 @@ import {
 const CALLBACK_COOKIE_PATH =
   "/api/ai/publishing-provider-connections/tiktok/callback";
 
-export async function GET() {
+export async function GET(
+  request: Request,
+) {
+  const requestId =
+    request.headers.get(
+      "x-request-id",
+    );
   const context =
     await getControlledActionRequestContext();
 
@@ -31,6 +41,20 @@ export async function GET() {
     );
 
   if (!config) {
+    logServerError({
+      event:
+        "ai_tiktok_authorize_config_unavailable",
+      requestId,
+      route:
+        "/api/ai/publishing-provider-connections/tiktok/authorize",
+      method:
+        "GET",
+      provider:
+        "tiktok",
+      operation:
+        "resolve_oauth_config",
+    });
+
     return NextResponse.json(
       {
         error:
