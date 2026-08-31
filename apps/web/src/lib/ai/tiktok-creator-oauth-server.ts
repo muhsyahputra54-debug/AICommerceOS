@@ -121,7 +121,7 @@ export type PublishingProviderTokenKeyring =
 export type PublishingProviderTokenEncryptionInput =
   Readonly<{
     plaintext: string;
-    provider: "tiktok";
+    provider: "tiktok" | "youtube";
     organizationId: string;
     externalAccountId: string;
     tokenKind: "access" | "refresh";
@@ -906,7 +906,7 @@ export function encryptPublishingProviderToken(
   const aad =
     Buffer.from(
       [
-        "provider=tiktok",
+        `provider=${input.provider ?? "tiktok"}`,
         `organizationId=${input.organizationId.trim()}`,
         `externalAccountId=${input.externalAccountId.trim()}`,
         `tokenKind=${input.tokenKind}`,
@@ -954,6 +954,7 @@ export function encryptPublishingProviderToken(
 export async function decryptPublishingProviderToken(
   input: Readonly<{
     ciphertext: string;
+    provider?: "tiktok" | "youtube";
     organizationId: string;
     externalAccountId: string;
     tokenKind: "access" | "refresh";
@@ -1054,7 +1055,7 @@ export async function decryptPublishingProviderToken(
   const aad =
     Buffer.from(
       [
-        "provider=tiktok",
+        `provider=${input.provider ?? "tiktok"}`,
         `organizationId=${input.organizationId.trim()}`,
         `externalAccountId=${input.externalAccountId.trim()}`,
         `tokenKind=${input.tokenKind}`,

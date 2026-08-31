@@ -2,6 +2,7 @@
 
 import TikTokCreatorConnectionCard from "@/components/growth/TikTokCreatorConnectionCard";
 import TikTokCreatorDirectPostPanel from "@/components/growth/TikTokCreatorDirectPostPanel";
+import YouTubeChannelConnectionCard from "@/components/growth/YouTubeChannelConnectionCard";
 
 import Link from "next/link";
 import {
@@ -663,6 +664,10 @@ export default function GrowthAssistantWorkspace({
       </section>
 
       <TikTokCreatorConnectionCard
+        locale={locale}
+      />
+
+      <YouTubeChannelConnectionCard
         locale={locale}
       />
 
