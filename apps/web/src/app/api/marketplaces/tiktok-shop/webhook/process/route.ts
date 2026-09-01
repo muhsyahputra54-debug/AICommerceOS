@@ -4,6 +4,7 @@ import {
   decryptMarketplaceSecret,
 } from "@/lib/marketplaces/crypto";
 import {
+  assertTikTokShopConfigured,
   getOrderDetails,
   hasOrderInfoScope,
   isTikTokShopProvider,
@@ -162,6 +163,20 @@ export async function POST(request: Request) {
           "Provider account ini bukan TikTok Shop connector.",
       },
       { status: 409 },
+    );
+  }
+
+  try {
+    assertTikTokShopConfigured("api");
+  } catch (error) {
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : "TikTok Shop configuration error.",
+      },
+      { status: 503 },
     );
   }
 

@@ -9,6 +9,7 @@ import { getCurrentOrganization } from "@/lib/supabase/current-organization";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import {
+  assertTikTokShopConfigured,
   buildSellerAuthorizationUrl,
   isTikTokShopProvider,
   TIKTOK_SHOP_PROVIDER,
@@ -93,6 +94,20 @@ export async function GET(request: Request) {
           "Marketplace account inactive. Aktifkan terlebih dahulu.",
       },
       { status: 409 },
+    );
+  }
+
+  try {
+    assertTikTokShopConfigured("oauth");
+  } catch (error) {
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : "Marketplace authorization configuration error.",
+      },
+      { status: 503 },
     );
   }
 

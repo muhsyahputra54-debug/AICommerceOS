@@ -258,6 +258,21 @@ function requiredEnv(name: string) {
   return value;
 }
 
+export type TikTokShopConfigurationScope =
+  | "api"
+  | "oauth";
+
+export function assertTikTokShopConfigured(
+  scope: TikTokShopConfigurationScope,
+) {
+  requiredEnv("TIKTOK_SHOP_APP_KEY");
+  requiredEnv("TIKTOK_SHOP_APP_SECRET");
+
+  if (scope === "oauth") {
+    requiredEnv("TIKTOK_SHOP_SERVICE_ID");
+  }
+}
+
 function unixTimestampToIso(
   value: number | string | undefined,
 ) {
@@ -1158,4 +1173,3 @@ export async function getOrderDetails(input: {
       payload.request_id?.trim() || null,
   };
 }
-
