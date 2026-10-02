@@ -212,7 +212,7 @@ describe(
         expect(
           aiApiRoutes.length,
         ).toBe(
-          24,
+          25,
         );
 
         for (
