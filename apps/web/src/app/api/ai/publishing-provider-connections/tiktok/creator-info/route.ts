@@ -15,6 +15,8 @@ import {
   type TikTokCreatorInfoServerErrorCode,
 } from "@/lib/ai/tiktok-creator-publishing-server";
 
+import { safeTikTokCreatorInfoProviderCode } from "@/lib/ai/tiktok-creator-info-error";
+
 function errorStatus(
   code: TikTokCreatorInfoServerErrorCode,
 ): number {
@@ -90,10 +92,24 @@ export async function GET(
     );
 
   if (!result.ok) {
+    const providerCode = safeTikTokCreatorInfoProviderCode(result.providerCode);
+    logServerError({
+      event: "ai_tiktok_creator_info_failed",
+      requestId,
+      route: "/api/ai/publishing-provider-connections/tiktok/creator-info",
+      method: "GET",
+      provider: "tiktok",
+      operation: "query_creator_info",
+      error: {
+        code: result.code,
+        ...(providerCode ? { message: `TikTok provider code: ${providerCode}` } : {}),
+      },
+    });
     return NextResponse.json(
       {
         error:
           result.code,
+        ...(providerCode ? { providerCode } : {}),
       },
       {
         status:

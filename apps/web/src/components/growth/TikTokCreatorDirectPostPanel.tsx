@@ -13,8 +13,10 @@ import {
 
 import {
   assessTikTokCreatorPreparation,
-  parseTikTokCreatorInfoApiResponse,
 } from "@/lib/ai/tiktok-creator-direct-post-ui";
+
+import { loadTikTokCreatorInfo } from "@/lib/ai/tiktok-creator-info-client";
+import { tikTokCreatorInfoErrorMessage, type TikTokCreatorInfoFailure } from "@/lib/ai/tiktok-creator-info-error";
 
 import type {
   TikTokCreatorInfoSnapshot,
@@ -29,9 +31,6 @@ import {
 import type {
   Locale,
 } from "@/lib/i18n/config";
-
-const CREATOR_INFO_API =
-  "/api/ai/publishing-provider-connections/tiktok/creator-info";
 
 type LoadState =
   | "idle"
@@ -150,6 +149,8 @@ export default function TikTokCreatorDirectPostPanel({
     useState<LoadState>(
       "idle",
     );
+
+  const [creatorInfoFailure, setCreatorInfoFailure] = useState<TikTokCreatorInfoFailure | null>(null);
 
   const [
     creatorInfo,
@@ -455,6 +456,7 @@ export default function TikTokCreatorDirectPostPanel({
         };
 
   async function loadCreatorInfo() {
+    setCreatorInfoFailure(null);
     setLoadState(
       "loading",
     );
@@ -480,42 +482,12 @@ export default function TikTokCreatorDirectPostPanel({
       null;
 
     try {
-      const response =
-        await fetch(
-          CREATOR_INFO_API,
-          {
-            method:
-              "GET",
-            cache:
-              "no-store",
-            credentials:
-              "same-origin",
-            headers: {
-              Accept:
-                "application/json",
-            },
-          },
-        );
-
-      if (!response.ok) {
-        throw new Error(
-          "Creator Info request failed.",
-        );
-      }
-
-      const body:
-        unknown =
-          await response.json();
-
-      const parsed =
-        parseTikTokCreatorInfoApiResponse(
-          body,
-        );
-
+      const parsed = await loadTikTokCreatorInfo();
       if (!parsed.ok) {
-        throw new Error(
-          "Creator Info response invalid.",
-        );
+        setCreatorInfoFailure(parsed.failure);
+        setCreatorInfo(null);
+        setLoadState("error");
+        return;
       }
 
       setCreatorInfo(
@@ -940,8 +912,8 @@ export default function TikTokCreatorDirectPostPanel({
 
       {loadState === "error" ? (
         <div className="mt-5 space-y-3">
-          <p className="text-sm text-rose-700">
-            {copy.error}
+          <p role="alert" className="text-sm text-rose-700">
+            {creatorInfoFailure ? tikTokCreatorInfoErrorMessage(creatorInfoFailure, isId) : copy.error}
           </p>
 
           <button
