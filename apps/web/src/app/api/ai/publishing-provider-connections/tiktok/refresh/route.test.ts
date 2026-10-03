@@ -5,7 +5,7 @@ vi.mock("@/lib/ai/controlled-action-server", () => ({ getControlledActionRequest
 vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: mocks.admin }));
 vi.mock("@/lib/ai/tiktok-creator-refresh-coordinator", () => ({ coordinateTikTokCreatorRefresh: mocks.coordinate }));
 vi.mock("@/lib/observability/server-logger", () => ({ logServerError: mocks.log }));
-import { POST } from "./route";
+import { GET, POST } from "./route";
 const app = "https://staging.example.test";
 const org = "11111111-1111-4111-8111-111111111111";
 const id = "22222222-2222-4222-8222-222222222222";
@@ -46,6 +46,44 @@ describe("TikTok refresh POST (default disabled, mock only)", () => {
     vi.stubGlobal("fetch", vi.fn(async () => { throw new Error("Live HTTP forbidden"); }));
   });
   afterEach(() => { vi.useRealTimers(); vi.unstubAllEnvs(); vi.unstubAllGlobals(); });
+  it.each(["", "false"])("availability defaults disabled without credential access: %s", async (flag) => {
+    vi.stubEnv("TIKTOK_CREATOR_REFRESH_ENABLED", flag);
+    const res = await GET(new Request(`${app}/api/ai/publishing-provider-connections/tiktok/refresh`));
+    expect(await res.json()).toEqual({ availability: { status: "disabled", target: null } });
+    expect(res.headers.get("Cache-Control")).toBe("no-store");
+    expect(mocks.metadata).not.toHaveBeenCalled();
+    expect(mocks.admin).not.toHaveBeenCalled(); expect(mocks.coordinate).not.toHaveBeenCalled(); expect(fetch).not.toHaveBeenCalled();
+  });
+  it("availability returns only current connection ID/version and cannot refresh", async () => {
+    const res = await GET(new Request(`${app}/api/ai/publishing-provider-connections/tiktok/refresh`));
+    expect(await res.json()).toEqual({ availability: { status: "eligible", target: { connectionId: id, expectedConnectionVersion: 7 } } });
+    expect(mocks.metadata).toHaveBeenCalledOnce();
+    expect(mocks.admin).not.toHaveBeenCalled(); expect(mocks.coordinate).not.toHaveBeenCalled(); expect(fetch).not.toHaveBeenCalled();
+  });
+  it.each([401, 403])("availability preserves auth denial %s", async (status) => {
+    mocks.context.mockResolvedValue({ error: Response.json({ error: "denied" }, { status }) });
+    const res = await GET(new Request(`${app}/api/ai/publishing-provider-connections/tiktok/refresh`));
+    expect(res.status).toBe(status); expect(res.headers.get("Cache-Control")).toBe("no-store");
+    expect(mocks.metadata).not.toHaveBeenCalled(); expect(mocks.admin).not.toHaveBeenCalled();
+  });
+  it("availability does not offer renewal of a healthy token", async () => {
+    mocks.metadata.mockResolvedValue({ data: [{ ...row, credential_expires_at: "2026-10-04T00:00:00Z" }], error: null });
+    const res = await GET(new Request(`${app}/api/ai/publishing-provider-connections/tiktok/refresh`));
+    expect(await res.json()).toEqual({ availability: { status: "unavailable", target: null } });
+    expect(mocks.admin).not.toHaveBeenCalled(); expect(fetch).not.toHaveBeenCalled();
+  });
+  it.each(["LAKUVO_APP_URL", "PUBLISHING_PROVIDER_TOKEN_ENCRYPTION_KEYS"])("availability rejects missing configuration %s", async (name) => {
+    vi.stubEnv(name, "");
+    const res = await GET(new Request(`${app}/api/ai/publishing-provider-connections/tiktok/refresh`));
+    expect(res.status).toBe(503); expect(mocks.admin).not.toHaveBeenCalled(); expect(fetch).not.toHaveBeenCalled();
+  });
+  it("availability fails safely for metadata errors", async () => {
+    mocks.metadata.mockRejectedValue(new Error("private-token"));
+    const res = await GET(new Request(`${app}/api/ai/publishing-provider-connections/tiktok/refresh`));
+    expect(await res.json()).toEqual({ error: "refresh_availability_unavailable" });
+    expect(JSON.stringify(mocks.log.mock.calls)).not.toContain("private-token");
+    expect(mocks.admin).not.toHaveBeenCalled(); expect(fetch).not.toHaveBeenCalled();
+  });
   it("uses session organization and passes trusted server dependencies; returns safe metadata", async () => {
     const res = await POST(request());
     expect(res.status).toBe(200);
