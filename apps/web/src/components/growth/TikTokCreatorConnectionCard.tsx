@@ -5,6 +5,8 @@ import {
   useState,
 } from "react";
 
+import TikTokCreatorConnectionHealth from "./TikTokCreatorConnectionHealth";
+
 import {
   parsePublishingProviderConnection,
   type PublishingProviderConnection,
@@ -263,7 +265,7 @@ export default function TikTokCreatorConnectionCard({
           disconnected:
             "Belum terhubung",
           connected:
-            "Terhubung",
+            "Koneksi tersimpan",
           reconnectRequired:
             "Perlu otorisasi ulang",
           revoked:
@@ -277,7 +279,7 @@ export default function TikTokCreatorConnectionCard({
           account:
             "ID akun TikTok",
           permissions:
-            "Izin aktif",
+            "Izin tersimpan",
           connect:
             "Hubungkan TikTok",
           reconnect:
@@ -299,7 +301,7 @@ export default function TikTokCreatorConnectionCard({
           disconnected:
             "Not connected",
           connected:
-            "Connected",
+            "Connection saved",
           reconnectRequired:
             "Reauthorization required",
           revoked:
@@ -313,7 +315,7 @@ export default function TikTokCreatorConnectionCard({
           account:
             "TikTok account ID",
           permissions:
-            "Active permissions",
+            "Saved permissions",
           connect:
             "Connect TikTok",
           reconnect:
@@ -420,7 +422,7 @@ export default function TikTokCreatorConnectionCard({
             <span
               className={
                 connected
-                  ? "inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700"
+                  ? "inline-flex rounded-full border bg-muted px-3 py-1 text-xs font-semibold text-foreground"
                   : "inline-flex rounded-full border bg-muted px-3 py-1 text-xs font-semibold text-muted-foreground"
               }
             >
@@ -455,6 +457,7 @@ export default function TikTokCreatorConnectionCard({
               {copy.disconnectedHelp}
             </p>
           )}
+          <TikTokCreatorConnectionHealth locale={locale} />
         </div>
 
         <div className="shrink-0">
