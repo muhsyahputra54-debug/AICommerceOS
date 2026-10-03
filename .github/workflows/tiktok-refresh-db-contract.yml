@@ -7,6 +7,7 @@ on:
       - database/phase-19-publishing-provider-connection-persistence.sql
       - database/phase-19.1-youtube-token-refresh-readiness.sql
       - database/phase-19.2-tiktok-creator-refresh-atomic-contract.sql
+      - supabase/migrations/20261003151000_phase_19_2_tiktok_creator_refresh_atomic_contract.sql
       - scripts/tiktok-refresh-db-tests/**
       - .github/workflows/tiktok-refresh-db-contract.yml
   workflow_dispatch:
