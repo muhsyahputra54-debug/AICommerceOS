@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import TikTokCreatorRefreshPanel from "./TikTokCreatorRefreshPanel";
 import { loadTikTokConnectionHealth, tikTokConnectionHealthCopy } from "@/lib/ai/tiktok-creator-connection-health-client";
 import type { TikTokConnectionMetadataHealth } from "@/lib/ai/tiktok-creator-connection-health";
 import type { Locale } from "@/lib/i18n/config";
@@ -64,5 +65,8 @@ export default function TikTokCreatorConnectionHealth({ locale }: Readonly<{ loc
     setView({ kind: "loading" });
     setRevision((value) => value + 1);
   }
-  return <TikTokCreatorConnectionHealthView view={view} locale={locale} onRefresh={refresh} />;
+  return <>
+    <TikTokCreatorConnectionHealthView view={view} locale={locale} onRefresh={refresh} />
+    <TikTokCreatorRefreshPanel locale={locale} />
+  </>;
 }

@@ -2,7 +2,8 @@
 
 Baseline: staging `36f2277` (PR #8). Adds POST
 `/api/ai/publishing-provider-connections/tiktok/refresh` using the guarded coordinator.
-No GET refresh, scheduler, auto-refresh hook or dashboard trigger is added here.
+GET now reads availability only (see `tiktok-creator-refresh-dashboard.md`).
+It never refreshes tokens. No scheduler or auto-refresh hook is added.
 
 ## Default off
 

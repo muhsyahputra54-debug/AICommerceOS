@@ -106,3 +106,42 @@ export async function POST(request: Request) {
     return fail("refresh_unavailable", 503);
   }
 }
+
+// Availability only: authenticated metadata reads; never claims/decrypts/dispatches.
+export async function GET(request: Request) {
+  const fail = () => {
+    logServerError({ event: "ai_tiktok_refresh_availability_failed", requestId: request.headers.get("x-request-id"),
+      route: ROUTE, method: "GET", provider: "tiktok", operation: "read_refresh_availability",
+      error: { code: "refresh_availability_unavailable" } });
+    return NextResponse.json({ error: "refresh_availability_unavailable" }, { status: 503, headers });
+  };
+  const reply = (status: "disabled" | "unavailable" | "eligible", target: { connectionId: string; expectedConnectionVersion: number } | null = null) =>
+    NextResponse.json({ availability: { status, target } }, { headers });
+  try {
+    const context = await getControlledActionRequestContext();
+    if ("error" in context) {
+      if (!context.error) return fail();
+      const response = new NextResponse(context.error.body, context.error);
+      response.headers.set("Cache-Control", "no-store");
+      return response;
+    }
+    if (process.env.TIKTOK_CREATOR_REFRESH_ENABLED !== "true" || process.env.VERCEL_ENV !== "preview" ||
+        process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() !== STAGING_URL) return reply("disabled");
+    const appUrl = resolveTikTokOAuthAppUrl(process.env.LAKUVO_APP_URL);
+    if (!appUrl.ok || appUrl.url.origin !== new URL(request.url).origin ||
+        !process.env.TIKTOK_CREATOR_CLIENT_KEY?.trim() || !process.env.TIKTOK_CREATOR_CLIENT_SECRET?.trim() ||
+        !parsePublishingProviderTokenKeyring(process.env.PUBLISHING_PROVIDER_TOKEN_ENCRYPTION_KEYS ?? "",
+          process.env.PUBLISHING_PROVIDER_TOKEN_ENCRYPTION_ACTIVE_VERSION ?? "")) return fail();
+    const { data, error } = await context.supabase.rpc("get_publishing_provider_connections", {
+      p_organization_id: context.organizationId, p_provider: "tiktok",
+    });
+    if (error) return fail();
+    const assessment = assessTikTokConnectionMetadata(data, context.organizationId);
+    if (!assessment.ok || !Array.isArray(data)) return fail();
+    if (!["access_token_expired", "access_token_expiring_soon"].includes(assessment.health.status)) return reply("unavailable");
+    const active = data.filter((row: unknown) => isRecord(row) && row.authorization_status === "authorized" && row.revoked_at === null);
+    if (active.length !== 1 || typeof active[0].id !== "string" || typeof active[0].version !== "number" ||
+        !Number.isSafeInteger(active[0].version) || active[0].version < 1 || active[0].version >= Number.MAX_SAFE_INTEGER) return fail();
+    return reply("eligible", { connectionId: active[0].id, expectedConnectionVersion: active[0].version });
+  } catch { return fail(); }
+}
