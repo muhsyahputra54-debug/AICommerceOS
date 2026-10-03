@@ -18,6 +18,8 @@ import {
   TIKTOK_CREATOR_OAUTH_TTL_SECONDS,
 } from "@/lib/ai/tiktok-creator-oauth-server";
 
+import { resolveTikTokOAuthAppUrl } from "@/lib/ai/tiktok-creator-oauth-app-url";
+
 const CALLBACK_COOKIE_PATH =
   "/api/ai/publishing-provider-connections/tiktok/callback";
 
@@ -33,6 +35,20 @@ export async function GET(
 
   if ("error" in context) {
     return context.error;
+  }
+
+  const appUrl = resolveTikTokOAuthAppUrl(process.env.LAKUVO_APP_URL);
+  if (!appUrl.ok) {
+    logServerError({
+      event: "ai_tiktok_authorize_config_unavailable",
+      requestId,
+      route: "/api/ai/publishing-provider-connections/tiktok/authorize",
+      method: "GET", provider: "tiktok", operation: "resolve_oauth_app_url",
+      error: { code: "application_url_unavailable" },
+    });
+    return NextResponse.json({ error: appUrl.error }, {
+      status: 503, headers: { "Cache-Control": "no-store" },
+    });
   }
 
   const config =

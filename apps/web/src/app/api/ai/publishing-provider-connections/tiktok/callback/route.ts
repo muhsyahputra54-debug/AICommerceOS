@@ -28,6 +28,8 @@ import {
   createAdminClient,
 } from "@/lib/supabase/admin";
 
+import { resolveTikTokOAuthAppUrl } from "@/lib/ai/tiktok-creator-oauth-app-url";
+
 const CALLBACK_COOKIE_PATH =
   "/api/ai/publishing-provider-connections/tiktok/callback";
 
@@ -70,62 +72,8 @@ function clearOAuthCookie(
 
 function fixedGrowthRedirect(
   status: CallbackStatus,
+  baseUrl: URL,
 ): NextResponse {
-  const appUrl =
-    process.env.LAKUVO_APP_URL?.trim();
-
-  if (!appUrl) {
-    return clearOAuthCookie(
-      NextResponse.json(
-        {
-          error:
-            "LAKUVO application URL is unavailable.",
-        },
-        {
-          status: 503,
-        },
-      ),
-    );
-  }
-
-  let baseUrl: URL;
-
-  try {
-    baseUrl =
-      new URL(
-        appUrl,
-      );
-  } catch {
-    return clearOAuthCookie(
-      NextResponse.json(
-        {
-          error:
-            "LAKUVO application URL is invalid.",
-        },
-        {
-          status: 503,
-        },
-      ),
-    );
-  }
-
-  if (
-    baseUrl.protocol !== "https:" &&
-    baseUrl.hostname !== "localhost"
-  ) {
-    return clearOAuthCookie(
-      NextResponse.json(
-        {
-          error:
-            "LAKUVO application URL is invalid.",
-        },
-        {
-          status: 503,
-        },
-      ),
-    );
-  }
-
   const target =
     new URL(
       TIKTOK_CREATOR_OAUTH_RETURN_TO,
@@ -146,12 +94,6 @@ function fixedGrowthRedirect(
     NextResponse.redirect(
       target,
     ),
-  );
-}
-
-function stateFailureRedirect() {
-  return fixedGrowthRedirect(
-    "state_invalid",
   );
 }
 
@@ -199,13 +141,29 @@ export async function GET(
     );
   }
 
+  const appUrl = resolveTikTokOAuthAppUrl(process.env.LAKUVO_APP_URL);
+  if (!appUrl.ok) {
+    logServerError({
+      event: "ai_tiktok_callback_config_unavailable",
+      requestId,
+      route: "/api/ai/publishing-provider-connections/tiktok/callback",
+      method: "GET", provider: "tiktok", operation: "resolve_oauth_app_url",
+      error: { code: "application_url_unavailable" },
+    });
+    return clearOAuthCookie(NextResponse.json({ error: appUrl.error }, {
+      status: 503, headers: { "Cache-Control": "no-store" },
+    }));
+  }
+  // Capture one validated destination for every outcome of this callback.
+  const redirect = (status: CallbackStatus) => fixedGrowthRedirect(status, appUrl.url);
+
   const config =
     resolveTikTokCreatorOAuthConfig(
       process.env,
     );
 
   if (!config) {
-    return fixedGrowthRedirect(
+    return redirect(
       "configuration_unavailable",
     );
   }
@@ -229,7 +187,7 @@ export async function GET(
     !returnedState ||
     !cookieValue
   ) {
-    return stateFailureRedirect();
+    return redirect("state_invalid");
   }
 
   const stateValidation =
@@ -247,7 +205,7 @@ export async function GET(
     );
 
   if (!stateValidation.ok) {
-    return stateFailureRedirect();
+    return redirect("state_invalid");
   }
 
   const providerError =
@@ -256,7 +214,7 @@ export async function GET(
       ?.trim();
 
   if (providerError) {
-    return fixedGrowthRedirect(
+    return redirect(
       "authorization_denied",
     );
   }
@@ -267,7 +225,7 @@ export async function GET(
       ?.trim();
 
   if (!code) {
-    return fixedGrowthRedirect(
+    return redirect(
       "authorization_code_missing",
     );
   }
@@ -292,12 +250,12 @@ export async function GET(
       exchange.code ===
       "required_scope_missing"
     ) {
-      return fixedGrowthRedirect(
+      return redirect(
         "scope_missing",
       );
     }
 
-    return fixedGrowthRedirect(
+    return redirect(
       exchange.code,
     );
   }
@@ -317,7 +275,7 @@ export async function GET(
     );
 
   if (!prepared.ok) {
-    return fixedGrowthRedirect(
+    return redirect(
       "credential_encryption_failed",
     );
   }
@@ -328,7 +286,7 @@ export async function GET(
     admin =
       createAdminClient();
   } catch {
-    return fixedGrowthRedirect(
+    return redirect(
       "connection_persistence_failed",
     );
   }
@@ -347,7 +305,7 @@ export async function GET(
     !Array.isArray(data) ||
     data.length !== 1
   ) {
-    return fixedGrowthRedirect(
+    return redirect(
       "connection_persistence_failed",
     );
   }
@@ -366,12 +324,12 @@ export async function GET(
     row.credential_reference_id.trim()
       .length === 0
   ) {
-    return fixedGrowthRedirect(
+    return redirect(
       "connection_persistence_failed",
     );
   }
 
-  return fixedGrowthRedirect(
+  return redirect(
     "connected",
   );
 }
