@@ -1,0 +1,44 @@
+name: TikTok refresh database contract
+
+on:
+  pull_request:
+    branches: [staging]
+    paths:
+      - database/phase-19-publishing-provider-connection-persistence.sql
+      - database/phase-19.1-youtube-token-refresh-readiness.sql
+      - database/phase-19.2-tiktok-creator-refresh-atomic-contract.sql
+      - scripts/tiktok-refresh-db-tests/**
+      - .github/workflows/tiktok-refresh-db-contract.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  database-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: lakuvo_test_refresh
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: disposable-test-password
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 5s
+          --health-timeout 5s --health-retries 10
+    defaults:
+      run:
+        working-directory: scripts/tiktok-refresh-db-tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24.14.1"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: SQL transaction and parallel connection tests
+        env:
+          LAKUVO_TEST_DATABASE_URL: postgresql://postgres:disposable-test-password@127.0.0.1:5432/lakuvo_test_refresh
+        run: npm test
