@@ -1,0 +1,43 @@
+name: Marketplace server RPC boundary
+
+on:
+  pull_request:
+    branches: [staging]
+    paths:
+      - supabase/migrations/20260901080831_production_schema_baseline.sql
+      - supabase/migrations/20261004001000_marketplace_server_rpc_boundary.sql
+      - scripts/marketplace-rpc-db-tests/**
+      - .github/workflows/marketplace-rpc-db-contract.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  database-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: lakuvo_test_marketplace
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: disposable-test-password
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 5s
+          --health-timeout 5s --health-retries 10
+    defaults:
+      run:
+        working-directory: scripts/marketplace-rpc-db-tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24.14.1"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: PostgreSQL RPC privilege and server-flow tests
+        env:
+          LAKUVO_MARKETPLACE_TEST_DATABASE_URL: postgresql://postgres:disposable-test-password@127.0.0.1:5432/lakuvo_test_marketplace
+        run: npm test
