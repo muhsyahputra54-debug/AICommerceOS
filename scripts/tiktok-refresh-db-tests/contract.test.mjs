@@ -78,8 +78,15 @@ test("TikTok refresh SQL transaction contract", async (t) => {
     for (const name of [
       "phase-19-publishing-provider-connection-persistence.sql",
       "phase-19.1-youtube-token-refresh-readiness.sql",
-      "phase-19.2-tiktok-creator-refresh-atomic-contract.sql",
     ]) await exec(db, await readFile(new URL(`../../database/${name}`, import.meta.url), "utf8"));
+
+    const draftSql = await readFile(new URL("../../database/phase-19.2-tiktok-creator-refresh-atomic-contract.sql", import.meta.url), "utf8");
+    const migrationSql = await readFile(new URL("../../supabase/migrations/20261003151000_phase_19_2_tiktok_creator_refresh_atomic_contract.sql", import.meta.url), "utf8");
+    await t.test("migration matches reviewed contract except its header", () => {
+      const body = (sql) => sql.replace(/\r\n/g, "\n").split("\n").slice(1).join("\n");
+      assert.equal(body(migrationSql), body(draftSql));
+    });
+    await exec(db, migrationSql);
 
     const run = (name, fn) => t.test(name, async () => { await fixture(db); await fn(); });
     await run("claims once and dispatches once", async () => {

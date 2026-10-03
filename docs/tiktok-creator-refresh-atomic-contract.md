@@ -1,8 +1,10 @@
 # TikTok Creator atomic refresh contract (draft)
 
-Baseline: staging `0c6d977` (PR #5). The SQL is under `database/`, not under
-`supabase/migrations/`: this PR does not apply changes to a remote database.
-No route invokes these RPCs. Automatic refresh remains inactive.
+Baseline: staging `f157606` (PR #6). The reviewed SQL is now copied into
+`supabase/migrations/20261003151000_phase_19_2_tiktok_creator_refresh_atomic_contract.sql`.
+Only the first comment differs from the reviewed draft. The test harness asserts
+this parity and executes the migration itself. Adding the file does not apply it
+to a remote database. No route invokes these RPCs; automatic refresh remains inactive.
 
 ## Ownership and transitions
 
@@ -49,7 +51,7 @@ npm test
 ```
 
 The default harness creates an in-memory PGlite database with small organization/auth
-fixtures and loads the actual Phase 19, 19.1 and draft 19.2 SQL. It does not read
+fixtures and loads the actual Phase 19, 19.1 and Phase 19.2 migration SQL. It does not read
 application env files or real credentials. Tests cover privileges, RLS, state transitions,
 replacement token pair, rollback, stale ownership and revoke/reconnect ordering.
 PGlite has one backend connection: the parallel-connection cases are explicitly skipped.
@@ -60,8 +62,13 @@ rejects non-loopback URLs and database names other than `lakuvo_test_refresh`.
 
 ## Remaining integration
 
-After CI review, convert the reviewed SQL into a staging migration with a verified
-staging target. Then implement the authenticated server coordinator and POST route,
+Before applying the migration, verify the linked staging target
+`ogqsmnurtbexpvbyrvtn`, compare local/remote migration history, and inspect
+`supabase db push --linked --dry-run`. The expected pending migration is only
+`20261003151000`. Stop if another pending migration appears. Record CI and dry-run
+results before applying and verify history plus RPC privileges afterwards.
+
+Then implement the authenticated server coordinator and POST route,
 bind the response identity to the claimed account, cancel only before dispatch, and
 persist success before returning safe metadata. Keep health GET read-only. Update
 dashboard handling for busy/uncertain/reauthorization states and test everything with
