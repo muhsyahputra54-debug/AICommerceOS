@@ -7,6 +7,7 @@ import {
 } from "./token-manager";
 import {
   assertMarketplaceConnectorAdapter,
+  createMarketplaceSyncReadSupport,
   type MarketplaceConnectorAdapter,
 } from "./provider-adapter";
 import type {
@@ -17,7 +18,9 @@ function buildAdapter(
   provider: MarketplaceProviderId,
 ): MarketplaceConnectorAdapter {
   const definition =
-    getMarketplaceProviderDefinition(provider);
+    getMarketplaceProviderDefinition(
+      provider,
+    );
 
   if (!definition) {
     throw new Error(
@@ -28,8 +31,14 @@ function buildAdapter(
   return assertMarketplaceConnectorAdapter({
     provider,
     definition,
+    syncReadSupport:
+      createMarketplaceSyncReadSupport(
+        definition,
+      ),
     getTokenResolver: () =>
-      getMarketplaceTokenResolver(provider),
+      getMarketplaceTokenResolver(
+        provider,
+      ),
   });
 }
 
@@ -49,7 +58,9 @@ export function getMarketplaceConnectorAdapter(
   provider: string,
 ): MarketplaceConnectorAdapter | null {
   const normalized =
-    normalizeMarketplaceProvider(provider);
+    normalizeMarketplaceProvider(
+      provider,
+    );
 
   return normalized
     ? ADAPTERS[normalized]
@@ -60,7 +71,9 @@ export function requireMarketplaceConnectorAdapter(
   provider: string,
 ): MarketplaceConnectorAdapter {
   const adapter =
-    getMarketplaceConnectorAdapter(provider);
+    getMarketplaceConnectorAdapter(
+      provider,
+    );
 
   if (!adapter) {
     throw new Error(
@@ -71,7 +84,8 @@ export function requireMarketplaceConnectorAdapter(
   return adapter;
 }
 
-export function getRegisteredMarketplaceConnectorAdapters(): readonly MarketplaceConnectorAdapter[] {
+export function getRegisteredMarketplaceConnectorAdapters():
+  readonly MarketplaceConnectorAdapter[] {
   return Object.freeze([
     ADAPTERS.tiktok_shop,
     ADAPTERS.shopee,
