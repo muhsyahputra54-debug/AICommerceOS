@@ -1,8 +1,8 @@
 "use client";
 
 import {
-  getMarketplaceProviderDefinition,
-} from "@/lib/marketplaces/provider-registry";
+  resolveMarketplaceProviderIdentity,
+} from "@/lib/marketplaces/provider-identity";
 
 import Link from "next/link";
 import { useState, type FormEvent } from "react";
@@ -253,18 +253,6 @@ function formatDateValue(
   }).format(new Date(value));
 }
 
-function supportsTokopediaShopConnector(provider: string) {
-  const normalized = provider
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, " ")
-    .trim();
-
-  return (
-    normalized.includes("tokopedia") ||
-    normalized.includes("tiktok shop")
-  );
-}
-
 
 function requireMarketplaceProviderRoute(
   route: string | null | undefined,
@@ -299,14 +287,12 @@ export default function MarketplaceIntegrationManager({
   const router = useRouter();
   const { locale } = useLanguage();
   const copy = getDictionary(locale).marketplaces.detail.manager;
-  const connectorDefinition =
-    getMarketplaceProviderDefinition(
-      supportsTokopediaShopConnector(
-        account.provider,
-      )
-        ? "tiktok_shop"
-        : account.provider,
+  const connectorIdentity =
+    resolveMarketplaceProviderIdentity(
+      account.provider,
     );
+  const connectorDefinition =
+    connectorIdentity?.definition ?? null;
   const connectorRoutes =
     connectorDefinition?.routes ?? null;
   const localeTag = locale === "id" ? "id-ID" : "en-US";
@@ -371,8 +357,8 @@ export default function MarketplaceIntegrationManager({
   const editingOrderLink =
     orderLinks.find((item) => item.id === editingOrderLinkId) ?? null;
 
-  const supportsTokopediaShop =
-    supportsTokopediaShopConnector(account.provider);
+  const supportsTikTokShopConnector =
+    connectorIdentity?.provider === "tiktok_shop";
 
   function listingTargetName(item: Listing) {
     if (item.target_type === "product" && item.product_id) {
@@ -948,7 +934,7 @@ export default function MarketplaceIntegrationManager({
 
   return (
     <div className="space-y-6">
-      {supportsTokopediaShop ? (
+      {supportsTikTokShopConnector ? (
         <div className="rounded-2xl border bg-card p-6 shadow-sm">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
@@ -997,7 +983,7 @@ export default function MarketplaceIntegrationManager({
         </div>
       ) : null}
 
-      {supportsTokopediaShop ? (
+      {supportsTikTokShopConnector ? (
         <div className="rounded-2xl border bg-card p-6 shadow-sm">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
@@ -1109,7 +1095,7 @@ export default function MarketplaceIntegrationManager({
         </div>
       ) : null}
 
-      {supportsTokopediaShop ? (
+      {supportsTikTokShopConnector ? (
         <div className="rounded-2xl border bg-card p-6 shadow-sm">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
@@ -1205,7 +1191,7 @@ export default function MarketplaceIntegrationManager({
         </div>
       ) : null}
 
-      {supportsTokopediaShop ? (
+      {supportsTikTokShopConnector ? (
         <div className="rounded-2xl border bg-card p-6 shadow-sm">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
@@ -1430,7 +1416,7 @@ export default function MarketplaceIntegrationManager({
         </div>
       ) : null}
 
-      {supportsTokopediaShop ? (
+      {supportsTikTokShopConnector ? (
         <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
           <div className="border-b px-6 py-5">
             <h2 className="text-lg font-semibold">
@@ -1533,7 +1519,7 @@ export default function MarketplaceIntegrationManager({
         </div>
       ) : null}
 
-      {supportsTokopediaShop ? (
+      {supportsTikTokShopConnector ? (
         <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
           <div className="flex flex-col gap-4 border-b px-6 py-5 md:flex-row md:items-center md:justify-between">
             <div>

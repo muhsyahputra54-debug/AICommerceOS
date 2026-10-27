@@ -19,19 +19,56 @@ const managerSource = readFileSync(
 );
 
 describe(
-  "MarketplaceIntegrationManager provider registry contract",
+  "MarketplaceIntegrationManager provider identity contract",
   () => {
     it(
-      "uses the central provider registry",
+      "uses the canonical provider identity boundary",
       () => {
         expect(managerSource).toContain(
-          'from "@/lib/marketplaces/provider-registry"',
+          'from "@/lib/marketplaces/provider-identity"',
         );
+
         expect(managerSource).toContain(
-          "getMarketplaceProviderDefinition(",
+          "resolveMarketplaceProviderIdentity(",
         );
+
+        expect(managerSource).toContain(
+          "connectorIdentity?.definition",
+        );
+
+        expect(managerSource).toContain(
+          'connectorIdentity?.provider === "tiktok_shop"',
+        );
+
         expect(managerSource).toContain(
           "connectorRoutes",
+        );
+
+        expect(managerSource).not.toContain(
+          'from "@/lib/marketplaces/provider-registry"',
+        );
+
+        expect(managerSource).not.toContain(
+          "getMarketplaceProviderDefinition(",
+        );
+      },
+    );
+
+    it(
+      "does not alias Tokopedia to the TikTok Shop connector",
+      () => {
+        expect(
+          managerSource.toLowerCase(),
+        ).not.toContain(
+          "tokopedia",
+        );
+
+        expect(managerSource).not.toContain(
+          "supportsTokopediaShopConnector",
+        );
+
+        expect(managerSource).not.toContain(
+          "supportsTokopediaShop",
         );
       },
     );
@@ -59,18 +96,23 @@ describe(
         expect(managerSource).toContain(
           "requireMarketplaceProviderRoute(",
         );
+
         expect(managerSource).toContain(
           "connectorRoutes?.shopsSync",
         );
+
         expect(managerSource).toContain(
           "connectorRoutes?.productsSync",
         );
+
         expect(managerSource).toContain(
           "connectorRoutes?.ordersSync",
         );
+
         expect(managerSource).toContain(
           "connectorRoutes?.webhookProcess",
         );
+
         expect(managerSource).toContain(
           "connectorRoutes?.authorize",
         );
