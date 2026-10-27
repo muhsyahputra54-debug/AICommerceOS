@@ -156,8 +156,14 @@ export function PublicSiteFooter() {
 
       <div className="border-t">
         <div className="mx-auto max-w-6xl px-6 py-5 text-xs text-muted-foreground">
-          © 2026 LAKUVO. Jasa Teknologi
-          Informasi / Software-as-a-Service.
+          <p>
+            © 2026 LAKUVO. Software-as-a-Service.
+          </p>
+          <p className="mt-2">
+            Legal operator: HERY PANCAWIRA
+            <br />
+            NIB: 2510260079145
+          </p>
         </div>
       </div>
     </footer>
