@@ -24,6 +24,10 @@ export default function sitemap():
       },
       {
         url:
+          `${baseUrl}/about`,
+      },
+      {
+        url:
           `${baseUrl}/terms`,
       },
       {
