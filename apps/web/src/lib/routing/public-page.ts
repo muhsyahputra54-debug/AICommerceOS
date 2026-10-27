@@ -2,6 +2,7 @@ const publicMarketingPaths =
   new Set([
     "/",
     "/pricing",
+    "/about",
     "/terms",
     "/privacy",
     "/refund-policy",
