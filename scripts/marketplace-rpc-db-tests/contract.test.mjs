@@ -211,6 +211,502 @@ test('Marketplace server RPC boundary', async t => {
         assert.equal(row.anon, false); assert.equal(row.authenticated, false); assert.equal(row.server, true);
       }
     });
+    await t.test('marketplace sync job persistence is durable, isolated, and RPC-only', async () => {
+      await fixture(db, 'tiktok_shop');
+
+      await exec(db, `
+        create or replace function auth.uid()
+        returns uuid
+        language sql
+        stable
+        as 'select nullif(current_setting(''request.jwt.claim.sub'',true),'''')::uuid';
+      `);
+
+      await exec(
+        db,
+        definition(
+          baseline,
+          'is_organization_member',
+        ),
+      );
+
+      await exec(db, `
+        revoke all
+        on function public.is_organization_member(uuid)
+        from public;
+
+        grant execute
+        on function public.is_organization_member(uuid)
+        to anon, authenticated, service_role;
+      `);
+
+      const syncJobMigration = await readFile(
+        new URL(
+          '../../supabase/migrations/20261027070000_marketplace_sync_job_persistence.sql',
+          import.meta.url,
+        ),
+        'utf8',
+      );
+
+      await exec(db, syncJobMigration);
+
+      await exec(db, `
+        insert into marketplace_authorized_shops(
+          organization_id,
+          marketplace_account_id,
+          provider,
+          external_shop_id,
+          name,
+          shop_cipher_ciphertext,
+          status,
+          is_selected
+        )
+        values(
+          '${org}',
+          '${account}',
+          'tiktok_shop',
+          'synthetic-shop',
+          'Synthetic TikTok shop',
+          'synthetic-shop-cipher',
+          'active',
+          true
+        );
+      `);
+
+      const relation = (
+        await db.query(`
+          select
+            c.relrowsecurity as rls
+          from pg_class c
+          join pg_namespace n
+            on n.oid = c.relnamespace
+          where n.nspname = 'public'
+            and c.relname = 'marketplace_sync_jobs'
+        `)
+      ).rows[0];
+
+      assert.equal(
+        relation.rls,
+        true,
+      );
+
+      const indexNames = (
+        await db.query(`
+          select indexname
+          from pg_indexes
+          where schemaname = 'public'
+            and tablename =
+              'marketplace_sync_jobs'
+        `)
+      ).rows.map(
+        row => row.indexname,
+      );
+
+      assert.ok(
+        indexNames.includes(
+          'marketplace_sync_jobs_one_active_per_account_entity_uidx',
+        ),
+      );
+
+      assert.ok(
+        indexNames.includes(
+          'marketplace_sync_jobs_queue_idx',
+        ),
+      );
+
+      const tablePrivileges = (
+        await db.query(`
+          select
+            has_table_privilege(
+              'anon',
+              'public.marketplace_sync_jobs',
+              'SELECT'
+            ) as anon_select,
+            has_table_privilege(
+              'authenticated',
+              'public.marketplace_sync_jobs',
+              'SELECT'
+            ) as authenticated_select,
+            has_table_privilege(
+              'authenticated',
+              'public.marketplace_sync_jobs',
+              'INSERT'
+            ) as authenticated_insert,
+            has_table_privilege(
+              'service_role',
+              'public.marketplace_sync_jobs',
+              'SELECT'
+            ) as service_select,
+            has_table_privilege(
+              'service_role',
+              'public.marketplace_sync_jobs',
+              'INSERT'
+            ) as service_insert
+        `)
+      ).rows[0];
+
+      assert.equal(
+        tablePrivileges.anon_select,
+        false,
+      );
+
+      assert.equal(
+        tablePrivileges.authenticated_select,
+        true,
+      );
+
+      assert.equal(
+        tablePrivileges.authenticated_insert,
+        false,
+      );
+
+      assert.equal(
+        tablePrivileges.service_select,
+        true,
+      );
+
+      assert.equal(
+        tablePrivileges.service_insert,
+        false,
+      );
+
+      const rpc = (
+        await db.query(`
+          select
+            p.oid,
+            p.prosecdef as definer,
+            has_function_privilege(
+              'anon',
+              p.oid,
+              'EXECUTE'
+            ) as anon,
+            has_function_privilege(
+              'authenticated',
+              p.oid,
+              'EXECUTE'
+            ) as authenticated,
+            has_function_privilege(
+              'service_role',
+              p.oid,
+              'EXECUTE'
+            ) as server
+          from pg_proc p
+          join pg_namespace n
+            on n.oid = p.pronamespace
+          where n.nspname = 'public'
+            and p.proname =
+              'enqueue_marketplace_sync_job'
+        `)
+      ).rows[0];
+
+      assert.equal(
+        rpc.definer,
+        true,
+      );
+
+      assert.equal(
+        rpc.anon,
+        false,
+      );
+
+      assert.equal(
+        rpc.authenticated,
+        false,
+      );
+
+      assert.equal(
+        rpc.server,
+        true,
+      );
+
+      const enqueue = (
+        provider = 'tiktok_shop',
+        entity = 'products',
+        requestedBy = member,
+        cursorKind = null,
+        cursorValue = null,
+      ) =>
+        db.query(
+          `
+            select
+              public.enqueue_marketplace_sync_job(
+                $1,
+                $2,
+                $3,
+                $4,
+                $5,
+                $6,
+                $7,
+                '{}'::jsonb
+              ) as id
+          `,
+          [
+            org,
+            account,
+            requestedBy,
+            provider,
+            entity,
+            cursorKind,
+            cursorValue,
+          ],
+        );
+
+      await exec(db, `
+        set role service_role;
+        select set_config(
+          'request.jwt.claim.role',
+          'service_role',
+          false
+        );
+      `);
+
+      const firstJob =
+        (await enqueue()).rows[0].id;
+
+      const replayJob =
+        (await enqueue()).rows[0].id;
+
+      assert.equal(
+        replayJob,
+        firstJob,
+      );
+
+      const productJobs = (
+        await db.query(`
+          select
+            provider,
+            entity,
+            status,
+            authorized_shop_id,
+            processed_count,
+            attempt_count,
+            max_attempts
+          from marketplace_sync_jobs
+          where id = $1
+        `, [firstJob])
+      ).rows;
+
+      assert.equal(
+        productJobs.length,
+        1,
+      );
+
+      assert.equal(
+        productJobs[0].provider,
+        'tiktok_shop',
+      );
+
+      assert.equal(
+        productJobs[0].entity,
+        'products',
+      );
+
+      assert.equal(
+        productJobs[0].status,
+        'queued',
+      );
+
+      assert.ok(
+        productJobs[0].authorized_shop_id,
+      );
+
+      assert.equal(
+        Number(
+          productJobs[0].processed_count,
+        ),
+        0,
+      );
+
+      assert.equal(
+        Number(
+          productJobs[0].attempt_count,
+        ),
+        0,
+      );
+
+      assert.equal(
+        Number(
+          productJobs[0].max_attempts,
+        ),
+        5,
+      );
+
+      const shopJob =
+        (
+          await enqueue(
+            'tiktok_shop',
+            'shops',
+          )
+        ).rows[0].id;
+
+      const shopTarget = (
+        await db.query(`
+          select authorized_shop_id
+          from marketplace_sync_jobs
+          where id = $1
+        `, [shopJob])
+      ).rows[0];
+
+      assert.equal(
+        shopTarget.authorized_shop_id,
+        null,
+      );
+
+      await assert.rejects(
+        enqueue(
+          'shopee',
+          'products',
+        ),
+        /unsupported marketplace sync provider\/entity/,
+      );
+
+      await assert.rejects(
+        enqueue(
+          'lazada',
+          'shops',
+        ),
+        /unsupported marketplace sync provider/,
+      );
+
+      await assert.rejects(
+        enqueue(
+          'tiktok_shop',
+          'orders',
+          other,
+        ),
+        /not an organization member/,
+      );
+
+      await assert.rejects(
+        enqueue(
+          'tiktok_shop',
+          'orders',
+          member,
+          'page_token',
+          null,
+        ),
+        /cursor kind and value must be provided together/,
+      );
+
+      await assert.rejects(
+        db.query(`
+          insert into marketplace_sync_jobs(
+            organization_id,
+            marketplace_account_id,
+            provider,
+            entity
+          )
+          values(
+            $1,
+            $2,
+            'tiktok_shop',
+            'shops'
+          )
+        `, [org, account]),
+      );
+
+      await exec(db, `
+        reset role;
+        set role authenticated;
+        select set_config(
+          'request.jwt.claim.role',
+          'authenticated',
+          false
+        );
+        select set_config(
+          'request.jwt.claim.sub',
+          '${member}',
+          false
+        );
+      `);
+
+      assert.equal(
+        Number(
+          (
+            await db.query(`
+              select count(*) as n
+              from marketplace_sync_jobs
+            `)
+          ).rows[0].n,
+        ),
+        2,
+      );
+
+      await assert.rejects(
+        db.query(`
+          insert into marketplace_sync_jobs(
+            organization_id,
+            marketplace_account_id,
+            provider,
+            entity
+          )
+          values(
+            $1,
+            $2,
+            'tiktok_shop',
+            'shops'
+          )
+        `, [org, account]),
+      );
+
+      await exec(db, `
+        select set_config(
+          'request.jwt.claim.sub',
+          '${other}',
+          false
+        );
+      `);
+
+      assert.equal(
+        Number(
+          (
+            await db.query(`
+              select count(*) as n
+              from marketplace_sync_jobs
+            `)
+          ).rows[0].n,
+        ),
+        0,
+      );
+
+      await exec(db, `
+        reset role;
+        set role anon;
+        select set_config(
+          'request.jwt.claim.role',
+          'anon',
+          false
+        );
+      `);
+
+      await assert.rejects(
+        db.query(`
+          select *
+          from marketplace_sync_jobs
+        `),
+      );
+
+      await assert.rejects(
+        db.query(`
+          select public.enqueue_marketplace_sync_job(
+            $1,
+            $2,
+            $3,
+            'tiktok_shop',
+            'shops',
+            null,
+            null,
+            '{}'::jsonb
+          )
+        `, [
+          org,
+          account,
+          member,
+        ]),
+      );
+
+      await exec(db, 'reset role;');
+    });
   } finally {
     if (db.close) await db.close(); else await db.end();
   }
