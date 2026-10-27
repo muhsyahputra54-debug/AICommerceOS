@@ -14,6 +14,7 @@ describe(
     it.each([
       "/",
       "/pricing",
+      "/about",
       "/terms",
       "/privacy",
       "/refund-policy",
