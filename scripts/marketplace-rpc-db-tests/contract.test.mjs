@@ -720,6 +720,20 @@ test('Marketplace server RPC boundary', async t => {
       lifecycleMigration,
     );
 
+    const paginationHardeningMigration =
+      await readFile(
+        new URL(
+          '../../supabase/migrations/20261028040000_marketplace_sync_job_pagination_hardening.sql',
+          import.meta.url,
+        ),
+        'utf8',
+      );
+
+    await exec(
+      db,
+      paginationHardeningMigration,
+    );
+
     const lifecycleNames = [
       'claim_marketplace_sync_job',
       'complete_marketplace_sync_job_page',
@@ -1292,7 +1306,7 @@ test('Marketplace server RPC boundary', async t => {
             secondClaim[0]
               .attempt_count,
           ),
-          2,
+          1,
         );
 
         assert.equal(
@@ -1809,6 +1823,341 @@ test('Marketplace server RPC boundary', async t => {
       },
     );
 
+    await t.test(
+      'successful marketplace sync pages reset retry budget for long pagination',
+      async () => {
+        await lifecycleFixture();
+
+        const jobId =
+          await enqueueLifecycleJob(
+            'products',
+          );
+
+        await exec(
+          db,
+          'reset role;',
+        );
+
+        await db.query(
+          `
+            update marketplace_sync_jobs
+            set max_attempts = 2
+            where id = $1
+          `,
+          [
+            jobId,
+          ],
+        );
+
+        await resumeServiceRole();
+
+        for (
+          let page = 1;
+          page <= 6;
+          page += 1
+        ) {
+          const claimed =
+            (
+              await claimLifecycleJob(
+                jobId,
+              )
+            ).rows[0];
+
+          assert.ok(
+            claimed,
+          );
+
+          assert.equal(
+            Number(
+              claimed.attempt_count,
+            ),
+            1,
+          );
+
+          const status =
+            (
+              await completeLifecyclePage(
+                jobId,
+                claimed.lease_token,
+                1,
+                7,
+                'page_token',
+                `page-${page + 1}`,
+                `request-${page}`,
+              )
+            ).rows[0].status;
+
+          assert.equal(
+            status,
+            'queued',
+          );
+
+          const stored =
+            (
+              await db.query(
+                `
+                  select
+                    status,
+                    processed_count,
+                    attempt_count,
+                    cursor_kind,
+                    cursor_value
+                  from marketplace_sync_jobs
+                  where id = $1
+                `,
+                [
+                  jobId,
+                ],
+              )
+            ).rows[0];
+
+          assert.equal(
+            stored.status,
+            'queued',
+          );
+
+          assert.equal(
+            Number(
+              stored.processed_count,
+            ),
+            page,
+          );
+
+          assert.equal(
+            Number(
+              stored.attempt_count,
+            ),
+            0,
+          );
+
+          assert.equal(
+            stored.cursor_kind,
+            'page_token',
+          );
+
+          assert.equal(
+            stored.cursor_value,
+            `page-${page + 1}`,
+          );
+        }
+
+        const finalClaim =
+          (
+            await claimLifecycleJob(
+              jobId,
+            )
+          ).rows[0];
+
+        assert.ok(
+          finalClaim,
+        );
+
+        assert.equal(
+          Number(
+            finalClaim.attempt_count,
+          ),
+          1,
+        );
+
+        const finalStatus =
+          (
+            await completeLifecyclePage(
+              jobId,
+              finalClaim.lease_token,
+              1,
+              7,
+              null,
+              null,
+              'request-7',
+            )
+          ).rows[0].status;
+
+        assert.equal(
+          finalStatus,
+          'succeeded',
+        );
+
+        const finalRow =
+          (
+            await db.query(
+              `
+                select
+                  status,
+                  processed_count,
+                  total_count,
+                  attempt_count,
+                  cursor_kind,
+                  cursor_value
+                from marketplace_sync_jobs
+                where id = $1
+              `,
+              [
+                jobId,
+              ],
+            )
+          ).rows[0];
+
+        assert.equal(
+          finalRow.status,
+          'succeeded',
+        );
+
+        assert.equal(
+          Number(
+            finalRow.processed_count,
+          ),
+          7,
+        );
+
+        assert.equal(
+          Number(
+            finalRow.total_count,
+          ),
+          7,
+        );
+
+        assert.equal(
+          Number(
+            finalRow.attempt_count,
+          ),
+          1,
+        );
+
+        assert.equal(
+          finalRow.cursor_kind,
+          null,
+        );
+
+        assert.equal(
+          finalRow.cursor_value,
+          null,
+        );
+      },
+    );
+
+    await t.test(
+      'marketplace sync completion rejects cumulative progress beyond total count',
+      async () => {
+        await lifecycleFixture();
+
+        const jobId =
+          await enqueueLifecycleJob(
+            'products',
+          );
+
+        const firstClaim =
+          (
+            await claimLifecycleJob(
+              jobId,
+            )
+          ).rows[0];
+
+        assert.equal(
+          (
+            await completeLifecyclePage(
+              jobId,
+              firstClaim.lease_token,
+              2,
+              3,
+              'page_token',
+              'next-page',
+              'request-1',
+            )
+          ).rows[0].status,
+          'queued',
+        );
+
+        const secondClaim =
+          (
+            await claimLifecycleJob(
+              jobId,
+            )
+          ).rows[0];
+
+        assert.equal(
+          Number(
+            secondClaim.attempt_count,
+          ),
+          1,
+        );
+
+        await assert.rejects(
+          completeLifecyclePage(
+            jobId,
+            secondClaim.lease_token,
+            2,
+            3,
+            null,
+            null,
+            'request-2',
+          ),
+          /cumulative processed count cannot exceed total count/,
+        );
+
+        const unchanged =
+          (
+            await db.query(
+              `
+                select
+                  status,
+                  processed_count,
+                  total_count,
+                  attempt_count,
+                  lease_token
+                from marketplace_sync_jobs
+                where id = $1
+              `,
+              [
+                jobId,
+              ],
+            )
+          ).rows[0];
+
+        assert.equal(
+          unchanged.status,
+          'running',
+        );
+
+        assert.equal(
+          Number(
+            unchanged.processed_count,
+          ),
+          2,
+        );
+
+        assert.equal(
+          Number(
+            unchanged.total_count,
+          ),
+          3,
+        );
+
+        assert.equal(
+          Number(
+            unchanged.attempt_count,
+          ),
+          1,
+        );
+
+        assert.equal(
+          unchanged.lease_token,
+          secondClaim.lease_token,
+        );
+
+        assert.equal(
+          (
+            await failLifecycleAttempt(
+              jobId,
+              secondClaim.lease_token,
+              'persistence_error',
+              'synthetic cleanup',
+              false,
+            )
+          ).rows[0].status,
+          'failed',
+        );
+      },
+    );
     await t.test(
       'marketplace sync terminal errors cannot be mislabeled retryable',
       async () => {
