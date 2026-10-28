@@ -707,6 +707,1179 @@ test('Marketplace server RPC boundary', async t => {
 
       await exec(db, 'reset role;');
     });
+    const lifecycleMigration = await readFile(
+      new URL(
+        '../../supabase/migrations/20261027080000_marketplace_sync_job_lifecycle.sql',
+        import.meta.url,
+      ),
+      'utf8',
+    );
+
+    await exec(
+      db,
+      lifecycleMigration,
+    );
+
+    const lifecycleNames = [
+      'claim_marketplace_sync_job',
+      'complete_marketplace_sync_job_page',
+      'fail_marketplace_sync_job_attempt',
+    ];
+
+    const lifecycleFixture = async () => {
+      await exec(db, `
+        reset role;
+        select set_config(
+          'request.jwt.claim.role',
+          'service_role',
+          false
+        );
+
+        truncate
+          marketplace_sync_jobs,
+          marketplace_authorized_shops,
+          marketplace_sync_logs,
+          marketplace_oauth_states,
+          marketplace_connections,
+          marketplace_accounts,
+          organization_members;
+
+        insert into organization_members(
+          organization_id,
+          user_id
+        )
+        values(
+          '${org}',
+          '${member}'
+        );
+
+        insert into marketplace_accounts(
+          id,
+          organization_id,
+          provider,
+          name
+        )
+        values(
+          '${account}',
+          '${org}',
+          'tiktok_shop',
+          'Synthetic TikTok shop'
+        );
+
+        insert into marketplace_connections(
+          organization_id,
+          marketplace_account_id,
+          provider,
+          open_id,
+          access_token_ciphertext,
+          refresh_token_ciphertext,
+          access_token_expires_at,
+          refresh_token_expires_at,
+          user_type
+        )
+        values(
+          '${org}',
+          '${account}',
+          'tiktok_shop',
+          '123',
+          'synthetic-access',
+          'synthetic-refresh',
+          now() + interval '4 hours',
+          now() + interval '30 days',
+          0
+        );
+
+        insert into marketplace_authorized_shops(
+          organization_id,
+          marketplace_account_id,
+          provider,
+          external_shop_id,
+          name,
+          shop_cipher_ciphertext,
+          status,
+          is_selected
+        )
+        values(
+          '${org}',
+          '${account}',
+          'tiktok_shop',
+          'synthetic-shop',
+          'Synthetic TikTok shop',
+          'synthetic-shop-cipher',
+          'active',
+          true
+        );
+
+        set role service_role;
+
+        select set_config(
+          'request.jwt.claim.role',
+          'service_role',
+          false
+        );
+      `);
+    };
+
+    const enqueueLifecycleJob = async (
+      entity = 'products',
+    ) => (
+      await db.query(
+        `
+          select
+            public.enqueue_marketplace_sync_job(
+              $1,
+              $2,
+              $3,
+              'tiktok_shop',
+              $4,
+              null,
+              null,
+              '{}'::jsonb
+            ) as id
+        `,
+        [
+          org,
+          account,
+          member,
+          entity,
+        ],
+      )
+    ).rows[0].id;
+
+    const claimLifecycleJob = (
+      jobId = null,
+    ) =>
+      db.query(
+        `
+          select *
+          from public.claim_marketplace_sync_job(
+            $1
+          )
+        `,
+        [
+          jobId,
+        ],
+      );
+
+    const completeLifecyclePage = (
+      jobId,
+      leaseToken,
+      syncedCount,
+      totalCount,
+      cursorKind,
+      cursorValue,
+      requestId,
+    ) =>
+      db.query(
+        `
+          select
+            public.complete_marketplace_sync_job_page(
+              $1,
+              $2,
+              $3,
+              $4,
+              $5,
+              $6,
+              $7
+            ) as status
+        `,
+        [
+          jobId,
+          leaseToken,
+          syncedCount,
+          totalCount,
+          cursorKind,
+          cursorValue,
+          requestId,
+        ],
+      );
+
+    const failLifecycleAttempt = (
+      jobId,
+      leaseToken,
+      errorCode,
+      errorMessage,
+      retryable,
+    ) =>
+      db.query(
+        `
+          select
+            public.fail_marketplace_sync_job_attempt(
+              $1,
+              $2,
+              $3,
+              $4,
+              $5
+            ) as status
+        `,
+        [
+          jobId,
+          leaseToken,
+          errorCode,
+          errorMessage,
+          retryable,
+        ],
+      );
+
+    const resumeServiceRole = async () => {
+      await exec(db, `
+        set role service_role;
+
+        select set_config(
+          'request.jwt.claim.role',
+          'service_role',
+          false
+        );
+      `);
+    };
+
+    await t.test(
+      'marketplace sync lifecycle RPCs are service-role-only and internally guarded',
+      async () => {
+        const rows = (
+          await db.query(
+            `
+              select
+                p.proname as name,
+                p.oid,
+                pg_get_function_identity_arguments(
+                  p.oid
+                ) as args,
+                pg_get_functiondef(
+                  p.oid
+                ) as definition,
+                p.prosecdef as definer,
+                has_function_privilege(
+                  'anon',
+                  p.oid,
+                  'EXECUTE'
+                ) as anon,
+                has_function_privilege(
+                  'authenticated',
+                  p.oid,
+                  'EXECUTE'
+                ) as authenticated,
+                has_function_privilege(
+                  'service_role',
+                  p.oid,
+                  'EXECUTE'
+                ) as server
+              from pg_proc p
+              join pg_namespace n
+                on n.oid = p.pronamespace
+              where
+                n.nspname = 'public'
+                and p.proname = any($1)
+              order by p.proname
+            `,
+            [
+              lifecycleNames,
+            ],
+          )
+        ).rows;
+
+        assert.equal(
+          rows.length,
+          3,
+        );
+
+        for (const row of rows) {
+          assert.equal(
+            row.definer,
+            true,
+            row.name,
+          );
+
+          assert.equal(
+            row.anon,
+            false,
+            row.name,
+          );
+
+          assert.equal(
+            row.authenticated,
+            false,
+            row.name,
+          );
+
+          assert.equal(
+            row.server,
+            true,
+            row.name,
+          );
+
+          assert.ok(
+            row.definition.includes(
+              'service_role_required',
+            ),
+            row.name,
+          );
+        }
+
+        const claimDefinition =
+          rows.find(
+            row =>
+              row.name ===
+              'claim_marketplace_sync_job',
+          ).definition;
+
+        assert.ok(
+          claimDefinition
+            .toUpperCase()
+            .includes(
+              'FOR UPDATE SKIP LOCKED',
+            ),
+        );
+
+        for (
+          const role of [
+            'anon',
+            'authenticated',
+          ]
+        ) {
+          await exec(
+            db,
+            'reset role;',
+          );
+
+          for (const row of rows) {
+            await exec(
+              db,
+              `
+                grant execute
+                on function public.${row.name}(${row.args})
+                to ${role};
+              `,
+            );
+          }
+
+          await exec(db, `
+            set role ${role};
+
+            select set_config(
+              'request.jwt.claim.role',
+              '${role}',
+              false
+            );
+          `);
+
+          for (const row of rows) {
+            const count = (
+              await db.query(
+                `
+                  select pronargs
+                  from pg_proc
+                  where oid = $1
+                `,
+                [
+                  row.oid,
+                ],
+              )
+            ).rows[0].pronargs;
+
+            await denied(
+              db.query(
+                `
+                  select
+                    public.${row.name}(
+                      ${Array(count)
+                        .fill('null')
+                        .join(',')}
+                    )
+                `,
+              ),
+              'service_role_required',
+            );
+          }
+
+          await exec(
+            db,
+            'reset role;',
+          );
+
+          for (const row of rows) {
+            await exec(
+              db,
+              `
+                revoke execute
+                on function public.${row.name}(${row.args})
+                from ${role};
+              `,
+            );
+          }
+        }
+      },
+    );
+
+    await t.test(
+      'marketplace sync claim and completion preserve lease ownership and cursor continuation',
+      async () => {
+        await lifecycleFixture();
+
+        const jobId =
+          await enqueueLifecycleJob(
+            'products',
+          );
+
+        const firstClaim =
+          (
+            await claimLifecycleJob(
+              jobId,
+            )
+          ).rows;
+
+        assert.equal(
+          firstClaim.length,
+          1,
+        );
+
+        assert.equal(
+          Number(
+            firstClaim[0]
+              .attempt_count,
+          ),
+          1,
+        );
+
+        assert.equal(
+          firstClaim[0]
+            .cursor_kind,
+          null,
+        );
+
+        assert.ok(
+          firstClaim[0]
+            .lease_token,
+        );
+
+        const firstLease =
+          firstClaim[0]
+            .lease_token;
+
+        assert.equal(
+          (
+            await claimLifecycleJob(
+              jobId,
+            )
+          ).rows.length,
+          0,
+        );
+
+        await assert.rejects(
+          completeLifecyclePage(
+            jobId,
+            'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+            2,
+            250,
+            'page_token',
+            'next-page',
+            'wrong-lease',
+          ),
+          /lease is stale or unavailable/,
+        );
+
+        await assert.rejects(
+          completeLifecyclePage(
+            jobId,
+            firstLease,
+            3,
+            2,
+            null,
+            null,
+            'bad-total',
+          ),
+          /total count cannot be smaller than synced count/,
+        );
+
+        const queued =
+          (
+            await completeLifecyclePage(
+              jobId,
+              firstLease,
+              2,
+              250,
+              'page_token',
+              'next-page',
+              'request-1',
+            )
+          ).rows[0].status;
+
+        assert.equal(
+          queued,
+          'queued',
+        );
+
+        const queuedRow =
+          (
+            await db.query(
+              `
+                select
+                  status,
+                  cursor_kind,
+                  cursor_value,
+                  processed_count,
+                  total_count,
+                  lease_token,
+                  lease_expires_at,
+                  last_request_id
+                from marketplace_sync_jobs
+                where id = $1
+              `,
+              [
+                jobId,
+              ],
+            )
+          ).rows[0];
+
+        assert.equal(
+          queuedRow.status,
+          'queued',
+        );
+
+        assert.equal(
+          queuedRow.cursor_kind,
+          'page_token',
+        );
+
+        assert.equal(
+          queuedRow.cursor_value,
+          'next-page',
+        );
+
+        assert.equal(
+          Number(
+            queuedRow.processed_count,
+          ),
+          2,
+        );
+
+        assert.equal(
+          Number(
+            queuedRow.total_count,
+          ),
+          250,
+        );
+
+        assert.equal(
+          queuedRow.lease_token,
+          null,
+        );
+
+        assert.equal(
+          queuedRow.lease_expires_at,
+          null,
+        );
+
+        assert.equal(
+          queuedRow.last_request_id,
+          'request-1',
+        );
+
+        const secondClaim =
+          (
+            await claimLifecycleJob(
+              jobId,
+            )
+          ).rows;
+
+        assert.equal(
+          secondClaim.length,
+          1,
+        );
+
+        assert.equal(
+          Number(
+            secondClaim[0]
+              .attempt_count,
+          ),
+          2,
+        );
+
+        assert.equal(
+          secondClaim[0]
+            .cursor_kind,
+          'page_token',
+        );
+
+        assert.equal(
+          secondClaim[0]
+            .cursor_value,
+          'next-page',
+        );
+
+        assert.notEqual(
+          secondClaim[0]
+            .lease_token,
+          firstLease,
+        );
+
+        const succeeded =
+          (
+            await completeLifecyclePage(
+              jobId,
+              secondClaim[0]
+                .lease_token,
+              1,
+              250,
+              null,
+              null,
+              'request-2',
+            )
+          ).rows[0].status;
+
+        assert.equal(
+          succeeded,
+          'succeeded',
+        );
+
+        const finalRow =
+          (
+            await db.query(
+              `
+                select
+                  status,
+                  processed_count,
+                  total_count,
+                  cursor_kind,
+                  cursor_value,
+                  lease_token,
+                  lease_expires_at,
+                  finished_at,
+                  last_request_id
+                from marketplace_sync_jobs
+                where id = $1
+              `,
+              [
+                jobId,
+              ],
+            )
+          ).rows[0];
+
+        assert.equal(
+          finalRow.status,
+          'succeeded',
+        );
+
+        assert.equal(
+          Number(
+            finalRow.processed_count,
+          ),
+          3,
+        );
+
+        assert.equal(
+          Number(
+            finalRow.total_count,
+          ),
+          250,
+        );
+
+        assert.equal(
+          finalRow.cursor_kind,
+          null,
+        );
+
+        assert.equal(
+          finalRow.cursor_value,
+          null,
+        );
+
+        assert.equal(
+          finalRow.lease_token,
+          null,
+        );
+
+        assert.equal(
+          finalRow.lease_expires_at,
+          null,
+        );
+
+        assert.ok(
+          finalRow.finished_at,
+        );
+
+        assert.equal(
+          finalRow.last_request_id,
+          'request-2',
+        );
+      },
+    );
+
+    await t.test(
+      'marketplace sync retry backoff and maximum attempts are durable',
+      async () => {
+        await lifecycleFixture();
+
+        const jobId =
+          await enqueueLifecycleJob(
+            'orders',
+          );
+
+        await exec(
+          db,
+          'reset role;',
+        );
+
+        await db.query(
+          `
+            update marketplace_sync_jobs
+            set max_attempts = 2
+            where id = $1
+          `,
+          [
+            jobId,
+          ],
+        );
+
+        await resumeServiceRole();
+
+        const firstClaim =
+          (
+            await claimLifecycleJob(
+              jobId,
+            )
+          ).rows[0];
+
+        const firstFailure =
+          (
+            await failLifecycleAttempt(
+              jobId,
+              firstClaim.lease_token,
+              'provider_error',
+              'temporary provider failure',
+              true,
+            )
+          ).rows[0].status;
+
+        assert.equal(
+          firstFailure,
+          'queued',
+        );
+
+        const retryRow =
+          (
+            await db.query(
+              `
+                select
+                  status,
+                  attempt_count,
+                  available_at,
+                  lease_token,
+                  lease_expires_at,
+                  last_error_code
+                from marketplace_sync_jobs
+                where id = $1
+              `,
+              [
+                jobId,
+              ],
+            )
+          ).rows[0];
+
+        assert.equal(
+          retryRow.status,
+          'queued',
+        );
+
+        assert.equal(
+          Number(
+            retryRow.attempt_count,
+          ),
+          1,
+        );
+
+        assert.ok(
+          new Date(
+            retryRow.available_at,
+          ).getTime() >
+            Date.now(),
+        );
+
+        assert.equal(
+          retryRow.lease_token,
+          null,
+        );
+
+        assert.equal(
+          retryRow.lease_expires_at,
+          null,
+        );
+
+        assert.equal(
+          retryRow.last_error_code,
+          'provider_error',
+        );
+
+        assert.equal(
+          (
+            await claimLifecycleJob(
+              null,
+            )
+          ).rows.length,
+          0,
+        );
+
+        await exec(
+          db,
+          'reset role;',
+        );
+
+        await db.query(
+          `
+            update marketplace_sync_jobs
+            set
+              available_at =
+                now() - interval '1 second'
+            where id = $1
+          `,
+          [
+            jobId,
+          ],
+        );
+
+        await resumeServiceRole();
+
+        const secondClaim =
+          (
+            await claimLifecycleJob(
+              null,
+            )
+          ).rows[0];
+
+        assert.equal(
+          secondClaim.id,
+          jobId,
+        );
+
+        assert.equal(
+          Number(
+            secondClaim.attempt_count,
+          ),
+          2,
+        );
+
+        const terminalFailure =
+          (
+            await failLifecycleAttempt(
+              jobId,
+              secondClaim.lease_token,
+              'provider_error',
+              'provider still unavailable',
+              true,
+            )
+          ).rows[0].status;
+
+        assert.equal(
+          terminalFailure,
+          'failed',
+        );
+
+        const failedRow =
+          (
+            await db.query(
+              `
+                select
+                  status,
+                  attempt_count,
+                  lease_token,
+                  lease_expires_at,
+                  finished_at
+                from marketplace_sync_jobs
+                where id = $1
+              `,
+              [
+                jobId,
+              ],
+            )
+          ).rows[0];
+
+        assert.equal(
+          failedRow.status,
+          'failed',
+        );
+
+        assert.equal(
+          Number(
+            failedRow.attempt_count,
+          ),
+          2,
+        );
+
+        assert.equal(
+          failedRow.lease_token,
+          null,
+        );
+
+        assert.equal(
+          failedRow.lease_expires_at,
+          null,
+        );
+
+        assert.ok(
+          failedRow.finished_at,
+        );
+      },
+    );
+
+    await t.test(
+      'marketplace sync expired leases can be reclaimed and exhausted leases fail closed',
+      async () => {
+        await lifecycleFixture();
+
+        const reclaimJob =
+          await enqueueLifecycleJob(
+            'products',
+          );
+
+        const firstClaim =
+          (
+            await claimLifecycleJob(
+              reclaimJob,
+            )
+          ).rows[0];
+
+        await exec(
+          db,
+          'reset role;',
+        );
+
+        await db.query(
+          `
+            update marketplace_sync_jobs
+            set
+              lease_expires_at =
+                now() - interval '1 second'
+            where id = $1
+          `,
+          [
+            reclaimJob,
+          ],
+        );
+
+        await resumeServiceRole();
+
+        const reclaimed =
+          (
+            await claimLifecycleJob(
+              reclaimJob,
+            )
+          ).rows[0];
+
+        assert.equal(
+          Number(
+            reclaimed.attempt_count,
+          ),
+          2,
+        );
+
+        assert.notEqual(
+          reclaimed.lease_token,
+          firstClaim.lease_token,
+        );
+
+        assert.equal(
+          (
+            await failLifecycleAttempt(
+              reclaimJob,
+              reclaimed.lease_token,
+              'persistence_error',
+              'synthetic stop',
+              false,
+            )
+          ).rows[0].status,
+          'failed',
+        );
+
+        const exhaustedJob =
+          await enqueueLifecycleJob(
+            'shops',
+          );
+
+        await exec(
+          db,
+          'reset role;',
+        );
+
+        await db.query(
+          `
+            update marketplace_sync_jobs
+            set max_attempts = 1
+            where id = $1
+          `,
+          [
+            exhaustedJob,
+          ],
+        );
+
+        await resumeServiceRole();
+
+        const exhaustedClaim =
+          (
+            await claimLifecycleJob(
+              exhaustedJob,
+            )
+          ).rows[0];
+
+        assert.equal(
+          Number(
+            exhaustedClaim.attempt_count,
+          ),
+          1,
+        );
+
+        await exec(
+          db,
+          'reset role;',
+        );
+
+        await db.query(
+          `
+            update marketplace_sync_jobs
+            set
+              lease_expires_at =
+                now() - interval '1 second'
+            where id = $1
+          `,
+          [
+            exhaustedJob,
+          ],
+        );
+
+        await resumeServiceRole();
+
+        assert.equal(
+          (
+            await claimLifecycleJob(
+              exhaustedJob,
+            )
+          ).rows.length,
+          0,
+        );
+
+        const exhaustedRow =
+          (
+            await db.query(
+              `
+                select
+                  status,
+                  attempt_count,
+                  last_error_code,
+                  lease_token,
+                  lease_expires_at,
+                  finished_at
+                from marketplace_sync_jobs
+                where id = $1
+              `,
+              [
+                exhaustedJob,
+              ],
+            )
+          ).rows[0];
+
+        assert.equal(
+          exhaustedRow.status,
+          'failed',
+        );
+
+        assert.equal(
+          Number(
+            exhaustedRow.attempt_count,
+          ),
+          1,
+        );
+
+        assert.equal(
+          exhaustedRow.last_error_code,
+          'persistence_error',
+        );
+
+        assert.equal(
+          exhaustedRow.lease_token,
+          null,
+        );
+
+        assert.equal(
+          exhaustedRow.lease_expires_at,
+          null,
+        );
+
+        assert.ok(
+          exhaustedRow.finished_at,
+        );
+      },
+    );
+
+    await t.test(
+      'marketplace sync terminal errors cannot be mislabeled retryable',
+      async () => {
+        await lifecycleFixture();
+
+        const jobId =
+          await enqueueLifecycleJob(
+            'inventory',
+          );
+
+        const claim =
+          (
+            await claimLifecycleJob(
+              jobId,
+            )
+          ).rows[0];
+
+        await assert.rejects(
+          failLifecycleAttempt(
+            jobId,
+            claim.lease_token,
+            'scope_missing',
+            'scope missing',
+            true,
+          ),
+          /retryable flag is invalid for error code/,
+        );
+
+        const running =
+          (
+            await db.query(
+              `
+                select
+                  status,
+                  lease_token
+                from marketplace_sync_jobs
+                where id = $1
+              `,
+              [
+                jobId,
+              ],
+            )
+          ).rows[0];
+
+        assert.equal(
+          running.status,
+          'running',
+        );
+
+        assert.equal(
+          running.lease_token,
+          claim.lease_token,
+        );
+
+        const failed =
+          (
+            await failLifecycleAttempt(
+              jobId,
+              claim.lease_token,
+              'scope_missing',
+              'scope missing',
+              false,
+            )
+          ).rows[0].status;
+
+        assert.equal(
+          failed,
+          'failed',
+        );
+      },
+    );
   } finally {
     if (db.close) await db.close(); else await db.end();
   }
