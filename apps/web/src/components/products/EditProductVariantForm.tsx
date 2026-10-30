@@ -76,10 +76,6 @@ export default function EditProductVariantForm({
       formData.get("cost_price"),
     );
 
-    const stock = Number(
-      formData.get("stock"),
-    );
-
     const status = String(
       formData.get("status") ?? "",
     );
@@ -127,18 +123,6 @@ export default function EditProductVariantForm({
     }
 
     if (
-      !Number.isInteger(stock) ||
-      stock < 0
-    ) {
-      setErrorMessage(
-        copy.validation.stockInvalid,
-      );
-
-      setIsSubmitting(false);
-      return;
-    }
-
-    if (
       status !== "active" &&
       status !== "inactive"
     ) {
@@ -162,7 +146,6 @@ export default function EditProductVariantForm({
         sku,
         price,
         cost_price: costPrice,
-        stock,
         status,
       })
       .eq("id", variant.id)
@@ -302,14 +285,13 @@ export default function EditProductVariantForm({
 
           <Input
             id="stock"
-            name="stock"
+            readOnly
             type="number"
             min="0"
             step="1"
             defaultValue={
               String(variant.stock)
             }
-            required
           />
         </div>
 

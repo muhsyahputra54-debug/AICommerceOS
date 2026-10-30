@@ -1252,10 +1252,6 @@ export default function EditProductForm({
       formData.get("cost_price"),
     );
 
-    const stock = Number(
-      formData.get("stock"),
-    );
-
     const status = String(
       formData.get("status") ?? "",
     );
@@ -1294,18 +1290,6 @@ export default function EditProductForm({
     }
 
     if (
-      !Number.isInteger(stock) ||
-      stock < 0
-    ) {
-      setErrorMessage(
-        copy.validation.stockInvalid,
-      );
-
-      setIsSubmitting(false);
-      return;
-    }
-
-    if (
       status !== "active" &&
       status !== "inactive"
     ) {
@@ -1331,7 +1315,6 @@ export default function EditProductForm({
             categoryId || null,
           price,
           cost_price: costPrice,
-          stock,
           status,
         })
         .eq("id", product.id)
@@ -1569,14 +1552,13 @@ export default function EditProductForm({
 
           <Input
             id="stock"
-            name="stock"
+            readOnly
             type="number"
             min="0"
             step="1"
             defaultValue={
               String(product.stock)
             }
-            required
           />
         </div>
 
