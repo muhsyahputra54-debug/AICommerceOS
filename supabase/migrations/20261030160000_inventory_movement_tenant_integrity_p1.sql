@@ -1,5 +1,5 @@
 -- LAKUVO G6-R8V.30A | P1 Inventory Movement Tenant Integrity
--- DRAFT FOR SOURCE REVIEW / LOCAL TESTING ONLY. DO NOT APPLY TO STAGING OR PRODUCTION.
+-- Locally regression-tested on PostgreSQL 17; staging deployment requires verified target and read-only preflight. Production deployment is not authorized.
 -- Preconditions: products and product_variants each have UNIQUE (id, organization_id),
 -- and inventory_movements.organization_id is NOT NULL.
 -- This migration changes constraints, not inventory movement rows.
