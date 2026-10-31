@@ -5,6 +5,8 @@
 -- This migration changes constraints, not inventory movement rows.
 
 BEGIN;
+SET LOCAL lock_timeout = '5s';
+SET LOCAL statement_timeout = '30s';
 
 -- Serialize inventory_movement writes during validation and constraint replacement.
 -- AccessExclusiveLock also prevents concurrent writes until COMMIT/ROLLBACK.
